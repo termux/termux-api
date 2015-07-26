@@ -17,3 +17,8 @@ where the sockets are used to transfer:
 Client scripts
 ==============
 Client scripts which processes command line arguments before calling the termux-api helper binary are available in [the termux-api package](https://github.com/termux/termux-packages/tree/master/packages/termux-api).
+
+Ideas
+=====
+- Method for sharing files, so `termux-share myfile.txt` will bring up a share dialog allowing mailing/sharing/etc.
+- Method for playing audio files using the system MediaPlayer, so `termux-play myfile.ogg` would play the audio file.

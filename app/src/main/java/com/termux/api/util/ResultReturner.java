@@ -15,7 +15,7 @@ import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.util.JsonWriter;
 
-public class ResultReturner {
+public abstract class ResultReturner {
 
 	/**
 	 * An extra intent parameter which specifies a linux abstract namespace socket address where output from the API

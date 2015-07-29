@@ -39,6 +39,10 @@
         <activity android:name="com.termux.api.DialogActivity" android:theme="@android:style/Theme.Material.Light.Dialog.Alert" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
         <service android:name="com.termux.api.SpeechToTextAPI$SpeechToTextService"/>
         <service android:name="com.termux.api.TextToSpeechAPI$TextToSpeechService" />
+        <provider android:authorities="com.termux.sharedfiles"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:name="com.termux.api.ShareAPI$ContentProvider" />
     </application>
 
 </manifest>

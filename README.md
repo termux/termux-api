@@ -20,7 +20,6 @@ Client scripts which processes command line arguments before calling the termux-
 
 Ideas
 =====
-- Method for sharing files, so `termux-share myfile.txt` will bring up a share dialog allowing mailing/sharing/etc.
 - Method for playing audio files using the system MediaPlayer, so `termux-play myfile.ogg` would play the audio file.
 - Wifi network search and connect.
 - Proximity sensor.

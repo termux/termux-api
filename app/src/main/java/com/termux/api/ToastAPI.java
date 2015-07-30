@@ -3,6 +3,7 @@ package com.termux.api;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
+import android.view.Gravity;
 import android.widget.Toast;
 
 import com.termux.api.util.ResultReturner;
@@ -18,7 +19,6 @@ public class ToastAPI {
 
         final Handler handler = new Handler();
 
-        TermuxApiLogger.info("duration=" + durationExtra);
         ResultReturner.returnData(context, intent, new ResultReturner.WithStringInput() {
             @Override
             public void writeResult(PrintWriter out) throws Exception {
@@ -26,6 +26,7 @@ public class ToastAPI {
                     @Override
                     public void run() {
                         Toast toast = Toast.makeText(context, inputString, durationExtra);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
                         toast.show();
                     }
                 });

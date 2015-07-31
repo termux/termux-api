@@ -65,6 +65,7 @@ public class ShareAPI {
                     sendIntent.setType(contentTypeExtra == null ? "text/plain" : contentTypeExtra);
 
                     context.startActivity(Intent.createChooser(sendIntent, context.getResources().getText(R.string.share_file_chooser_title)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+
                 }
             });
         } else {
@@ -74,7 +75,7 @@ public class ShareAPI {
                 public void writeResult(PrintWriter out) throws Exception {
                     final File fileToShare = new File(fileExtra);
                     if (!(fileToShare.isFile() && fileToShare.canRead())) {
-                        out.println("Not a readable file: '" + fileToShare.getAbsolutePath() + "'");
+                        out.println("ERROR: Not a readable file: '" + fileToShare.getAbsolutePath() + "'");
                         return;
                     }
 
@@ -93,8 +94,6 @@ public class ShareAPI {
                     } else {
                         contentTypeToUse = contentTypeExtra;
                     }
-
-                    TermuxApiLogger.info("CONTENT: " + contentTypeToUse + ", default=" + defaultReceiverExtra + ", action=" + finalIntentAction);
 
                     if (titleExtra != null) sendIntent.putExtra(Intent.EXTRA_SUBJECT, titleExtra);
 
@@ -151,7 +150,6 @@ public class ShareAPI {
         public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
             String fileName = uri.getPath();
             File file = new File(uri.getPath());
-            TermuxApiLogger.info("...filepath=" + file.getAbsolutePath());
             return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
         }
     }

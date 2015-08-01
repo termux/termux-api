@@ -7,13 +7,12 @@ import android.view.Gravity;
 import android.widget.Toast;
 
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
 
 import java.io.PrintWriter;
 
 public class ToastAPI {
 
-    public static void onReceive(TermuxApiReceiver receiver, final Context context, Intent intent) {
+    public static void onReceive(final Context context, Intent intent) {
         final int durationExtra = intent.getBooleanExtra("short", false) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
 
         final Handler handler = new Handler();

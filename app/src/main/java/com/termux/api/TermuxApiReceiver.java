@@ -3,7 +3,6 @@ package com.termux.api;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.widget.Toast;
 
 import com.termux.api.util.TermuxApiLogger;
 
@@ -61,7 +60,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 TextToSpeechAPI.onReceive(context, intent);
                 break;
             case "Toast":
-                ToastAPI.onReceive(this, context, intent);
+                ToastAPI.onReceive(context, intent);
                 break;
             case "Vibrate":
                 VibrateAPI.onReceive(this, context, intent);

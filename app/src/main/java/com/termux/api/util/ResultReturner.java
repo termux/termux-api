@@ -29,8 +29,8 @@ public abstract class ResultReturner {
 	 */
 	private static final String SOCKET_INPUT_EXTRA = "socket_input";
 
-	public static interface ResultWriter {
-		public void writeResult(PrintWriter out) throws Exception;
+	static interface ResultWriter {
+		void writeResult(PrintWriter out) throws Exception;
 	}
 
 	/** Possible subclass of {@link ResultWriter} when input is to be read from stdin. */

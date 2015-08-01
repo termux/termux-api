@@ -129,7 +129,6 @@ public class LocationAPI  {
 							.name("API_ERROR")
 							.value("Unsupported request '" + request + "' - only '" + REQUEST_LAST_KNOWN + "', '" + REQUEST_ONCE + "' and '" + REQUEST_UPDATES
 									+ "' supported").endObject();
-					return;
 				}
 			}
 		});

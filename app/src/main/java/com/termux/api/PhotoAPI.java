@@ -106,7 +106,7 @@ public class PhotoAPI {
 
                         // Orientation jpeg fix, from the Camera2BasicFragment example:
                         int cameraJpegOrientation;
-                        int deviceOrientation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getOrientation();
+                        int deviceOrientation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
                         switch (deviceOrientation) {
                             case Surface.ROTATION_0:
                                 cameraJpegOrientation = 90;

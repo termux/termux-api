@@ -29,7 +29,7 @@ public abstract class ResultReturner {
 	 */
 	private static final String SOCKET_INPUT_EXTRA = "socket_input";
 
-	static interface ResultWriter {
+	public interface ResultWriter {
 		void writeResult(PrintWriter out) throws Exception;
 	}
 

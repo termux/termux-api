@@ -42,8 +42,6 @@ public class ClipboardAPI {
 							}
 						}
 					}
-				} else {
-					// Set clip - already done in main thread.
 				}
 			}
 		});

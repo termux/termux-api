@@ -50,7 +50,7 @@ public class PhotoAPI {
     private static void takePictureNoPreview(final PrintWriter out, final Context context, final File outputFile, String cameraId) {
         try {
             final CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
-            CameraCharacteristics characteristics = null;
+            CameraCharacteristics characteristics;
             try {
                 characteristics = manager.getCameraCharacteristics(cameraId);
             } catch (IllegalArgumentException e) {
@@ -79,7 +79,7 @@ public class PhotoAPI {
                                 try (FileOutputStream output = new FileOutputStream(outputFile)) {
                                     output.write(bytes);
                                 } catch (Exception e) {
-                                    out.append("Error writing image: " + e.getMessage());
+                                    out.println("Error writing image: " + e.getMessage());
                                     TermuxApiLogger.error("Error writing image", e);
                                 } finally {
                                     looper.quit();

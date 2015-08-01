@@ -148,7 +148,6 @@ public class ShareAPI {
 
         @Override
         public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
-            String fileName = uri.getPath();
             File file = new File(uri.getPath());
             return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
         }

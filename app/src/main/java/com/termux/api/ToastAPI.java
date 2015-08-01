@@ -15,7 +15,6 @@ public class ToastAPI {
 
     public static void onReceive(TermuxApiReceiver receiver, final Context context, Intent intent) {
         final int durationExtra = intent.getBooleanExtra("short", false) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
-        final String gravityExtra = intent.getStringExtra("gravity");
 
         final Handler handler = new Handler();
 

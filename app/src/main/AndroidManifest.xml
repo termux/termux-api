@@ -33,6 +33,7 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
+        android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light" >
         <receiver android:name="com.termux.api.TermuxApiReceiver"/>
         <activity android:name="com.termux.api.PhotoActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false"/>

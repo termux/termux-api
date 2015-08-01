@@ -25,6 +25,10 @@
 	<uses-feature android:name="android.hardware.microphone" android:required="false" />
 	<uses-feature android:name="android.hardware.telephony" android:required="false" />
 
+    <!-- This permission is not used, but a permission is needed on the sharedfiles contentprovider,
+         which will always use FLAG_GRANT_READ_URI_PERMISSION. -->
+    <permission android:name="com.termux.sharedfiles.READ" android:protectionLevel="signature" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -36,6 +40,7 @@
         <service android:name="com.termux.api.SpeechToTextAPI$SpeechToTextService"/>
         <service android:name="com.termux.api.TextToSpeechAPI$TextToSpeechService" />
         <provider android:authorities="com.termux.sharedfiles"
+            android:readPermission="com.termux.sharedfiles.READ"
             android:exported="true"
             android:grantUriPermissions="true"
             android:name="com.termux.api.ShareAPI$ContentProvider" />

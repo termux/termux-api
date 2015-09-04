@@ -90,7 +90,8 @@ public class ShareAPI {
                         int lastDotIndex = fileName.lastIndexOf('.');
                         String fileExtension = fileName.substring(lastDotIndex + 1, fileName.length());
                         MimeTypeMap mimeTypes = MimeTypeMap.getSingleton();
-                        contentTypeToUse = mimeTypes.getMimeTypeFromExtension(fileExtension);
+                        // Lower casing makes it work with e.g. "JPG":
+                        contentTypeToUse = mimeTypes.getMimeTypeFromExtension(fileExtension.toLowerCase());
                     } else {
                         contentTypeToUse = contentTypeExtra;
                     }

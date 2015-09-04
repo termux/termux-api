@@ -57,15 +57,23 @@ public class PhotoAPI {
                 out.println("No such camera: " + cameraId);
                 return;
             }
+
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
-            // For still image captures, we use the largest available size.
-            Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                    new CompareSizesByArea());
-            final ImageReader mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
-                    ImageFormat.JPEG, 2);
+            // Use largest available size:
+            Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new Comparator<Size>() {
+                @Override
+                public int compare(Size lhs, Size rhs) {
+                    // Cast to ensure multiplications won't overflow:
+                    return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
+                }
+            });
+
+            final ImageReader mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, 2);
+
             Looper.prepare();
             final Looper looper = Looper.myLooper();
+
             mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(final ImageReader reader) {
@@ -94,15 +102,12 @@ public class PhotoAPI {
                 @Override
                 public void onOpened(final CameraDevice camera) {
                     try {
-                        final CaptureRequest.Builder captureBuilder = camera
-                                .createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                        final CaptureRequest.Builder captureBuilder = camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                         captureBuilder.addTarget(mImageReader.getSurface());
 
-                        // Use the same AE and AF modes as the preview.
-                        captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                                CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                        captureBuilder
-                                .set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                        // Configure auto-focus (AF) and auto-exposure (AE) modes:
+                        captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                        captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
                         // Orientation jpeg fix, from the Camera2BasicFragment example:
                         int cameraJpegOrientation;
@@ -125,8 +130,7 @@ public class PhotoAPI {
                         }
                         captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, cameraJpegOrientation);
 
-                        List<Surface> outputSurfaces = Collections.singletonList(mImageReader.getSurface());
-                        camera.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
+                        camera.createCaptureSession(Collections.singletonList(mImageReader.getSurface()), new CameraCaptureSession.StateCallback() {
                             @Override
                             public void onConfigured(CameraCaptureSession session) {
                                 try {
@@ -170,17 +174,10 @@ public class PhotoAPI {
                 }
 
             }, null);
+
             Looper.loop();
         } catch (Exception e) {
             TermuxApiLogger.error("Error getting camera", e);
-        }
-    }
-
-    static class CompareSizesByArea implements Comparator<Size> {
-        @Override
-        public int compare(Size lhs, Size rhs) {
-            // We cast here to ensure the multiplications won't overflow
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
         }
     }
 

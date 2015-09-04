@@ -1,24 +1,20 @@
 apply plugin: 'com.android.application'
 android {
-    compileSdkVersion 22
-    buildToolsVersion "22.0.1"
+    compileSdkVersion 23
+    buildToolsVersion "23.0.0"
 
     defaultConfig {
         applicationId "com.termux.api"
         minSdkVersion 21
         targetSdkVersion 22
-        compileOptions {
-            sourceCompatibility JavaVersion.VERSION_1_7
-            targetCompatibility JavaVersion.VERSION_1_7
-        }
     }
 
     signingConfigs {
         release {
-            storeFile new File(RELEASE_STORE_FILE)
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+            storeFile new File((String) RELEASE_STORE_FILE) //noinspection GroovyAssignabilityCheck
+            storePassword RELEASE_STORE_PASSWORD   //noinspection GroovyAssignabilityCheck
+            keyAlias RELEASE_KEY_ALIAS             //noinspection GroovyAssignabilityCheck
+            keyPassword RELEASE_KEY_PASSWORD       //noinspection GroovyAssignabilityCheck
         }
     }
 
@@ -26,10 +22,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.release   //noinspection GroovyAssignabilityCheck
         }
     }
-}
-
-dependencies {
 }

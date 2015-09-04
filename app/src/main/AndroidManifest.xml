@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.termux.api"
     android:sharedUserId="com.termux"
-    android:versionCode="3"
-    android:versionName="0.3" >
+    android:versionCode="4"
+    android:versionName="0.4" >
 
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 

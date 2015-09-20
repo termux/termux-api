@@ -96,7 +96,7 @@ public class ShareAPI {
                         MimeTypeMap mimeTypes = MimeTypeMap.getSingleton();
                         // Lower casing makes it work with e.g. "JPG":
                         contentTypeToUse = mimeTypes.getMimeTypeFromExtension(fileExtension.toLowerCase());
-                        if (contentTypeExtra == null) contentTypeToUse = "application/octet-stream";
+                        if (contentTypeToUse == null) contentTypeToUse = "application/octet-stream";
                     } else {
                         contentTypeToUse = contentTypeExtra;
                     }

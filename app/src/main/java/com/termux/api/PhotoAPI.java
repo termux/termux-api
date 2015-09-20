@@ -19,6 +19,7 @@ import android.media.ImageReader;
 import android.os.Looper;
 import android.util.Size;
 import android.view.Surface;
+import android.view.SurfaceView;
 import android.view.WindowManager;
 
 import com.termux.api.util.ResultReturner;
@@ -71,7 +72,7 @@ public class PhotoAPI {
                     try {
                         proceedWithOpenedCamera(context, manager, camera, numPreviews, outputFile, looper, stdout);
                     } catch (Exception e) {
-                        TermuxApiLogger.error("in onOpened", e);
+                        TermuxApiLogger.error("Exception in onOpened()", e);
                         closeCamera(camera, looper);
                     }
                 }
@@ -95,19 +96,32 @@ public class PhotoAPI {
     }
 
     // See answer on http://stackoverflow.com/questions/31925769/pictures-with-camera2-api-are-really-dark
+    // See https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html#createCaptureSession(java.util.List<android.view.Surface>, android.hardware.camera2.CameraCaptureSession.StateCallback, android.os.Handler)
+    // for information about guaranteed support for output sizes and formats.
     static void proceedWithOpenedCamera(final Context context, final CameraManager manager, final CameraDevice camera, final int previews, final File outputFile, final Looper looper, final PrintWriter stdout) throws CameraAccessException, IllegalArgumentException {
         final List<Surface> outputSurfaces = new ArrayList<>();
 
-        // Use largest available size:
         CameraCharacteristics characteristics = manager.getCameraCharacteristics(camera.getId());
+
+        int autoExposureMode = CameraMetadata.CONTROL_AE_MODE_OFF;
+        for (int supportedMode : characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES)) {
+            if (supportedMode == CameraMetadata.CONTROL_AE_MODE_ON) {
+                autoExposureMode = supportedMode;
+            }
+        }
+        final int autoExposureModeFinal = autoExposureMode;
+
+        // Use largest available size:
         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new Comparator<Size>() {
+        Comparator<Size> bySize = new Comparator<Size>() {
             @Override
             public int compare(Size lhs, Size rhs) {
                 // Cast to ensure multiplications won't overflow:
                 return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
             }
-        });
+        };
+        List<Size> sizes = Arrays.asList(map.getOutputSizes(ImageFormat.JPEG));
+        Size largest = Collections.max(sizes, bySize);
 
         final ImageReader mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, 2);
         mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
@@ -138,6 +152,7 @@ public class PhotoAPI {
 
         if (previews > 0) {
             final SurfaceTexture dummyPreview = new SurfaceTexture(1);
+            dummyPreview.setDefaultBufferSize(1920, 1080);
             final Surface dummySurface = new Surface(dummyPreview);
             outputSurfaces.add(dummySurface);
         }
@@ -151,7 +166,7 @@ public class PhotoAPI {
                     jpegRequest.addTarget(imageReaderSurface);
                     // Configure auto-focus (AF) and auto-exposure (AE) modes:
                     jpegRequest.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                    jpegRequest.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                    jpegRequest.set(CaptureRequest.CONTROL_AE_MODE, autoExposureModeFinal);
                     // Orientation jpeg fix, from the Camera2BasicFragment example:
                     fixOrientation(context, jpegRequest);
 
@@ -164,9 +179,7 @@ public class PhotoAPI {
                         captureBuilder.addTarget(outputSurfaces.get(1));
                         // Configure auto-focus (AF) and auto-exposure (AE) modes:
                         captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                        captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH);
-                        // Orientation jpeg fix, from the Camera2BasicFragment example:
-                        fixOrientation(context, captureBuilder);
+                        captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, autoExposureModeFinal);
 
                         session.setRepeatingRequest(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
                             int mNumCaptures;

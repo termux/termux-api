@@ -4,8 +4,10 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
@@ -15,6 +17,8 @@ import com.termux.api.util.TermuxApiLogger;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 public class ShareAPI {
 
@@ -92,6 +96,7 @@ public class ShareAPI {
                         MimeTypeMap mimeTypes = MimeTypeMap.getSingleton();
                         // Lower casing makes it work with e.g. "JPG":
                         contentTypeToUse = mimeTypes.getMimeTypeFromExtension(fileExtension.toLowerCase());
+                        if (contentTypeExtra == null) contentTypeToUse = "application/octet-stream";
                     } else {
                         contentTypeToUse = contentTypeExtra;
                     }
@@ -123,12 +128,16 @@ public class ShareAPI {
 
         @Override
         public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-            return null;
+            File file = new File(uri.getPath());
+            String fileName = file.getName();
+
+            MatrixCursor cursor = new MatrixCursor(new String[]{MediaStore.MediaColumns.DISPLAY_NAME});
+            cursor.addRow(new Object[]{fileName});
+            return cursor;
         }
 
         @Override
         public String getType(Uri uri) {
-            TermuxApiLogger.info("getType(" + uri + ")");
             return null;
         }
 

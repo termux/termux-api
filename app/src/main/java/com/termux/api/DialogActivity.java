@@ -41,7 +41,7 @@ public class DialogActivity extends Activity {
 		}
 
 		String inputType = getIntent().getStringExtra("input_type");
-		if ("password".equals(inputType)) {A
+		if ("password".equals(inputType)) {
 			textInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
 		}
 

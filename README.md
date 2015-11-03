@@ -2,6 +2,10 @@ Termux API
 ==========
 This is an app exposing Android API to command line usage and scripts or programs.
 
+License
+=======
+Released under the [GPLv3 license](http://www.gnu.org/licenses/gpl-3.0.en.html).
+
 The termux-api client helper binary
 ===================================
 The client helper binary ([termux-api.c](https://github.com/termux/termux-packages/blob/master/packages/termux-api/termux-api.c))

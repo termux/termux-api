@@ -7,22 +7,14 @@ android {
         applicationId "com.termux.api"
         minSdkVersion 21
         targetSdkVersion 22
-    }
-
-    signingConfigs {
-        release {
-            storeFile new File((String) RELEASE_STORE_FILE) //noinspection GroovyAssignabilityCheck
-            storePassword RELEASE_STORE_PASSWORD   //noinspection GroovyAssignabilityCheck
-            keyAlias RELEASE_KEY_ALIAS             //noinspection GroovyAssignabilityCheck
-            keyPassword RELEASE_KEY_PASSWORD       //noinspection GroovyAssignabilityCheck
-        }
+        versionCode 6
+        versionName "0.6"
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
-            signingConfig signingConfigs.release   //noinspection GroovyAssignabilityCheck
         }
     }
 }

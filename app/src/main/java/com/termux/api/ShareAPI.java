@@ -17,8 +17,6 @@ import com.termux.api.util.TermuxApiLogger;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.lang.reflect.Array;
-import java.util.Arrays;
 
 public class ShareAPI {
 
@@ -131,8 +129,36 @@ public class ShareAPI {
             File file = new File(uri.getPath());
             String fileName = file.getName();
 
-            MatrixCursor cursor = new MatrixCursor(new String[]{MediaStore.MediaColumns.DISPLAY_NAME});
-            cursor.addRow(new Object[]{fileName});
+            if (projection == null) {
+                projection = new String[]{
+                        MediaStore.MediaColumns.DISPLAY_NAME,
+                        MediaStore.MediaColumns.SIZE,
+                        MediaStore.MediaColumns._ID
+                };
+            }
+
+            Object[] row = new Object[projection.length];
+            for (int i = 0; i < projection.length; i++) {
+                String column = projection[i];
+                Object value;
+                switch (column) {
+                    case MediaStore.MediaColumns.DISPLAY_NAME:
+                        value = file.getName();
+                        break;
+                    case MediaStore.MediaColumns.SIZE:
+                        value = (int) file.length();
+                        break;
+                    case MediaStore.MediaColumns._ID:
+                        value = 1;
+                        break;
+                    default:
+                        value = null;
+                }
+                row[i] = value;
+            }
+
+            MatrixCursor cursor = new MatrixCursor(projection);
+            cursor.addRow(row);
             return cursor;
         }
 

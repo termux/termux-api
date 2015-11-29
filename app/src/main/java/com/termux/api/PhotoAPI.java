@@ -2,7 +2,6 @@ package com.termux.api;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Camera;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -19,7 +18,6 @@ import android.media.ImageReader;
 import android.os.Looper;
 import android.util.Size;
 import android.view.Surface;
-import android.view.SurfaceView;
 import android.view.WindowManager;
 
 import com.termux.api.util.ResultReturner;
@@ -101,7 +99,7 @@ public class PhotoAPI {
     static void proceedWithOpenedCamera(final Context context, final CameraManager manager, final CameraDevice camera, final int previews, final File outputFile, final Looper looper, final PrintWriter stdout) throws CameraAccessException, IllegalArgumentException {
         final List<Surface> outputSurfaces = new ArrayList<>();
 
-        CameraCharacteristics characteristics = manager.getCameraCharacteristics(camera.getId());
+        final CameraCharacteristics characteristics = manager.getCameraCharacteristics(camera.getId());
 
         int autoExposureMode = CameraMetadata.CONTROL_AE_MODE_OFF;
         for (int supportedMode : characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES)) {
@@ -167,8 +165,7 @@ public class PhotoAPI {
                     // Configure auto-focus (AF) and auto-exposure (AE) modes:
                     jpegRequest.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                     jpegRequest.set(CaptureRequest.CONTROL_AE_MODE, autoExposureModeFinal);
-                    // Orientation jpeg fix, from the Camera2BasicFragment example:
-                    fixOrientation(context, jpegRequest);
+                    jpegRequest.set(CaptureRequest.JPEG_ORIENTATION, correctOrientation(context, characteristics));
 
                     if (previews == 0) {
                         saveImage(camera, session, jpegRequest.build());
@@ -222,27 +219,48 @@ public class PhotoAPI {
         }, null);
     }
 
-    /** Orientation jpeg fix, from the Camera2BasicFragment example. */
-    static void fixOrientation(Context context, CaptureRequest.Builder request) {
-        int cameraJpegOrientation;
-        final int deviceOrientation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
-        switch (deviceOrientation) {
-            case Surface.ROTATION_0:
-                cameraJpegOrientation = 90;
-                break;
-            case Surface.ROTATION_90:
-                cameraJpegOrientation = 0;
-                break;
-            case Surface.ROTATION_180:
-                cameraJpegOrientation = 270;
-                break;
-            case Surface.ROTATION_270:
-                cameraJpegOrientation = 180;
-                break;
-            default:
-                cameraJpegOrientation = 0;
+    /**
+     * Determine the correct JPEG orientation, taking into account device and sensor orientations.
+     * See https://developer.android.com/reference/android/hardware/Camera.html#setDisplayOrientation(int)
+     */
+    static int correctOrientation(final Context context, final CameraCharacteristics characteristics) {
+        final Integer lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
+        final boolean isFrontFacing = lensFacing != null && lensFacing == CameraCharacteristics.LENS_FACING_FRONT;
+        TermuxApiLogger.info((isFrontFacing ? "Using" : "Not using") + " a front facing camera.");
+
+        Integer sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+        if (sensorOrientation != null) {
+            TermuxApiLogger.info(String.format("Sensor orientation: %s degrees", sensorOrientation));
+        } else {
+            TermuxApiLogger.info("CameraCharacteristics didn't contain SENSOR_ORIENTATION. Assuming 0 degrees.");
+            sensorOrientation = 0;
         }
-        request.set(CaptureRequest.JPEG_ORIENTATION, cameraJpegOrientation);
+
+        int deviceOrientation;
+        final int deviceRotation =
+                ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
+        switch (deviceRotation) {
+            case Surface.ROTATION_0: deviceOrientation = 0; break;
+            case Surface.ROTATION_90: deviceOrientation = 90; break;
+            case Surface.ROTATION_180: deviceOrientation = 180; break;
+            case Surface.ROTATION_270: deviceOrientation = 270; break;
+            default:
+                TermuxApiLogger.info(
+                        String.format("Default display has unknown rotation %d. Assuming 0 degrees.", deviceRotation));
+                deviceOrientation = 0;
+        }
+        TermuxApiLogger.info(String.format("Device orientation: %d degrees", deviceOrientation));
+
+        int jpegOrientation;
+        if (isFrontFacing) {
+            jpegOrientation = sensorOrientation + deviceOrientation;
+        } else {
+            jpegOrientation = sensorOrientation - deviceOrientation;
+        }
+        // Add an extra 360 because (-90 % 360) == -90 and Android won't accept a negative rotation.
+        jpegOrientation = (jpegOrientation + 360) % 360;
+        TermuxApiLogger.info(String.format("Returning JPEG orientation of %d degrees", jpegOrientation));
+        return jpegOrientation;
     }
 
     static void closeCamera(CameraDevice camera, Looper looper) {

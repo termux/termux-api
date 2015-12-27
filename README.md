@@ -4,25 +4,23 @@ This is an app exposing Android API to command line usage and scripts or program
 
 - [Termux:API on Google Play](https://play.google.com/store/apps/details?id=com.termux.api)
 
+When developing or packaging, note that this app needs to be signed with the same key as the main Termux app for permissions to work (only the main Termux app are allowed to call the API methods in this app).
+
 License
 =======
 Released under the [GPLv3 license](http://www.gnu.org/licenses/gpl-3.0.en.html).
 
-The termux-api client helper binary
-===================================
-The client helper binary ([termux-api.c](https://github.com/termux/termux-packages/blob/master/packages/termux-api/termux-api.c))
-generates two linux anonymous namespace sockets, and passes their address as in:
+How API calls are may through the termux-api helper binary
+==========================================================
+The [termux-api](https://github.com/termux/termux-packages/blob/master/packages/termux-api/termux-api.c) client binary in the `termux-api` package generates two linux anonymous namespace sockets, and passes their address to the [TermuxApiReceiver broadcast receiver](https://github.com/termux/termux-api/blob/master/app/src/main/java/com/termux/api/TermuxApiReceiver.java) as in:
 	
-	/system/bin/am broadcast ${SERVICE_CLASS} --es socket_input ${INPUT_SOCKET} --es socket_output ${OUTPUT_SOCKET}
+	/system/bin/am broadcast ${BROADCAST_RECEIVER} --es socket_input ${INPUT_SOCKET} --es socket_output ${OUTPUT_SOCKET}
 
-where the sockets are used to transfer:
-
-- input through stdin to the helper binary are forwarded to java code
-- java code may output feedback which are forwarded to the stdout of the helper binary
+The two sockets are used to forward stdin from `termux-api` to the relevant API class and output from the API class to the stdout of `termux-api`.
 
 Client scripts
 ==============
-Client scripts which processes command line arguments before calling the termux-api helper binary are available in [the termux-api package](https://github.com/termux/termux-packages/tree/master/packages/termux-api).
+Client scripts which processes command line arguments before calling the `termux-api` helper binary are available in [the termux-api package](https://github.com/termux/termux-packages/tree/master/packages/termux-api).
 
 Ideas
 =====

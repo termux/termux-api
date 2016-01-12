@@ -1,11 +1,5 @@
 package com.termux.api.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.IntentService;
 import android.content.BroadcastReceiver;
@@ -14,6 +8,11 @@ import android.content.Intent;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.util.JsonWriter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
 public abstract class ResultReturner {
 
@@ -71,13 +70,11 @@ public abstract class ResultReturner {
 	}
 
 	/** Just tell termux-api.c that we are done. */
-	@SuppressLint("SdCardPath")
 	public static void noteDone(BroadcastReceiver receiver, final Intent intent) {
 		returnData(receiver, intent, null);
 	}
 
 	/** Run in a separate thread, unless the context is an IntentService. */
-	@SuppressLint("SdCardPath")
 	public static void returnData(Object context, final Intent intent, final ResultWriter resultWriter) {
 		final PendingResult asyncResult = (context instanceof BroadcastReceiver) ? ((BroadcastReceiver) context)
 				.goAsync() : null;

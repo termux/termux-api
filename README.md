@@ -1,5 +1,7 @@
 Termux API
 ==========
+[![Join the chat at https://gitter.im/termux/termux](https://badges.gitter.im/termux/termux.svg)](https://gitter.im/termux/termux)
+
 This is an app exposing Android API to command line usage and scripts or programs.
 
 - [Termux:API on Google Play](https://play.google.com/store/apps/details?id=com.termux.api)

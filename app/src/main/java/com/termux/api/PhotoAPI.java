@@ -3,7 +3,6 @@ package com.termux.api;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.ImageFormat;
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -41,34 +40,32 @@ public class PhotoAPI {
         final File outputFile = new File(filePath);
         final File outputDir = outputFile.getParentFile();
         final String cameraId = Objects.toString(intent.getStringExtra("camera"), "0");
-        final int numPreviews = intent.getIntExtra("previews", 30);
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
             @Override
             public void writeResult(PrintWriter stdout) throws Exception {
-                if (numPreviews < 0 || numPreviews > 1000) {
-                    stdout.println("Not a sensible number of previews: " + numPreviews);
-                } else if (!(outputDir.isDirectory() || outputDir.mkdirs())) {
+                if (!(outputDir.isDirectory() || outputDir.mkdirs())) {
                     stdout.println("Not a folder (and unable to create it): " + outputDir.getAbsolutePath());
                 } else {
-                    takePicture(stdout, context, outputFile, cameraId, numPreviews);
+                    takePicture(stdout, context, outputFile, cameraId);
                 }
             }
         });
     }
 
-    private static void takePicture(final PrintWriter stdout, final Context context, final File outputFile, String cameraId, final int numPreviews) {
+    private static void takePicture(final PrintWriter stdout, final Context context, final File outputFile, String cameraId) {
         try {
             final CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
 
             Looper.prepare();
             final Looper looper = Looper.myLooper();
 
+            //noinspection MissingPermission
             manager.openCamera(cameraId, new CameraDevice.StateCallback() {
                 @Override
                 public void onOpened(final CameraDevice camera) {
                     try {
-                        proceedWithOpenedCamera(context, manager, camera, numPreviews, outputFile, looper, stdout);
+                        proceedWithOpenedCamera(context, manager, camera, outputFile, looper, stdout);
                     } catch (Exception e) {
                         TermuxApiLogger.error("Exception in onOpened()", e);
                         closeCamera(camera, looper);
@@ -96,7 +93,7 @@ public class PhotoAPI {
     // See answer on http://stackoverflow.com/questions/31925769/pictures-with-camera2-api-are-really-dark
     // See https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html#createCaptureSession(java.util.List<android.view.Surface>, android.hardware.camera2.CameraCaptureSession.StateCallback, android.os.Handler)
     // for information about guaranteed support for output sizes and formats.
-    static void proceedWithOpenedCamera(final Context context, final CameraManager manager, final CameraDevice camera, final int previews, final File outputFile, final Looper looper, final PrintWriter stdout) throws CameraAccessException, IllegalArgumentException {
+    static void proceedWithOpenedCamera(final Context context, final CameraManager manager, final CameraDevice camera, final File outputFile, final Looper looper, final PrintWriter stdout) throws CameraAccessException, IllegalArgumentException {
         final List<Surface> outputSurfaces = new ArrayList<>();
 
         final CameraCharacteristics characteristics = manager.getCameraCharacteristics(camera.getId());
@@ -148,13 +145,6 @@ public class PhotoAPI {
         final Surface imageReaderSurface = mImageReader.getSurface();
         outputSurfaces.add(imageReaderSurface);
 
-        if (previews > 0) {
-            final SurfaceTexture dummyPreview = new SurfaceTexture(1);
-            dummyPreview.setDefaultBufferSize(1920, 1080);
-            final Surface dummySurface = new Surface(dummyPreview);
-            outputSurfaces.add(dummySurface);
-        }
-
         camera.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
             @Override
             public void onConfigured(final CameraCaptureSession session) {
@@ -167,34 +157,7 @@ public class PhotoAPI {
                     jpegRequest.set(CaptureRequest.CONTROL_AE_MODE, autoExposureModeFinal);
                     jpegRequest.set(CaptureRequest.JPEG_ORIENTATION, correctOrientation(context, characteristics));
 
-                    if (previews == 0) {
-                        saveImage(camera, session, jpegRequest.build());
-                    } else {
-                        // Take previews to dummySurface to allow camera to warm up before saving jpeg:
-                        final CaptureRequest.Builder captureBuilder = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                        // Render to our dummy preview surface:
-                        captureBuilder.addTarget(outputSurfaces.get(1));
-                        // Configure auto-focus (AF) and auto-exposure (AE) modes:
-                        captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                        captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, autoExposureModeFinal);
-
-                        session.setRepeatingRequest(captureBuilder.build(), new CameraCaptureSession.CaptureCallback() {
-                            int mNumCaptures;
-
-                            @Override
-                            public void onCaptureCompleted(CameraCaptureSession completedSession, CaptureRequest request, TotalCaptureResult result) {
-                                if (++mNumCaptures == previews) {
-                                    try {
-                                        completedSession.stopRepeating();
-                                        saveImage(camera, session, jpegRequest.build());
-                                    } catch (CameraAccessException e) {
-                                        TermuxApiLogger.error("Error saving image", e);
-                                        closeCamera(camera, looper);
-                                    }
-                                }
-                            }
-                        }, null);
-                    }
+                    saveImage(camera, session, jpegRequest.build());
                 } catch (Exception e) {
                     TermuxApiLogger.error("onConfigured() error in preview", e);
                     closeCamera(camera, looper);

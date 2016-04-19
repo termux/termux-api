@@ -2,4 +2,7 @@
 <resources>
     <string name="app_name">Termux:API</string>
     <string name="share_file_chooser_title">Share with</string>
+    <string name="grant_permission">Grant permission</string>
+
+    <string name="permission_description">Termux:API needs the following permission(s):\n</string>
 </resources>

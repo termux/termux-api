@@ -3,8 +3,10 @@ package com.termux.api;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.Manifest;
 
 import com.termux.api.util.TermuxApiLogger;
+import com.termux.api.util.TermuxApiPermissionActivity;
 
 public class TermuxApiReceiver extends BroadcastReceiver {
 
@@ -24,13 +26,19 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 CameraInfoAPI.onReceive(this, context, intent);
                 break;
             case "CameraPhoto":
-                PhotoAPI.onReceive(this, context, intent);
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
+                        Manifest.permission.CAMERA)) {
+                    PhotoAPI.onReceive(this, context, intent);
+                }
                 break;
             case "Clipboard":
                 ClipboardAPI.onReceive(this, context, intent);
                 break;
             case "ContactList":
-                ContactListAPI.onReceive(this, context, intent);
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
+                        Manifest.permission.READ_CONTACTS)) {
+                    ContactListAPI.onReceive(this, context, intent);
+                }
                 break;
             case "Dialog":
                 context.startActivity(new Intent(context, DialogActivity.class).putExtras(intent.getExtras()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -39,7 +47,10 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 DownloadAPI.onReceive(this, context, intent);
                 break;
             case "Location":
-                LocationAPI.onReceive(this, context, intent);
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
+                        Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    LocationAPI.onReceive(this, context, intent);
+                }
                 break;
             case "Notification":
                 NotificationAPI.onReceive(this, context, intent);
@@ -48,13 +59,22 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 ShareAPI.onReceive(this, context, intent);
                 break;
             case "SmsInbox":
-                SmsInboxAPI.onReceive(this, context, intent);
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
+                        Manifest.permission.READ_SMS, Manifest.permission.READ_CONTACTS)) {
+                    SmsInboxAPI.onReceive(this, context, intent);
+                }
                 break;
             case "SmsSend":
-                SmsSendAPI.onReceive(this, intent);
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
+                        Manifest.permission.SEND_SMS)) {
+                    SmsSendAPI.onReceive(this, intent);
+                }
                 break;
             case "SpeechToText":
-                SpeechToTextAPI.onReceive(context, intent);
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
+                        Manifest.permission.RECORD_AUDIO)) {
+                    SpeechToTextAPI.onReceive(context, intent);
+                }
                 break;
             case "TextToSpeech":
                 TextToSpeechAPI.onReceive(context, intent);

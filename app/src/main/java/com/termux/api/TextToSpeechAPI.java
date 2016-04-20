@@ -133,7 +133,7 @@ public class TextToSpeechAPI {
 
 						String utteranceId = "utterance_id";
 						Bundle params = new Bundle();
-						params.putInt(Engine.KEY_PARAM_STREAM, AudioManager.STREAM_ALARM);
+						params.putInt(Engine.KEY_PARAM_STREAM, AudioManager.STREAM_NOTIFICATION);
 						params.putString(Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
 
 						int submittedUtterances = 0;

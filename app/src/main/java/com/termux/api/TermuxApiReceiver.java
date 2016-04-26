@@ -26,8 +26,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 CameraInfoAPI.onReceive(this, context, intent);
                 break;
             case "CameraPhoto":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
-                        Manifest.permission.CAMERA)) {
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.CAMERA)) {
                     PhotoAPI.onReceive(this, context, intent);
                 }
                 break;
@@ -35,8 +34,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 ClipboardAPI.onReceive(this, context, intent);
                 break;
             case "ContactList":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
-                        Manifest.permission.READ_CONTACTS)) {
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_CONTACTS)) {
                     ContactListAPI.onReceive(this, context, intent);
                 }
                 break;
@@ -46,9 +44,20 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "Download":
                 DownloadAPI.onReceive(this, context, intent);
                 break;
+
+            case "InfraredFrequencies":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.TRANSMIT_IR)) {
+                    InfraredAPI.onReceiveCarrierFrequency(this, context, intent);
+                }
+                break;
+            case "InfraredTransmit":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.TRANSMIT_IR)) {
+                    InfraredAPI.onReceiveTransmit(this, context, intent);
+                }
+                break;
+
             case "Location":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
-                        Manifest.permission.ACCESS_FINE_LOCATION)) {
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.ACCESS_FINE_LOCATION)) {
                     LocationAPI.onReceive(this, context, intent);
                 }
                 break;
@@ -59,23 +68,32 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 ShareAPI.onReceive(this, context, intent);
                 break;
             case "SmsInbox":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
-                        Manifest.permission.READ_SMS, Manifest.permission.READ_CONTACTS)) {
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_SMS, Manifest.permission.READ_CONTACTS)) {
                     SmsInboxAPI.onReceive(this, context, intent);
                 }
                 break;
             case "SmsSend":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
-                        Manifest.permission.SEND_SMS)) {
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.SEND_SMS)) {
                     SmsSendAPI.onReceive(this, intent);
                 }
                 break;
             case "SpeechToText":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent,
-                        Manifest.permission.RECORD_AUDIO)) {
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.RECORD_AUDIO)) {
                     SpeechToTextAPI.onReceive(context, intent);
                 }
                 break;
+
+            case "TelephonyCellInfo":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                    TelephonyAPI.onReceiveTelephonyCellInfo(this, context, intent);
+                }
+                break;
+            case "TelephonyDeviceInfo":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_PHONE_STATE)) {
+                    TelephonyAPI.onReceiveTelephonyDeviceInfo(this, context, intent);
+                }
+                break;
+
             case "TextToSpeech":
                 TextToSpeechAPI.onReceive(context, intent);
                 break;

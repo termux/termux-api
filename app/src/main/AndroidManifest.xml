@@ -11,8 +11,11 @@
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
 	<uses-permission android:name="android.permission.CAMERA" />
 	<uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.TRANSMIT_IR" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
 	<!-- Some of the used permissions imply uses-feature, so we need to make it optional.
 		 See http://developer.android.com/guide/topics/manifest/uses-feature-element.html#permissions -->

@@ -18,7 +18,9 @@ import java.util.ArrayList;
 
 public class TermuxApiPermissionActivity extends Activity {
 
-    /** Intent extra containing the permissions to request. */
+    /**
+     * Intent extra containing the permissions to request.
+     */
     public static final String PERMISSIONS_EXTRA = "com.termux.api.permission_extra";
 
     private ArrayList<String> permissionValues;

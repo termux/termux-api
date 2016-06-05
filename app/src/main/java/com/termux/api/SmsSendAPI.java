@@ -1,12 +1,12 @@
 package com.termux.api;
 
-import java.io.PrintWriter;
-
 import android.content.Intent;
 import android.telephony.SmsManager;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
+
+import java.io.PrintWriter;
 
 public class SmsSendAPI {
 

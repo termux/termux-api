@@ -16,12 +16,12 @@ import java.io.PrintWriter;
 
 public class DialogActivity extends Activity {
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
         String title = null;
-		Intent i = getIntent();
+        Intent i = getIntent();
         if (i != null) {
             title = i.getStringExtra("input_title");
         }
@@ -31,7 +31,7 @@ public class DialogActivity extends Activity {
         } else {
             setTitle(title);
         }
-		setContentView(R.layout.dialog_textarea_input);
+        setContentView(R.layout.dialog_textarea_input);
 
         EditText textInput = (EditText) findViewById(R.id.text_input);
 
@@ -88,10 +88,10 @@ public class DialogActivity extends Activity {
         });
     }
 
-	@Override
-	protected void onNewIntent(Intent intent) {
-		super.onNewIntent(intent);
-		setIntent(intent);
-	}
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+    }
 
 }

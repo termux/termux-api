@@ -44,7 +44,7 @@ public class CameraInfoAPI {
 
                     StreamConfigurationMap map = camera.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                     out.name("jpeg_output_sizes").beginArray();
-                    for (Size size: map.getOutputSizes(ImageFormat.JPEG)) {
+                    for (Size size : map.getOutputSizes(ImageFormat.JPEG)) {
                         out.beginObject().name("width").value(size.getWidth()).name("height").value(size.getHeight()).endObject();
                     }
                     out.endArray();

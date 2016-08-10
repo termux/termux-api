@@ -280,6 +280,8 @@ public class TelephonyAPI {
 
 
                 }
+                
+                out.endObject();
             }
         });
     }

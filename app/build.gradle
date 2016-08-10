@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.3"
+    compileSdkVersion 24
+    buildToolsVersion "24.0.1"
 
     defaultConfig {
         applicationId "com.termux.api"
         minSdkVersion 21
-        targetSdkVersion 23
+        targetSdkVersion 24
         versionCode 10
         versionName "0.10"
     }

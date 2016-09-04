@@ -47,6 +47,8 @@ public class TextToSpeechAPI {
         @Override
         protected void onHandleIntent(final Intent intent) {
             final String speechLanguage = intent.getStringExtra("language");
+            final String speechRegion = intent.getStringExtra("region");
+            final String speechVariant = intent.getStringExtra("variant");
             final String speechEngine = intent.getStringExtra("engine");
             final float speechPitch = intent.getFloatExtra("pitch", 1.0f);
 
@@ -148,7 +150,7 @@ public class TextToSpeechAPI {
                         });
 
                         if (speechLanguage != null) {
-                            int setLanguageResult = mTts.setLanguage(new Locale(speechLanguage));
+                            int setLanguageResult = mTts.setLanguage(getLocale(speechLanguage, speechRegion, speechVariant));
                             if (setLanguageResult != TextToSpeech.LANG_AVAILABLE) {
                                 TermuxApiLogger.error("tts.setLanguage('" + speechLanguage + "') returned " + setLanguageResult);
                             }
@@ -187,4 +189,17 @@ public class TextToSpeechAPI {
         }
     }
 
+    private static Locale getLocale(String language, String region, String variant) {
+        Locale result = null;
+        if (region != null) {
+            if (variant != null) {
+                result = new Locale(language, region, variant);
+            } else {
+                result = new Locale(language, region);
+            }
+        } else {
+            result = new Locale(language);
+        }
+        return result;
+    }
 }

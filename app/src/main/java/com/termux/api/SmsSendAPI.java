@@ -7,6 +7,7 @@ import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 
 public class SmsSendAPI {
 
@@ -26,8 +27,9 @@ public class SmsSendAPI {
                 if (recipients == null || recipients.length == 0) {
                     TermuxApiLogger.error("No recipient given");
                 } else {
+                    final ArrayList<String> messages = smsManager.divideMessage(inputString);
                     for (String recipient : recipients) {
-                        smsManager.sendTextMessage(recipient, null, inputString, null, null);
+                        smsManager.sendMultipartTextMessage(recipient, null, messages, null, null);
                     }
                 }
             }

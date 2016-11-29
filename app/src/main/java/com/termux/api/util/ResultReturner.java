@@ -80,6 +80,13 @@ public abstract class ResultReturner {
         returnData(receiver, intent, null);
     }
 
+    public static void copyIntentExtras(Intent origIntent, Intent newIntent) {
+        newIntent.putExtra("api_method", origIntent.getStringExtra("api_method"));
+        newIntent.putExtra(SOCKET_OUTPUT_EXTRA, origIntent.getStringExtra(SOCKET_OUTPUT_EXTRA));
+        newIntent.putExtra(SOCKET_INPUT_EXTRA, origIntent.getStringExtra(SOCKET_INPUT_EXTRA));
+
+    }
+
     /**
      * Run in a separate thread, unless the context is an IntentService.
      */

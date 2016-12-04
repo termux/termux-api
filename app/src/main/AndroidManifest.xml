@@ -45,6 +45,10 @@
                   android:noHistory="true"
                   android:excludeFromRecents="true"
                   android:exported="false"/>
+        <activity android:name="com.termux.api.StorageGetAPI$StorageActivity"
+                  android:theme="@android:style/Theme.Translucent.NoTitleBar"
+                  android:excludeFromRecents="true"
+                  android:exported="false"/>
         <service android:name="com.termux.api.SpeechToTextAPI$SpeechToTextService"/>
         <service android:name="com.termux.api.TextToSpeechAPI$TextToSpeechService" />
         <provider android:authorities="com.termux.sharedfiles"

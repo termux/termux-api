@@ -77,6 +77,11 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     SmsSendAPI.onReceive(this, intent);
                 }
                 break;
+
+            case "StorageGet":
+                StorageGetAPI.onReceive(this, context, intent);
+                break;
+
             case "SpeechToText":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.RECORD_AUDIO)) {
                     SpeechToTextAPI.onReceive(context, intent);

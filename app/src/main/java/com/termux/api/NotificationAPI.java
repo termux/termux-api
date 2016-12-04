@@ -75,7 +75,6 @@ public class NotificationAPI {
 
         if (useSound) notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI);
 
-
         if (urlExtra != null) {
             Intent urlIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(urlExtra));
             PendingIntent pi = PendingIntent.getActivity(context, 0, urlIntent, 0);

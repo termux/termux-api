@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.util.Log;
 
 import com.termux.api.util.ResultReturner;
+import com.termux.api.util.TermuxApiLogger;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,7 +45,6 @@ public class StorageGetAPI {
         public void onResume() {
             super.onResume();
             outputFile = getIntent().getStringExtra(FILE_EXTRA);
-            Log.e("termux-api", "output file: " + outputFile);
 
             // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file browser.
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -78,7 +78,7 @@ public class StorageGetAPI {
                         }
                     }
                 } catch (IOException e) {
-                    Log.e("termux-api", "Error copying " + data + " to " + outputFile);
+                    TermuxApiLogger.error("Error copying " + data + " to " + outputFile);
                 }
             }
             finish();

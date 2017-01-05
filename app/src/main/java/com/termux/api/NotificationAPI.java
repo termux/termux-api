@@ -7,22 +7,26 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.provider.Settings;
+import android.text.TextUtils;
 
 import com.termux.api.util.ResultReturner;
 
+import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.UUID;
 
-/**
- * Shows a notification. Driven by the termux-show-notification script.
- */
 public class NotificationAPI {
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
-        String content = intent.getStringExtra("content");
+    public static final String TERMUX_SERVICE = "com.termux.app.TermuxService";
+    public static final String ACTION_EXECUTE = "com.termux.service_execute";
+    public static final String EXTRA_ARGUMENTS = "com.termux.execute.arguments";
+    public static final String BIN_SH = "/data/data/com.termux/files/usr/bin/sh";
+    private static final String EXTRA_EXECUTE_IN_BACKGROUND = "com.termux.execute.background";
 
-        String notificationId = intent.getStringExtra("id");
-        if (notificationId == null) notificationId = UUID.randomUUID().toString();
-
+    /**
+     * Show a notification. Driven by the termux-show-notification script.
+     */
+    static void onReceiveShowNotification(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         String priorityExtra = intent.getStringExtra("priority");
         if (priorityExtra == null) priorityExtra = "default";
         int priority;
@@ -54,13 +58,16 @@ public class NotificationAPI {
         long[] vibratePattern = intent.getLongArrayExtra("vibrate");
         boolean useSound = intent.getBooleanExtra("sound", false);
 
-        String urlExtra = intent.getStringExtra("url");
+        String actionExtra = intent.getStringExtra("action");
 
-        Notification.Builder notification = new Notification.Builder(context);
+        String id = intent.getStringExtra("id");
+        if (id == null) id = UUID.randomUUID().toString();
+        final String notificationId = id;
+
+        final Notification.Builder notification = new Notification.Builder(context);
         notification.setSmallIcon(R.drawable.ic_event_note_black_24dp);
         notification.setColor(0xFF000000);
         notification.setContentTitle(title);
-        notification.setContentText(content);
         notification.setPriority(priority);
         notification.setWhen(System.currentTimeMillis());
 
@@ -75,16 +82,66 @@ public class NotificationAPI {
 
         if (useSound) notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI);
 
-        if (urlExtra != null) {
-            Intent urlIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(urlExtra));
-            PendingIntent pi = PendingIntent.getActivity(context, 0, urlIntent, 0);
+        notification.setAutoCancel(true);
+
+        if (actionExtra != null) {
+            String[] arguments = new String[]{"-c", actionExtra};
+            Uri executeUri = new Uri.Builder().scheme("com.termux.file")
+                    .path(BIN_SH)
+                    .appendQueryParameter("arguments", Arrays.toString(arguments))
+                    .build();
+            Intent executeIntent = new Intent(ACTION_EXECUTE, executeUri);
+            executeIntent.setClassName("com.termux", TERMUX_SERVICE);
+            executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
+            executeIntent.putExtra(EXTRA_ARGUMENTS, arguments);
+            PendingIntent pi = PendingIntent.getService(context, 0, executeIntent, 0);
             notification.setContentIntent(pi);
         }
 
-        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        manager.notify(notificationId, 0, notification.build());
+        for (int button = 1; button <= 3; button++) {
+            String buttonText = intent.getStringExtra("button_text_" + button);
+            String buttonAction = intent.getStringExtra("button_action_" + button);
+            if (buttonText != null && buttonAction != null) {
+                String[] arguments = new String[]{"-c", buttonAction};
+                Uri executeUri = new Uri.Builder().scheme("com.termux.file")
+                        .path(BIN_SH)
+                        .appendQueryParameter("arguments", Arrays.toString(arguments))
+                        .build();
+                Intent executeIntent = new Intent(ACTION_EXECUTE, executeUri);
+                executeIntent.setClassName("com.termux", TERMUX_SERVICE);
+                executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
+                executeIntent.putExtra(EXTRA_ARGUMENTS, new String[]{"-c", buttonAction});
+                PendingIntent pi = PendingIntent.getService(context, 0, executeIntent, 0);
+                notification.addAction(new Notification.Action(android.R.drawable.ic_input_add, buttonText, pi));
+            }
+        }
 
+        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
+            @Override
+            public void writeResult(PrintWriter out) throws Exception {
+                NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+                if (!TextUtils.isEmpty(inputString)) {
+                    if (inputString.contains("\n")) {
+                        Notification.BigTextStyle style = new Notification.BigTextStyle();
+                        style.bigText(inputString);
+                        notification.setStyle(style);
+                    } else {
+                        notification.setContentText(inputString);
+                    }
+                }
+                manager.notify(notificationId, 0, notification.build());
+            }
+        });
+    }
+
+    static void onReceiveRemoveNotification(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         ResultReturner.noteDone(apiReceiver, intent);
+        String notificationId = intent.getStringExtra("id");
+        if (notificationId != null) {
+            NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            manager.cancel(notificationId, 0);
+        }
     }
 
 }

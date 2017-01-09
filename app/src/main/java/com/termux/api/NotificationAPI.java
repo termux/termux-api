@@ -71,7 +71,14 @@ public class NotificationAPI {
         notification.setPriority(priority);
         notification.setWhen(System.currentTimeMillis());
 
-        if (ledColor != 0) notification.setLights(ledColor, ledOnMs, ledOffMs);
+        if (ledColor != 0) {
+            notification.setLights(ledColor, ledOnMs, ledOffMs);
+
+            if (vibratePattern == null) {
+                // Hack to make led work without vibrating.
+                vibratePattern = new long[]{0};
+            }
+        }
 
         if (vibratePattern != null) {
             // Do not force the user to specify a delay first element, let it be 0.

@@ -35,7 +35,7 @@ public class BatteryStatusAPI {
                         batteryHealth = "GOOD";
                         break;
                     case BatteryManager.BATTERY_HEALTH_OVERHEAT:
-                        batteryHealth = "OVERHEAD";
+                        batteryHealth = "OVERHEAT";
                         break;
                     case BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE:
                         batteryHealth = "OVER_VOLTAGE";

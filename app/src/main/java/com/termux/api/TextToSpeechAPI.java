@@ -52,7 +52,7 @@ public class TextToSpeechAPI {
             final String speechEngine = intent.getStringExtra("engine");
             final float speechPitch = intent.getFloatExtra("pitch", 1.0f);
 
-            int streamToUseInt = AudioManager.STREAM_NOTIFICATION;
+            int streamToUseInt = AudioManager.STREAM_MUSIC;
             String streamToUseString = intent.getStringExtra("stream");
             if (streamToUseString != null) {
                 switch (streamToUseString) {

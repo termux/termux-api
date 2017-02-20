@@ -52,6 +52,8 @@ public class TextToSpeechAPI {
             final String speechEngine = intent.getStringExtra("engine");
             final float speechPitch = intent.getFloatExtra("pitch", 1.0f);
 
+            // STREAM_MUSIC is the default audio stream for TTS, see:
+            // http://stackoverflow.com/questions/6877272/what-is-the-default-audio-stream-of-tts/6979025#6979025
             int streamToUseInt = AudioManager.STREAM_MUSIC;
             String streamToUseString = intent.getStringExtra("stream");
             if (streamToUseString != null) {

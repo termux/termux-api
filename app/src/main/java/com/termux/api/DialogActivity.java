@@ -54,17 +54,7 @@ public class DialogActivity extends Activity {
         findViewById(R.id.cancel_button).setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                ResultReturner.returnData(DialogActivity.this, getIntent(), new ResultWriter() {
-                    @Override
-                    public void writeResult(PrintWriter out) throws Exception {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                finish();
-                            }
-                        });
-                    }
-                });
+                onBackPressed();
             }
         });
 
@@ -92,6 +82,21 @@ public class DialogActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+    }
+
+    @Override
+    public void onBackPressed() {
+        ResultReturner.returnData(DialogActivity.this, getIntent(), new ResultWriter() {
+            @Override
+            public void writeResult(PrintWriter out) throws Exception {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        finish();
+                    }
+                });
+            }
+        });
     }
 
 }

@@ -86,6 +86,11 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     SpeechToTextAPI.onReceive(context, intent);
                 }
                 break;
+            case "TelephonyCall":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.CALL_PHONE)) {
+                    TelephonyAPI.onReceiveTelephonyCall(this, context, intent);
+                }
+                break;
             case "TelephonyCellInfo":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.ACCESS_COARSE_LOCATION)) {
                     TelephonyAPI.onReceiveTelephonyCellInfo(this, context, intent);

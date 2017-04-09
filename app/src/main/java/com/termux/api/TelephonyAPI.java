@@ -2,6 +2,7 @@ package com.termux.api;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoCdma;
@@ -10,6 +11,7 @@ import android.telephony.CellInfoLte;
 import android.telephony.CellInfoWcdma;
 import android.telephony.TelephonyManager;
 import android.util.JsonWriter;
+import android.util.Log;
 
 import com.termux.api.util.ResultReturner;
 
@@ -280,10 +282,32 @@ public class TelephonyAPI {
 
 
                 }
-                
+
                 out.endObject();
             }
         });
+    }
+
+    static void onReceiveTelephonyCall(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        String numberExtra = intent.getStringExtra("number");
+        if (numberExtra == null) {
+            Log.e("termux-api", "No 'number extra");
+            ResultReturner.noteDone(apiReceiver, intent);
+        }
+
+        Uri data = Uri.parse("tel:" + numberExtra);
+
+        Intent callIntent = new Intent(Intent.ACTION_CALL);
+        callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        callIntent.setData(data);
+
+        try {
+            context.startActivity(callIntent);
+        } catch (SecurityException e) {
+            Log.e("termux-api", "Exception in phone call", e);
+        }
+
+        ResultReturner.noteDone(apiReceiver, intent);
     }
 
 }

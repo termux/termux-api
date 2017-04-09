@@ -16,6 +16,8 @@ import java.io.PrintWriter;
 
 public class DialogActivity extends Activity {
 
+    boolean mResultReturned = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,15 +35,14 @@ public class DialogActivity extends Activity {
         }
         setContentView(R.layout.dialog_textarea_input);
 
+        setFinishOnTouchOutside(false);
+
         EditText textInput = (EditText) findViewById(R.id.text_input);
 
-        boolean multiLine = getIntent().getBooleanExtra("multiple_lines", false);
-
         String inputHint = getIntent().getStringExtra("input_hint");
-        if (inputHint != null) {
-            textInput.setHint(inputHint);
-        }
+        if (inputHint != null) textInput.setHint(inputHint);
 
+        boolean multiLine = getIntent().getBooleanExtra("multiple_lines", false);
         String inputType = getIntent().getStringExtra("input_type");
         if ("password".equals(inputType)) {
             textInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -54,7 +55,7 @@ public class DialogActivity extends Activity {
         findViewById(R.id.cancel_button).setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                onBackPressed();
+                finish();
             }
         });
 
@@ -66,6 +67,7 @@ public class DialogActivity extends Activity {
                     public void writeResult(PrintWriter out) throws Exception {
                         String text = ((EditText) findViewById(R.id.text_input)).getText().toString();
                         out.println(text.trim());
+                        mResultReturned = true;
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -85,18 +87,22 @@ public class DialogActivity extends Activity {
     }
 
     @Override
-    public void onBackPressed() {
-        ResultReturner.returnData(DialogActivity.this, getIntent(), new ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter out) throws Exception {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        finish();
-                    }
-                });
-            }
-        });
+    protected void onPause() {
+        super.onPause();
+        if (!mResultReturned) {
+            mResultReturned = true;
+            ResultReturner.returnData(DialogActivity.this, getIntent(), new ResultWriter() {
+                @Override
+                public void writeResult(PrintWriter out) throws Exception {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            finish();
+                        }
+                    });
+                }
+            });
+        }
     }
 
 }

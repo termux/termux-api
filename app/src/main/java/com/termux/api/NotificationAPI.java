@@ -117,10 +117,25 @@ public class NotificationAPI {
                 Intent executeIntent = new Intent(ACTION_EXECUTE, executeUri);
                 executeIntent.setClassName("com.termux", TERMUX_SERVICE);
                 executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
-                executeIntent.putExtra(EXTRA_ARGUMENTS, new String[]{"-c", buttonAction});
+                executeIntent.putExtra(EXTRA_ARGUMENTS, arguments);
                 PendingIntent pi = PendingIntent.getService(context, 0, executeIntent, 0);
                 notification.addAction(new Notification.Action(android.R.drawable.ic_input_add, buttonText, pi));
             }
+        }
+
+        String onDeleteActionExtra = intent.getStringExtra("on_delete_action");
+        if (onDeleteActionExtra != null) {
+            String[] arguments = new String[]{"-c", onDeleteActionExtra};
+            Uri executeUri = new Uri.Builder().scheme("com.termux.file")
+                    .path(BIN_SH)
+                    .appendQueryParameter("arguments", Arrays.toString(arguments))
+                    .build();
+            Intent executeIntent = new Intent(ACTION_EXECUTE, executeUri);
+            executeIntent.setClassName("com.termux", TERMUX_SERVICE);
+            executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
+            executeIntent.putExtra(EXTRA_ARGUMENTS, arguments);
+            PendingIntent pi = PendingIntent.getService(context, 0, executeIntent, 0);
+            notification.setDeleteIntent(pi);
         }
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {

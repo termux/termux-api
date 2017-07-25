@@ -11,16 +11,14 @@ import android.util.SparseArray;
 import com.termux.api.util.ResultReturner;
 
 public class SensorAPI implements SensorEventListener{
-    private static SensorAPI instance;
-
     private static SensorManager mSensorManager;
 
-    private SparseArray<float[]> mSensorValues = new SparseArray<>();
+    private static SparseArray<float[]> mSensorValues = new SparseArray<>();
 
     SensorAPI(Context context){
-        instance = this;
         mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
 
+        tryRegisterSensor(mSensorManager, Sensor.TYPE_ACCELEROMETER);
         tryRegisterSensor(mSensorManager, Sensor.TYPE_AMBIENT_TEMPERATURE);
         tryRegisterSensor(mSensorManager, Sensor.TYPE_LIGHT);
         tryRegisterSensor(mSensorManager, Sensor.TYPE_RELATIVE_HUMIDITY);
@@ -31,11 +29,11 @@ public class SensorAPI implements SensorEventListener{
     private void tryRegisterSensor(SensorManager manager, int type){
         Sensor sensor = manager.getDefaultSensor(type);
         if (sensor != null){
-            manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_UI);
+            manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
 
-    public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent, final int type) {
+    public static void onReceive(TermuxApiReceiver apiReceiver, Intent intent, final int type) {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
@@ -43,7 +41,26 @@ public class SensorAPI implements SensorEventListener{
                 if ((sensor = mSensorManager.getDefaultSensor(type)) != null) {
                     out.beginObject();
                     out.name("info").value(sensor.toString());
-                    out.name("data").value(instance.mSensorValues.get(type)[0]);
+                    float[] data;
+                    if ((data = mSensorValues.get(type)) != null) {
+                        switch (type) {
+                            case Sensor.TYPE_ACCELEROMETER:
+                                out.name("data").beginObject();
+                                out.name("x").value(data[0]);
+                                out.name("y").value(data[1]);
+                                out.name("z").value(data[2]);
+                                out.endObject();
+                            default:
+                                out.name("data").value(data[0]);
+                        }
+                    } else {
+                        out.name("data").value("");
+                    }
+                    out.endObject();
+                } else {
+                    out.beginObject();
+                    out.name("info").value("");
+                    out.name("data").value("");
                     out.endObject();
                 }
             }

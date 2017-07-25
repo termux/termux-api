@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import android.hardware.Sensor;
 import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
 
@@ -68,6 +69,8 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "Share":
                 ShareAPI.onReceive(this, context, intent);
                 break;
+            case "SensorProximity":
+                SensorAPI.onReceive(this, context, intent, Sensor.TYPE_PROXIMITY);
             case "SmsInbox":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_SMS, Manifest.permission.READ_CONTACTS)) {
                     SmsInboxAPI.onReceive(this, context, intent);

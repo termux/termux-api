@@ -71,6 +71,19 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "SensorProximity":
                 SensorAPI.onReceive(this, context, intent, Sensor.TYPE_PROXIMITY);
+                break;
+            case "SensorTemp":
+                SensorAPI.onReceive(this, context, intent, Sensor.TYPE_AMBIENT_TEMPERATURE);
+                break;
+            case "SensorLight":
+                SensorAPI.onReceive(this, context, intent, Sensor.TYPE_LIGHT);
+                break;
+            case "SensorPressure":
+                SensorAPI.onReceive(this, context, intent, Sensor.TYPE_PRESSURE);
+                break;
+            case "SensorHumidity":
+                SensorAPI.onReceive(this, context, intent, Sensor.TYPE_RELATIVE_HUMIDITY);
+                break;
             case "SmsInbox":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_SMS, Manifest.permission.READ_CONTACTS)) {
                     SmsInboxAPI.onReceive(this, context, intent);

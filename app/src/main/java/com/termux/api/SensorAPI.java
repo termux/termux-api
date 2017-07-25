@@ -7,40 +7,45 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.JsonWriter;
+import android.util.SparseArray;
 import com.termux.api.util.ResultReturner;
 
 public class SensorAPI implements SensorEventListener{
     private static SensorAPI instance;
 
-    private Sensor proximitySensor;
-    private float proximityData;
+    private static SensorManager mSensorManager;
+
+    private SparseArray<float[]> mSensorValues = new SparseArray<>();
 
     SensorAPI(Context context){
         instance = this;
-        SensorManager manager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        proximitySensor = manager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+        mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+
+        tryRegisterSensor(mSensorManager, Sensor.TYPE_AMBIENT_TEMPERATURE);
+        tryRegisterSensor(mSensorManager, Sensor.TYPE_LIGHT);
+        tryRegisterSensor(mSensorManager, Sensor.TYPE_RELATIVE_HUMIDITY);
+        tryRegisterSensor(mSensorManager, Sensor.TYPE_PRESSURE);
+        tryRegisterSensor(mSensorManager, Sensor.TYPE_PROXIMITY);
     }
 
-    Sensor getProximitySensor() {
-        return proximitySensor;
+    private void tryRegisterSensor(SensorManager manager, int type){
+        Sensor sensor = manager.getDefaultSensor(type);
+        if (sensor != null){
+            manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_UI);
+        }
     }
 
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent, final int type) {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
-                String info;
-                out.beginObject();
-                switch (type){
-                    case Sensor.TYPE_PROXIMITY:
-                        info = instance.proximitySensor.toString();
-                        out.name("data").value(instance.proximityData);
-                        break;
-                    default:
-                        info = "Unknown";
+                Sensor sensor;
+                if ((sensor = mSensorManager.getDefaultSensor(type)) != null) {
+                    out.beginObject();
+                    out.name("info").value(sensor.toString());
+                    out.name("data").value(instance.mSensorValues.get(type)[0]);
+                    out.endObject();
                 }
-                out.name("info").value(info);
-                out.endObject();
             }
         });
     }
@@ -52,9 +57,6 @@ public class SensorAPI implements SensorEventListener{
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        switch (event.sensor.getType()){
-            case Sensor.TYPE_PROXIMITY:
-                proximityData = event.values[0];
-        }
+        mSensorValues.put(event.sensor.getType(), event.values);
     }
 }

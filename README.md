@@ -22,7 +22,7 @@ The two sockets are used to forward stdin from `termux-api` to the relevant API 
 
 Client scripts
 ==============
-Client scripts which processes command line arguments before calling the `termux-api` helper binary are available in [the termux-api package](https://github.com/termux/termux-packages/tree/master/packages/termux-api).
+Client scripts which processes command line arguments before calling the `termux-api` helper binary are available in [the termux-api package](https://github.com/termux/termux-api-package).
 
 Ideas
 =====

@@ -49,53 +49,65 @@ public class WifiAPI {
             public void writeJson(JsonWriter out) throws Exception {
                 WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
                 List<ScanResult> scans = manager.getScanResults();
-                if (scans == null) {
-                    out.beginObject().name("API_ERROR").value("Failed getting scan results").endObject();
-                } else {
-                    out.beginArray();
-                    for (ScanResult scan : scans) {
-                        out.beginObject();
-                        out.name("bssid").value(scan.BSSID);
-                        out.name("frequency_mhz").value(scan.frequency);
-                        out.name("rssi").value(scan.level);
-                        out.name("ssid").value(scan.SSID);
-                        out.name("timestamp").value(scan.timestamp);
+                LocationManager lm = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
+                boolean gps_enabled = false;
+                try {
+                    gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+                } catch(Exception ex) {}
+                
+                if (!gps_enabled) {
+                    out.beginObject().name("API_ERROR").value("Geolocation should be enabled").endObject();
+                } 
+                else {
+                            if (scans == null) {
+                                out.beginObject().name("API_ERROR").value("Failed getting scan results").endObject();
+                            } 
+                            else {
+                                out.beginArray();
+                                for (ScanResult scan : scans) {
+                                    out.beginObject();
+                                    out.name("bssid").value(scan.BSSID);
+                                    out.name("frequency_mhz").value(scan.frequency);
+                                    out.name("rssi").value(scan.level);
+                                    out.name("ssid").value(scan.SSID);
+                                    out.name("timestamp").value(scan.timestamp);
 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            int channelWidth = scan.channelWidth;
-                            String channelWidthMhz = "???";
-                            switch (channelWidth) {
-                                case ScanResult.CHANNEL_WIDTH_20MHZ:
-                                    channelWidthMhz = "20";
-                                    break;
-                                case ScanResult.CHANNEL_WIDTH_40MHZ:
-                                    channelWidthMhz = "40";
-                                    break;
-                                case ScanResult.CHANNEL_WIDTH_80MHZ:
-                                    channelWidthMhz = "80";
-                                    break;
-                                case ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ:
-                                    channelWidthMhz = "80+80";
-                                    break;
-                                case ScanResult.CHANNEL_WIDTH_160MHZ:
-                                    channelWidthMhz = "160";
-                                    break;
-                            }
-                            out.name("channel_bandwidth_mhz").value(channelWidthMhz);
-                            if (channelWidth != ScanResult.CHANNEL_WIDTH_20MHZ) {
-                                // centerFreq0 says "Not used if the AP bandwidth is 20 MHz".
-                                out.name("center_frequency_mhz").value(scan.centerFreq0);
-                            }
-                            if (!TextUtils.isEmpty(scan.operatorFriendlyName)) {
-                                out.name("operator_name").value(scan.operatorFriendlyName.toString());
-                            }
-                            if (!TextUtils.isEmpty(scan.venueName)) {
-                                out.name("venue_name").value(scan.venueName.toString());
-                            }
-                        }
-                        out.endObject();
-                    }
-                    out.endArray();
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                            int channelWidth = scan.channelWidth;
+                                            String channelWidthMhz = "???";
+                                            switch (channelWidth) {
+                                                case ScanResult.CHANNEL_WIDTH_20MHZ:
+                                                    channelWidthMhz = "20";
+                                                    break;
+                                                case ScanResult.CHANNEL_WIDTH_40MHZ:
+                                                    channelWidthMhz = "40";
+                                                    break;
+                                                case ScanResult.CHANNEL_WIDTH_80MHZ:
+                                                    channelWidthMhz = "80";
+                                                    break;
+                                                case ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ:
+                                                    channelWidthMhz = "80+80";
+                                                    break;
+                                                case ScanResult.CHANNEL_WIDTH_160MHZ:
+                                                    channelWidthMhz = "160";
+                                                    break;
+                                            }
+                                            out.name("channel_bandwidth_mhz").value(channelWidthMhz);
+                                            if (channelWidth != ScanResult.CHANNEL_WIDTH_20MHZ) {
+                                                // centerFreq0 says "Not used if the AP bandwidth is 20 MHz".
+                                                out.name("center_frequency_mhz").value(scan.centerFreq0);
+                                            }
+                                            if (!TextUtils.isEmpty(scan.operatorFriendlyName)) {
+                                                out.name("operator_name").value(scan.operatorFriendlyName.toString());
+                                            }
+                                            if (!TextUtils.isEmpty(scan.venueName)) {
+                                                out.name("venue_name").value(scan.venueName.toString());
+                                            }
+                                    }
+                                    out.endObject();
+                                }
+                                out.endArray();
+                            }      
                 }
             }
         });

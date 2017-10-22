@@ -24,8 +24,9 @@ public class WifiAPI {
                 WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
                 WifiInfo info = manager.getConnectionInfo();
                 out.beginObject();
-                if (info == null) {
-                    out.name("API_ERROR").value("No current connection");
+                    
+                if (info == null || info.getSupplicantState().toString() == "SCANNING") {
+                    out.name("API_ERROR").value("No current wifi connection available");
                 } else {
                     out.name("bssid").value(info.getBSSID());
                     out.name("frequency_mhz").value(info.getFrequency());

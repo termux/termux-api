@@ -9,6 +9,7 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.text.format.Formatter;
 import android.util.JsonWriter;
+import android.location.LocationManager;
 
 import com.termux.api.util.ResultReturner;
 

@@ -14,7 +14,7 @@ Released under the [GPLv3 license](http://www.gnu.org/licenses/gpl-3.0.en.html).
 
 How API calls are made through the termux-api helper binary
 ===========================================================
-The [termux-api](https://github.com/termux/termux-api-package/termux-api.c) client binary in the `termux-api` package generates two linux anonymous namespace sockets, and passes their address to the [TermuxApiReceiver broadcast receiver](https://github.com/termux/termux-api/blob/master/app/src/main/java/com/termux/api/TermuxApiReceiver.java) as in:
+The [termux-api](https://github.com/termux/termux-api-package/blob/master/termux-api.c) client binary in the `termux-api` package generates two linux anonymous namespace sockets, and passes their address to the [TermuxApiReceiver broadcast receiver](https://github.com/termux/termux-api/blob/master/app/src/main/java/com/termux/api/TermuxApiReceiver.java) as in:
 	
 	/system/bin/am broadcast ${BROADCAST_RECEIVER} --es socket_input ${INPUT_SOCKET} --es socket_output ${OUTPUT_SOCKET}
 

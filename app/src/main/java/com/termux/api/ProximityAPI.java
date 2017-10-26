@@ -32,14 +32,13 @@ public class ProximityAPI {
               mSensorManager.registerListener(this, mProximity, SensorManager.SENSOR_DELAY_NORMAL);
               out.beginObject();
               
-              @override           
-              public void onSensorChanged(SensorEvent event) { 
-                   if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
-                      out.name("distance").value(event.values[0]);
-                   }
-                   out.endObject();
-                   mSensorManager.unregisterListener(this);
-              } 
+              
+               if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
+                  out.name("distance").value(sensorEvent.values[0]);
+               }
+               out.endObject();
+               mSensorManager.unregisterListener(this);
+               
             }
         });
         

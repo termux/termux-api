@@ -19,7 +19,10 @@ public class TermuxApiReceiver extends BroadcastReceiver {
         }
 
         switch (apiMethod) {
-            case "BatteryStatus":
+	    case "AudioInfo":
+	        AudioAPI.onReceive(this, context, intent);
+		break;
+	    case "BatteryStatus":
                 BatteryStatusAPI.onReceive(this, context, intent);
                 break;
             case "CameraInfo":

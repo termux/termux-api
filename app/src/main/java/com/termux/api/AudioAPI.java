@@ -7,6 +7,7 @@ import android.util.JsonWriter;
 import android.media.AudioTrack;
 import android.media.AudioFormat;
 import android.media.AudioAttributes;
+import android.os.Build;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultWriter;
@@ -14,7 +15,7 @@ import com.termux.api.util.ResultReturner.ResultWriter;
 public class AudioAPI {
     static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        AudioTrack at = new AudioTrack (
+	AudioTrack at = new AudioTrack (
                 new AudioAttributes.Builder()
                 .setFlags(256) // FLAG_LOW_LATENCY
                 .build(),
@@ -24,18 +25,47 @@ public class AudioAPI {
                 AudioTrack.MODE_STREAM,
                 AudioManager.AUDIO_SESSION_ID_GENERATE
         );
+	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+	final String SampleRate = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+	final String framesPerBuffer = am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
+	final String AudioUnprocessed = am.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED);
+	final int nativeoutput = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
+	final int volume_level= am.getStreamVolume(AudioManager.STREAM_MUSIC);
+	final int maxvolume_level = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+/*	final int bc = at.getBufferCapacityInFrames(); only available api 24 and up and is always returns same value as
+ *	the initial getbuffersizeinframes */
+	final int bs = at.getBufferSizeInFrames();
+	final boolean bluetootha2dp = am.isBluetoothA2dpOn();
+        final boolean wiredhs = am.isWiredHeadsetOn();
+	at.release();
 
-        String SampleRate = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
-        String framesPerBuffer = am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
-        String AudioUnprocessed = am.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED);
-        int nativeoutput = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
-        int volume_level= am.getStreamVolume(AudioManager.STREAM_MUSIC);
-        int maxvolume_level = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-        int sr = at.getSampleRate();
-        int pr = at.getPlaybackRate();
-        int bc = at.getBufferCapacityInFrames();
-        int bs = at.getBufferSizeInFrames();
-
+        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+            public void writeJson(JsonWriter out) throws Exception {
+                out.beginObject();
+                out.name("PROPERTY_OUTPUT_SAMPLE_RATE").value(SampleRate);
+                out.name("PROPERTY_OUTPUT_FRAMES_PER_BUFFER").value(framesPerBuffer);
+                out.name("PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED").value(AudioUnprocessed);
+                out.name("STREAM_MUSIC_VOLUME").value(volume_level);
+                out.name("STREAM_MUSIC_MAXVOLUME").value(maxvolume_level);
+                out.name("CURRENT_NATIVE_OUTPUT_SAMPLERATE").value(nativeoutput);
+                out.name("AUDIOTRACK_BUFFER_SIZE_IN_FRAMES").value(bs);
+		out.name("BLUETOOTH_A2DP_IS_ON").value(bluetootha2dp);
+                out.name("WIREDHEADSET_IS_CONNECTED").value(wiredhs);
+		out.endObject();
+                }
+        });
+	}
+if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+	final String SampleRate = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+	final String framesPerBuffer = am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
+	final String AudioUnprocessed = am.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED);
+	final int nativeoutput = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
+	final int volume_level= am.getStreamVolume(AudioManager.STREAM_MUSIC);
+	final int maxvolume_level = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+	final int sr = at.getSampleRate();
+	final int pr = at.getPlaybackRate();
+	final boolean WiredHs = am.isWiredHeadsetOn();
+        final boolean bluetootha2dp = am.isBluetoothA2dpOn();
         at.release();
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
@@ -47,12 +77,16 @@ public class AudioAPI {
                 out.name("STREAM_MUSIC_VOLUME").value(volume_level);
                 out.name("STREAM_MUSIC_MAXVOLUME").value(maxvolume_level);
                 out.name("CURRENT_NATIVE_OUTPUT_SAMPLERATE").value(nativeoutput);
-                out.name("SR").value(sr);
-                out.name("PR").value(pr);
-                out.name("BC").value(bc);
-                out.name("BS").value(bs);
-                out.endObject();
+                out.name("BLUETOOTH_A2DP_IS_ON").value(bluetootha2dp);
+                out.name("WIREDHEADSET_IS_CONNECTED").value(WiredHs);
+		out.endObject();
                 }
         });
+        }
+ 
+    
+    
+    
+    
     }
 }

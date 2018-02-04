@@ -62,8 +62,6 @@ if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
 	final int nativeoutput = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
 	final int volume_level= am.getStreamVolume(AudioManager.STREAM_MUSIC);
 	final int maxvolume_level = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-	final int sr = at.getSampleRate();
-	final int pr = at.getPlaybackRate();
 	final boolean WiredHs = am.isWiredHeadsetOn();
         final boolean bluetootha2dp = am.isBluetoothA2dpOn();
         at.release();

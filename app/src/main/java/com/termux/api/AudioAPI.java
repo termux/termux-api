@@ -23,6 +23,7 @@ public class AudioAPI {
         final boolean bluetootha2dp = am.isBluetoothA2dpOn();
         final boolean wiredhs = am.isWiredHeadsetOn();
         final int nativeoutput = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
+        int _bs = 0;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             AudioTrack at = new AudioTrack(
                 new AudioAttributes.Builder()
@@ -34,11 +35,12 @@ public class AudioAPI {
                 AudioTrack.MODE_STREAM,
                 AudioManager.AUDIO_SESSION_ID_GENERATE
             );
-            final int bs = at.getBufferSizeInFrames();
+            _bs = at.getBufferSizeInFrames();
             //final int bc = at.getBufferCapacityInFrames(); only available api 24 and up and apparently
             // always returns same value as the initial getbuffersizeinframes.
             at.release();
         }
+        final int bs = _bs;
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             public void writeJson(JsonWriter out) throws Exception {

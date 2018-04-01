@@ -71,6 +71,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "NotificationRemove":
                 NotificationAPI.onReceiveRemoveNotification(this, context, intent);
                 break;
+            case "Sensor":
+                SensorAPI.onReceive(context, intent);
+                break;
             case "Share":
                 ShareAPI.onReceive(this, context, intent);
                 break;

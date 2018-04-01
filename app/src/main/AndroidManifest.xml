@@ -54,6 +54,7 @@
                   android:exported="false"/>
         <service android:name="com.termux.api.SpeechToTextAPI$SpeechToTextService"/>
         <service android:name="com.termux.api.TextToSpeechAPI$TextToSpeechService" />
+        <service android:name=".SensorAPI$SensorReaderService"/>
         <provider android:authorities="com.termux.sharedfiles"
             android:readPermission="com.termux.sharedfiles.READ"
             android:exported="true"

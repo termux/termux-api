@@ -62,6 +62,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     LocationAPI.onReceive(this, context, intent);
                 }
                 break;
+            case "MediaPlayer":
+                MediaPlayerAPI.onReceive(context, intent);
+                break;
             case "MediaScanner":
                 MediaScannerAPI.onReceive(this, context, intent);
                 break;

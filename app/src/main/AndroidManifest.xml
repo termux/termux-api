@@ -60,6 +60,7 @@
             android:exported="true"
             android:grantUriPermissions="true"
             android:name="com.termux.api.ShareAPI$ContentProvider" />
+        <service android:name=".MediaPlayerAPI$PlayerService" android:exported="false"/>
     </application>
 
 </manifest>

@@ -205,7 +205,11 @@ public class MediaPlayerAPI {
                 try {
                     player.setDataSource(context, Uri.fromFile(mediaFile));
                     player.prepareAsync();
-                    result.message = "Now Playing: " + mediaFile.getName();
+                    if (player.isPlaying()) {
+                        result.message = "Now Playing: " + mediaFile.getName();
+                    } else {
+                        result.error = "Failed to play: " + mediaFile.getName();
+                    }
                 } catch (IOException e) {
                     result.error = e.getMessage();
                 }

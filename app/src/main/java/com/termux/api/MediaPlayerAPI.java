@@ -125,16 +125,16 @@ public class MediaPlayerAPI {
         }
 
         protected static MediaCommandHandler getMediaCommandHandler(final String command) {
-            switch (command == null ? "" : command.toUpperCase()) {
-                case "INFO":
+            switch (command == null ? "" : command) {
+                case "info":
                     return infoHandler;
-                case "PLAY":
+                case "play":
                     return playHandler;
-                case "PAUSE":
+                case "pause":
                     return pauseHandler;
-                case "RESUME":
+                case "resume":
                     return resumeHandler;
-                case "STOP":
+                case "stop":
                     return stopHandler;
                 default:
                     return new MediaCommandHandler() {

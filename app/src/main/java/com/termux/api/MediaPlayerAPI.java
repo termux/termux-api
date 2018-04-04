@@ -125,7 +125,7 @@ public class MediaPlayerAPI {
         }
 
         protected static MediaCommandHandler getMediaCommandHandler(final String command) {
-            switch (command.toUpperCase()) {
+            switch (command == null ? "" : command.toUpperCase()) {
                 case "INFO":
                     return infoHandler;
                 case "PLAY":

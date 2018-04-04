@@ -208,7 +208,10 @@ public class MediaPlayerAPI {
             public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
                 MediaCommandResult result = new MediaCommandResult();
 
-                File mediaFile = new File(intent.getStringExtra("file"));
+                // unescape spaces in filename
+                String filename = intent.hasExtra("file") ? intent.getStringExtra("file").replace("\\s", " ") : "";
+
+                File mediaFile = new File(filename);
 
                 if (!isValidMediaFile(mediaFile)) {
                     result.error = "Invalid file: " + mediaFile.getName();

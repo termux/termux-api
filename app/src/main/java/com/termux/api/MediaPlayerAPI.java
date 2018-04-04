@@ -14,7 +14,6 @@ import com.termux.api.util.TermuxApiLogger;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.regex.Pattern;
 
 /**
  * API that enables playback of standard audio formats such as:
@@ -172,17 +171,6 @@ public class MediaPlayerAPI {
         }
 
         /**
-         * Checks to see if the specified file exists and is a supported media type
-         * @param file
-         * @return
-         */
-        protected static boolean isValidMediaFile(File file) {
-            final String MEDIA_PATTERN = ".3gp|.flac|.mkv|.mp3|.ogg|.wav$";
-            Pattern pattern = Pattern.compile(MEDIA_PATTERN);
-            return pattern.matcher(file.getName()).find();
-        }
-
-        /**
          * -----
          * Media Command Handlers
          * -----
@@ -210,20 +198,16 @@ public class MediaPlayerAPI {
 
                 File mediaFile = new File(intent.getStringExtra("file"));
 
-                if (!isValidMediaFile(mediaFile)) {
-                    result.error = "Invalid file: " + mediaFile.getName();
-                } else {
-                    if (player.isPlaying()) {
-                        player.stop();
-                        player.reset();
-                    }
-                    try {
-                        player.setDataSource(context, Uri.fromFile(mediaFile));
-                        player.prepareAsync();
-                        result.message = "Now Playing: " + mediaFile.getName();
-                    } catch (IOException e) {
-                        result.error = e.getMessage();
-                    }
+                if (player.isPlaying()) {
+                    player.stop();
+                    player.reset();
+                }
+                try {
+                    player.setDataSource(context, Uri.fromFile(mediaFile));
+                    player.prepareAsync();
+                    result.message = "Now Playing: " + mediaFile.getName();
+                } catch (IOException e) {
+                    result.error = e.getMessage();
                 }
                 return result;
             }

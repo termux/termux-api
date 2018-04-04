@@ -3,7 +3,6 @@ package com.termux.api;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioAttributes;
-import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
@@ -22,25 +21,53 @@ public class AudioAPI {
         final int maxvolume_level = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final boolean bluetootha2dp = am.isBluetoothA2dpOn();
         final boolean wiredhs = am.isWiredHeadsetOn();
-        final int nativeoutput = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
-        int _bs = 0;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            AudioTrack at = new AudioTrack(
-                new AudioAttributes.Builder()
-                    .setFlags(256) // FLAG_LOW_LATENCY
-                    .build(),
-                new AudioFormat.Builder()
-                    .build(),
-                4, // bytes; i.e. one 16bit 2ch frame
-                AudioTrack.MODE_STREAM,
-                AudioManager.AUDIO_SESSION_ID_GENERATE
-            );
-            _bs = at.getBufferSizeInFrames();
-            //final int bc = at.getBufferCapacityInFrames(); only available api 24 and up and apparently
-            // always returns same value as the initial getbuffersizeinframes.
-            at.release();
+
+        int _sr, _bs, _sr_ll, _bs_ll, _nosr;
+        _sr = _bs = _sr_ll = _bs_ll = _nosr = 0;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int[] modes = {AudioTrack.PERFORMANCE_MODE_POWER_SAVING,
+                           AudioTrack.PERFORMANCE_MODE_LOW_LATENCY};
+            for (int mode: modes) {
+                AudioTrack at = new AudioTrack.Builder()
+                    .setBufferSizeInBytes(4) // one 16bit 2ch frame
+                    .setPerformanceMode(mode)
+                    .build();
+                if (mode == AudioTrack.PERFORMANCE_MODE_POWER_SAVING) {
+                    _sr = at.getSampleRate();
+                    _bs = at.getBufferSizeInFrames();
+                } else if (mode == AudioTrack.PERFORMANCE_MODE_LOW_LATENCY) {
+                    _sr_ll = at.getSampleRate();
+                    _bs_ll = at.getBufferSizeInFrames();
+                }
+                at.release();
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            int[] flags = {0,AudioAttributes.FLAG_LOW_LATENCY};
+            for (int flag: flags) {
+                AudioAttributes aa = new AudioAttributes.Builder()
+                    .setFlags(flag)
+                    .build();
+                AudioTrack at = new AudioTrack.Builder()
+                    .setAudioAttributes(aa)
+                    .setBufferSizeInBytes(4) // one 16bit 2ch frame
+                    .build();
+                if (flag == 0) {
+                    _sr = at.getSampleRate();
+                    _bs = at.getBufferSizeInFrames();
+                } else if (flag == AudioAttributes.FLAG_LOW_LATENCY) {
+                    _sr_ll = at.getSampleRate();
+                    _bs_ll = at.getBufferSizeInFrames();
+                }
+                at.release();
+            }
+        } else {
+            _nosr = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
         }
+        final int sr = _sr;
         final int bs = _bs;
+        final int sr_ll = _sr_ll;
+        final int bs_ll = _bs_ll;
+        final int nosr = _nosr;
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             public void writeJson(JsonWriter out) throws Exception {
@@ -52,9 +79,15 @@ public class AudioAPI {
                 out.name("STREAM_MUSIC_MAXVOLUME").value(maxvolume_level);
                 out.name("BLUETOOTH_A2DP_IS_ON").value(bluetootha2dp);
                 out.name("WIREDHEADSET_IS_CONNECTED").value(wiredhs);
-                out.name("CURRENT_NATIVE_OUTPUT_SAMPLERATE").value(nativeoutput);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    out.name("AUDIOTRACK_SAMPLE_RATE").value(sr);
                     out.name("AUDIOTRACK_BUFFER_SIZE_IN_FRAMES").value(bs);
+                    if (sr_ll != sr || bs_ll != bs) { // all or nothing
+                        out.name("AUDIOTRACK_SAMPLE_RATE_LOW_LATENCY").value(sr_ll);
+                        out.name("AUDIOTRACK_BUFFER_SIZE_IN_FRAMES_LOW_LATENCY").value(bs_ll);
+                    }
+                } else {
+                    out.name("AUDIOTRACK_NATIVE_OUTPUT_SAMPLE_RATE").value(nosr);
                 }
                 out.endObject();
             }

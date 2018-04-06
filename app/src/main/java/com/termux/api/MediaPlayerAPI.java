@@ -204,7 +204,7 @@ public class MediaPlayerAPI {
                 }
                 try {
                     player.setDataSource(context, Uri.fromFile(mediaFile));
-                    player.prepareAsync();
+                    player.prepare();
                     if (player.isPlaying()) {
                         result.message = "Now Playing: " + mediaFile.getName();
                     } else {

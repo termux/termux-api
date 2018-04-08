@@ -61,8 +61,8 @@ public class MediaPlayerAPI {
     /**
      * All media functionality exists in this background service
      */
-    public static class PlayerService extends Service implements MediaPlayer.OnPreparedListener,
-            MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
+    public static class PlayerService extends Service implements MediaPlayer.OnErrorListener,
+            MediaPlayer.OnCompletionListener {
 
         protected static MediaPlayer mediaPlayer;
 
@@ -77,7 +77,6 @@ public class MediaPlayerAPI {
         protected MediaPlayer getMediaPlayer() {
             if (mediaPlayer == null) {
                 mediaPlayer = new MediaPlayer();
-                mediaPlayer.setOnPreparedListener(this);
                 mediaPlayer.setOnCompletionListener(this);
                 mediaPlayer.setOnErrorListener(this);
                 mediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
@@ -137,12 +136,7 @@ public class MediaPlayerAPI {
         @Override
         public void onCompletion(MediaPlayer mediaPlayer) {
             hasTrack = false;
-        }
-
-        @Override
-        public void onPrepared(MediaPlayer mediaPlayer) {
-            hasTrack = true;
-            mediaPlayer.start();
+            mediaPlayer.reset();
         }
 
         protected static MediaCommandHandler getMediaCommandHandler(final String command) {
@@ -226,6 +220,9 @@ public class MediaPlayerAPI {
                 try {
                     player.setDataSource(context, Uri.fromFile(mediaFile));
                     player.prepare();
+                    player.start();
+                    hasTrack = true;
+
                     if (player.isPlaying()) {
                         result.message = "Now Playing: " + mediaFile.getName();
                     } else {

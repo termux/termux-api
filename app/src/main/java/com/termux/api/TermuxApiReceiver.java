@@ -68,6 +68,11 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "MediaScanner":
                 MediaScannerAPI.onReceive(this, context, intent);
                 break;
+            case "MicRecorder":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.RECORD_AUDIO)) {
+                    MicRecorderAPI.onReceive(context, intent);
+                }
+                break;
             case "Notification":
                 NotificationAPI.onReceiveShowNotification(this, context, intent);
                 break;

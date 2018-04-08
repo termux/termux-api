@@ -61,6 +61,7 @@
             android:grantUriPermissions="true"
             android:name="com.termux.api.ShareAPI$ContentProvider" />
         <service android:name=".MediaPlayerAPI$PlayerService" android:exported="false"/>
+        <service android:name=".MicRecorderAPI$MicRecorderService" android:exported="false"/>
     </application>
 
 </manifest>

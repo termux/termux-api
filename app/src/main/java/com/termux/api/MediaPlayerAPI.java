@@ -36,6 +36,27 @@ public class MediaPlayerAPI {
         context.startService(playerService);
     }
 
+    /**
+     * Converts time in seconds to a formatted time string: HH:MM:SS
+     * Hours will not be included if it is 0
+     * @param totalSeconds
+     * @return
+     */
+    public static String getTimeString(int totalSeconds) {
+        int hours = (totalSeconds / 3600);
+        int mins = (totalSeconds % 3600) / 60;
+        int secs = (totalSeconds % 60);
+
+        String result = "";
+
+        // only show hours if we have them
+        if (hours > 0) {
+            result += String.format("%02d:", hours);
+        }
+        result += String.format("%02d:%02d", mins, secs);
+        return result;
+    }
+
 
     /**
      * All media functionality exists in this background service
@@ -245,27 +266,6 @@ public class MediaPlayerAPI {
             int duration = player.getDuration() / 1000;
             int position = player.getCurrentPosition() / 1000;
             return getTimeString(position) + " / " + getTimeString(duration);
-        }
-
-        /**
-         * Converts time in seconds to a formatted time string: HH:MM:SS
-         * Hours will not be included if it is 0
-         * @param totalSeconds
-         * @return
-         */
-        protected static String getTimeString(int totalSeconds) {
-            int hours = (totalSeconds / 3600);
-            int mins = (totalSeconds % 3600) / 60;
-            int secs = (totalSeconds % 60);
-
-            String result = "";
-
-            // only show hours if we have them
-            if (hours > 0) {
-                result += String.format("%02d:", hours);
-            }
-            result += String.format("%02d:%02d", mins, secs);
-            return result;
         }
 
         static MediaCommandHandler resumeHandler = new MediaCommandHandler() {

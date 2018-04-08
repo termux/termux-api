@@ -130,6 +130,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "Vibrate":
                 VibrateAPI.onReceive(this, context, intent);
                 break;
+            case "Wallpaper":
+                WallpaperAPI.onReceive(context, intent);
+                break;
             case "WifiConnectionInfo":
                 WifiAPI.onReceiveWifiConnectionInfo(this, context, intent);
                 break;

@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.TRANSMIT_IR" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -62,6 +63,7 @@
             android:name="com.termux.api.ShareAPI$ContentProvider" />
         <service android:name=".MediaPlayerAPI$PlayerService" android:exported="false"/>
         <service android:name=".MicRecorderAPI$MicRecorderService" android:exported="false"/>
+        <service android:name=".WallpaperAPI$WallpaperService"/>
     </application>
 
 </manifest>

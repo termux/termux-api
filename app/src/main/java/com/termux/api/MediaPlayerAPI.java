@@ -218,9 +218,10 @@ public class MediaPlayerAPI {
                     return result;
                 }
 
-                if (player.isPlaying()) {
+                if (hasTrack) {
                     player.stop();
                     player.reset();
+                    hasTrack = false;
                 }
 
                 try {
@@ -293,7 +294,7 @@ public class MediaPlayerAPI {
             public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
                 MediaCommandResult result = new MediaCommandResult();
 
-                if (player.isPlaying()) {
+                if (hasTrack) {
                     player.stop();
                     player.reset();
                     hasTrack = false;

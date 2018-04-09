@@ -211,21 +211,30 @@ public class MediaPlayerAPI {
             public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
                 MediaCommandResult result = new MediaCommandResult();
 
-                File mediaFile = new File(intent.getStringExtra("file"));
+                File mediaFile = null;
+                try {
+                    mediaFile = new File(intent.getStringExtra("file"));
+                } catch (NullPointerException e) {
+                    result.error = "No file was specified";
+                    return result;
+                }
 
                 if (player.isPlaying()) {
                     player.stop();
                     player.reset();
                 }
+
                 try {
                     player.setDataSource(context, Uri.fromFile(mediaFile));
                     player.prepare();
-                    player.start();
-                    hasTrack = true;
-                    result.message = "Now Playing: " + mediaFile.getName();
                 } catch (IOException e) {
                     result.error = e.getMessage();
+                    return result;
                 }
+
+                player.start();
+                hasTrack = true;
+                result.message = "Now Playing: " + mediaFile.getName();
                 return result;
             }
         };

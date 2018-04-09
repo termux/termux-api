@@ -198,7 +198,7 @@ public class MediaPlayerAPI {
 
                 if (hasTrack) {
                     String status = player.isPlaying() ? "Playing" : "Paused";
-                    result.message = String.format("Status: %s\n%s", status, getPlaybackPositionString(player));
+                    result.message = String.format("Song: %s\nStatus: %s\n%s",mediaFile.getName(), status, getPlaybackPositionString(player));
                 } else {
                     result.message = "No track currently!";
                 }

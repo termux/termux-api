@@ -222,12 +222,7 @@ public class MediaPlayerAPI {
                     player.prepare();
                     player.start();
                     hasTrack = true;
-
-                    if (player.isPlaying()) {
-                        result.message = "Now Playing: " + mediaFile.getName();
-                    } else {
-                        result.error = "Failed to play: " + mediaFile.getName();
-                    }
+                    result.message = "Now Playing: " + mediaFile.getName();
                 } catch (IOException e) {
                     result.error = e.getMessage();
                 }

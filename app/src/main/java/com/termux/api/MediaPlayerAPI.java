@@ -4,7 +4,6 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.IBinder;
 import android.os.PowerManager;
 
@@ -225,7 +224,7 @@ public class MediaPlayerAPI {
                 }
 
                 try {
-                    player.setDataSource(context, Uri.fromFile(mediaFile));
+                    player.setDataSource(mediaFile.getCanonicalPath());
                     player.prepare();
                 } catch (IOException e) {
                     result.error = e.getMessage();

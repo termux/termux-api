@@ -68,6 +68,8 @@ public class MediaPlayerAPI {
         // do we currently have a track to play?
         protected static boolean hasTrack;
 
+        protected static String trackName;
+
 
         /**
          * Returns our MediaPlayer instance and ensures it has all the necessary callbacks
@@ -197,7 +199,7 @@ public class MediaPlayerAPI {
 
                 if (hasTrack) {
                     String status = player.isPlaying() ? "Playing" : "Paused";
-                    result.message = String.format("Status: %s\n%s", status, getPlaybackPositionString(player));
+                    result.message = String.format("Status: %s\nTrack: %s\nCurrent Position: %s", status, trackName, getPlaybackPositionString(player));
                 } else {
                     result.message = "No track currently!";
                 }
@@ -234,7 +236,8 @@ public class MediaPlayerAPI {
 
                 player.start();
                 hasTrack = true;
-                result.message = "Now Playing: " + mediaFile.getName();
+                trackName = mediaFile.getName();
+                result.message = "Now Playing: " + trackName;
                 return result;
             }
         };
@@ -274,7 +277,7 @@ public class MediaPlayerAPI {
             public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
                 MediaCommandResult result = new MediaCommandResult();
                 if (hasTrack) {
-                    String positionString = "Current Position: " + getPlaybackPositionString(player);
+                    String positionString = String.format("Track: %s\nCurrent Position: %s", trackName, getPlaybackPositionString(player));
 
                     if (player.isPlaying()) {
                         result.message = "Already playing track!\n" + positionString;

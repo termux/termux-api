@@ -79,7 +79,7 @@ public class MediaPlayerAPI {
                 mediaPlayer.setOnCompletionListener(this);
                 mediaPlayer.setOnErrorListener(this);
                 mediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
-                mediaPlayer.setVolume(100, 100);
+                mediaPlayer.setVolume(1.0f, 1.0f);
             }
             return mediaPlayer;
         }

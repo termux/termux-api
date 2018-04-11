@@ -10,6 +10,7 @@ import android.provider.Settings;
 import android.text.TextUtils;
 
 import com.termux.api.util.ResultReturner;
+import com.termux.api.util.TermuxApiLogger;
 
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -51,7 +52,17 @@ public class NotificationAPI {
         String title = intent.getStringExtra("title");
 
         String lightsArgbExtra = intent.getStringExtra("led-color");
-        int ledColor = (lightsArgbExtra == null) ? 0 : (Integer.parseInt(lightsArgbExtra, 16) | 0xff000000);
+
+        int ledColor = 0;
+
+        if (lightsArgbExtra != null) {
+            try {
+                ledColor = Integer.parseInt(lightsArgbExtra, 16) | 0xff000000;
+            } catch (NumberFormatException e) {
+                TermuxApiLogger.error("Invalid LED color format! Ignoring!");
+            }
+        }
+
         int ledOnMs = intent.getIntExtra("led-on", 800);
         int ledOffMs = intent.getIntExtra("led-off", 800);
 

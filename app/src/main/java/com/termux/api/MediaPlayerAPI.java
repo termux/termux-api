@@ -4,7 +4,6 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.IBinder;
 import android.os.PowerManager;
 
@@ -69,6 +68,8 @@ public class MediaPlayerAPI {
         // do we currently have a track to play?
         protected static boolean hasTrack;
 
+        protected static String trackName;
+
 
         /**
          * Returns our MediaPlayer instance and ensures it has all the necessary callbacks
@@ -80,7 +81,7 @@ public class MediaPlayerAPI {
                 mediaPlayer.setOnCompletionListener(this);
                 mediaPlayer.setOnErrorListener(this);
                 mediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
-                mediaPlayer.setVolume(100, 100);
+                mediaPlayer.setVolume(1.0f, 1.0f);
             }
             return mediaPlayer;
         }
@@ -198,7 +199,7 @@ public class MediaPlayerAPI {
 
                 if (hasTrack) {
                     String status = player.isPlaying() ? "Playing" : "Paused";
-                    result.message = String.format("Status: %s\n%s", status, getPlaybackPositionString(player));
+                    result.message = String.format("Status: %s\nTrack: %s\nCurrent Position: %s", status, trackName, getPlaybackPositionString(player));
                 } else {
                     result.message = "No track currently!";
                 }
@@ -211,26 +212,32 @@ public class MediaPlayerAPI {
             public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
                 MediaCommandResult result = new MediaCommandResult();
 
-                File mediaFile = new File(intent.getStringExtra("file"));
+                File mediaFile = null;
+                try {
+                    mediaFile = new File(intent.getStringExtra("file"));
+                } catch (NullPointerException e) {
+                    result.error = "No file was specified";
+                    return result;
+                }
 
-                if (player.isPlaying()) {
+                if (hasTrack) {
                     player.stop();
                     player.reset();
+                    hasTrack = false;
                 }
-                try {
-                    player.setDataSource(context, Uri.fromFile(mediaFile));
-                    player.prepare();
-                    player.start();
-                    hasTrack = true;
 
-                    if (player.isPlaying()) {
-                        result.message = "Now Playing: " + mediaFile.getName();
-                    } else {
-                        result.error = "Failed to play: " + mediaFile.getName();
-                    }
+                try {
+                    player.setDataSource(mediaFile.getCanonicalPath());
+                    player.prepare();
                 } catch (IOException e) {
                     result.error = e.getMessage();
+                    return result;
                 }
+
+                player.start();
+                hasTrack = true;
+                trackName = mediaFile.getName();
+                result.message = "Now Playing: " + trackName;
                 return result;
             }
         };
@@ -270,7 +277,7 @@ public class MediaPlayerAPI {
             public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
                 MediaCommandResult result = new MediaCommandResult();
                 if (hasTrack) {
-                    String positionString = "Current Position: " + getPlaybackPositionString(player);
+                    String positionString = String.format("Track: %s\nCurrent Position: %s", trackName, getPlaybackPositionString(player));
 
                     if (player.isPlaying()) {
                         result.message = "Already playing track!\n" + positionString;
@@ -290,7 +297,7 @@ public class MediaPlayerAPI {
             public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
                 MediaCommandResult result = new MediaCommandResult();
 
-                if (player.isPlaying()) {
+                if (hasTrack) {
                     player.stop();
                     player.reset();
                     hasTrack = false;

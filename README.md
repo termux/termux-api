@@ -26,8 +26,5 @@ Client scripts which processes command line arguments before calling the `termux
 
 Ideas
 =====
-- Method for playing audio files using the system MediaPlayer, so `termux-play myfile.ogg` would play the audio file.
 - Wifi network search and connect.
-- real-time sensor data output instead of snap with a second delay.
-- LED Flash.
-- Add extra permissions to the app to (un)install apps, stop pricesses etc.
+- Add extra permissions to the app to (un)install apps, stop processes etc.

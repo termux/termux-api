@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.provider.CallLog;
 
 import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
@@ -33,6 +34,10 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     PhotoAPI.onReceive(this, context, intent);
                 }
                 break;
+            case "CallLog":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_CALL_LOG)) {
+                    CallLogAPI.onReceive(context, intent);
+                }
             case "Clipboard":
                 ClipboardAPI.onReceive(this, context, intent);
                 break;

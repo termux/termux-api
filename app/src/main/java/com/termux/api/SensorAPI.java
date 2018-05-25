@@ -141,7 +141,7 @@ public class SensorAPI {
         };
 
         protected static SensorCommandHandler getSensorCommandHandler(final String command) {
-            switch (command) {
+            switch (command == null ? "" : command) {
                 case "list":
                     return listHandler;
                 case "cleanup":

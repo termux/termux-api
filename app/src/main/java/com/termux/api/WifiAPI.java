@@ -112,4 +112,24 @@ public class WifiAPI {
         });
     }
 
+    static void onReceiveWifiTurnOn(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+            @Override
+            public void writeJson(JsonWriter out) throws Exception {
+                WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                manager.setWifiEnabled(true);
+            }
+        });
+    }
+
+    static void onReceiveWifiTurnOff(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+            @Override
+            public void writeJson(JsonWriter out) throws Exception {
+                WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                manager.setWifiEnabled(false);
+            }
+        });
+    }
+
 }

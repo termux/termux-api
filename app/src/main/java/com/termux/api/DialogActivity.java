@@ -524,7 +524,7 @@ public class DialogActivity extends Activity {
 
         InputDialog(Activity activity) {
             widgetView = createWidgetView(activity);
-            initActivityDisplay(activity:w);
+            initActivityDisplay(activity);
         }
 
 

@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.JsonWriter;
 
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ public class TermuxApiPermissionActivity extends Activity {
      */
     public static boolean checkAndRequestPermissions(Context context, Intent intent, String... permissions) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            ArrayList<String> permissionsToRequest = new ArrayList<>();
+            final ArrayList<String> permissionsToRequest = new ArrayList<>();
             for (String permission : permissions) {
                 if (context.checkSelfPermission(permission) == PackageManager.PERMISSION_DENIED) {
                     permissionsToRequest.add(permission);
@@ -39,7 +40,11 @@ public class TermuxApiPermissionActivity extends Activity {
                 ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
                     @Override
                     public void writeJson(JsonWriter out) throws Exception {
-                        out.beginObject().name("error").value(" API permission required, please grant permissions to use this command ").endObject();
+                        String errorMessage = "Please grant the following permission"
+                                + (permissionsToRequest.size() > 1 ? "s" : "")
+                                + " to use this command: "
+                                + TextUtils.join(" ,", permissionsToRequest);
+                        out.beginObject().name("error").value(errorMessage).endObject();
                     }
                 });
 

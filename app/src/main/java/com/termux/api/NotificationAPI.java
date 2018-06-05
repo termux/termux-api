@@ -1,11 +1,13 @@
 package com.termux.api;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.Settings;
 import android.text.TextUtils;
 
@@ -23,6 +25,8 @@ public class NotificationAPI {
     public static final String EXTRA_ARGUMENTS = "com.termux.execute.arguments";
     public static final String BIN_SH = "/data/data/com.termux/files/usr/bin/sh";
     private static final String EXTRA_EXECUTE_IN_BACKGROUND = "com.termux.execute.background";
+    private static final String CHANNEL_ID = "termux-notification";
+    private static final String CHANNEL_TITLE = "Termux API notification channel";
 
     /**
      * Show a notification. Driven by the termux-show-notification script.
@@ -163,6 +167,14 @@ public class NotificationAPI {
                         notification.setContentText(inputString);
                     }
                 }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
+                            CHANNEL_TITLE, NotificationManager.IMPORTANCE_DEFAULT);
+                    manager.createNotificationChannel(channel);
+                    notification.setChannelId(CHANNEL_ID);
+                }
+
                 manager.notify(notificationId, 0, notification.build());
             }
         });

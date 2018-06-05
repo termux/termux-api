@@ -2,6 +2,7 @@ package com.termux.api;
 
 import android.content.Context;
 import android.content.Intent;
+import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -43,6 +44,11 @@ public class WifiAPI {
         });
     }
 
+    static boolean isLocationEnabled(Context context) {
+        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        return lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+    }
+
     static void onReceiveWifiScanInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             @Override
@@ -51,6 +57,11 @@ public class WifiAPI {
                 List<ScanResult> scans = manager.getScanResults();
                 if (scans == null) {
                     out.beginObject().name("API_ERROR").value("Failed getting scan results").endObject();
+                } else if (scans.isEmpty() && !isLocationEnabled(context)) {
+                    // https://issuetracker.google.com/issues/37060483:
+                    // "WifiManager#getScanResults() returns an empty array list if GPS is turned off"
+                    String errorMessage = "Location needs to be enabled on the device";
+                    out.beginObject().name("API_ERROR").value(errorMessage).endObject();
                 } else {
                     out.beginArray();
                     for (ScanResult scan : scans) {

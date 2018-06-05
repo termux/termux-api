@@ -39,7 +39,7 @@ public class TermuxApiPermissionActivity extends Activity {
                 ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
                     @Override
                     public void writeJson(JsonWriter out) throws Exception {
-                        out.beginObject().name("error").value("Requesting API permission - try again").endObject();
+                        out.beginObject().name("error").value(" API permission required, please grant permissions to use this command ").endObject();
                     }
                 });
 

@@ -116,6 +116,10 @@ public class TelephonyAPI {
                 out.beginObject();
 
                 {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        out.name("data_enabled").value(Boolean.toString(manager.isDataEnabled()));
+                    }
+
                     int dataActivity = manager.getDataActivity();
                     String dataActivityString;
                     switch (dataActivity) {
@@ -253,6 +257,7 @@ public class TelephonyAPI {
                     out.name("sim_operator").value(manager.getSimOperator());
                     out.name("sim_operator_name").value(manager.getSimOperatorName());
                     out.name("sim_serial_number").value(manager.getSimSerialNumber());
+                    out.name("sim_subscriber_id").value(manager.getSubscriberId());
                     int simState = manager.getSimState();
                     String simStateString;
                     switch (simState) {

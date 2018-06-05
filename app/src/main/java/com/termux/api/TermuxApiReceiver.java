@@ -146,11 +146,8 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     WifiAPI.onReceiveWifiScanInfo(this, context, intent);
                 }
                 break;
-            case "WifiTurnOff":
-                WifiAPI.onReceiveWifiTurnOff(this, context, intent);
-                break;
-            case "WifiTurnOn":
-                WifiAPI.onReceiveWifiTurnOn(this, context, intent);
+            case "WifiEnable":
+                WifiAPI.onReceiveWifiEnable(this, context, intent);
                 break;
             default:
                 TermuxApiLogger.error("Unrecognized 'api_method' extra: '" + apiMethod + "'");

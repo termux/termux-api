@@ -17,7 +17,6 @@ import android.speech.SpeechRecognizer;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.BottomSheetDialogFragment;
-import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
 import android.util.JsonWriter;
@@ -28,12 +27,14 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
@@ -155,6 +156,8 @@ public class DialogActivity extends AppCompatActivity {
             switch (type == null ? "" : type) {
                 case "confirm":
                     return new ConfirmInputMethod(activity);
+                case "checkbox":
+                    return new CheckBoxInputMethod(activity);
                 case "counter":
                     return new CounterInputMethod(activity);
                 case "date":
@@ -216,6 +219,61 @@ public class DialogActivity extends AppCompatActivity {
      * InputMethod Implementations
      * --------------------------------------
      */
+
+
+    /**
+     * CheckBox InputMethod
+     * Allow users to select multiple options from a range of values
+     */
+    static class CheckBoxInputMethod extends InputDialog<LinearLayout> {
+
+        CheckBoxInputMethod(AppCompatActivity activity) {
+            super(activity);
+        }
+
+        @Override
+        LinearLayout createWidgetView(AppCompatActivity activity) {
+            LinearLayout layout = new LinearLayout(activity);
+            layout.setOrientation(LinearLayout.VERTICAL);
+
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            layoutParams.topMargin = 32;
+            layoutParams.bottomMargin = 32;
+
+            String[] values = getInputValues(activity.getIntent());
+
+            for (int j = 0; j < values.length; ++j) {
+                String value = values[j];
+
+                CheckBox checkBox = new CheckBox(activity);
+                checkBox.setText(value);
+                checkBox.setId(j);
+                checkBox.setTextSize(18);
+                checkBox.setPadding(16, 16, 16, 16);
+                checkBox.setLayoutParams(layoutParams);
+
+                layout.addView(checkBox);
+            }
+            return layout;
+        }
+
+        @Override
+        String getResult() {
+            int checkBoxCount = widgetView.getChildCount();
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("[");
+
+            for (int j = 0; j < checkBoxCount; ++j) {
+                CheckBox box = widgetView.findViewById(j);
+                if (box.isChecked()) {
+                    sb.append(box.getText().toString()).append(", ");
+                }
+            }
+            // remove trailing comma and add closing bracket
+            return sb.toString().replaceAll(", $", "") + "]";
+        }
+    }
 
 
     /**
@@ -436,6 +494,7 @@ public class DialogActivity extends AppCompatActivity {
         }
     }
 
+
     /**
      * Radio InputMethod
      * Allow users to confirm from radio button options
@@ -480,6 +539,7 @@ public class DialogActivity extends AppCompatActivity {
             return (radioButton != null) ? radioButton.getText().toString() : "";
         }
     }
+
 
     /**
      * BottomSheet InputMethod
@@ -529,7 +589,7 @@ public class DialogActivity extends AppCompatActivity {
             layout.setPadding(16, 16, 16, 16);
             layout.setOrientation(LinearLayout.VERTICAL);
 
-            NestedScrollView scrollView = new NestedScrollView(getContext());
+            FrameLayout scrollView = new FrameLayout(getContext());
             final String[] values = getInputValues(Objects.requireNonNull(getActivity()).getIntent());
 
             for (final String value : values) {
@@ -842,9 +902,16 @@ public class DialogActivity extends AppCompatActivity {
         View getLayoutView(AppCompatActivity activity, T view) {
             FrameLayout layout = getFrameLayout(activity);
             ViewGroup.LayoutParams params = layout.getLayoutParams();
+
             view.setLayoutParams(params);
             layout.addView(view);
-            return layout;
+            layout.setScrollbarFadingEnabled(false);
+
+            // wrap everything in scrollview
+            ScrollView scrollView = new ScrollView(activity);
+            scrollView.addView(layout);
+
+            return scrollView;
         }
 
         DialogInterface.OnClickListener getClickListener(final InputResultListener listener) {
@@ -911,6 +978,7 @@ public class DialogActivity extends AppCompatActivity {
             final int margin = 56;
             params.setMargins(margin, margin, margin, margin);
 
+            params.setMargins(56, 56, 56, 56);
             layout.setLayoutParams(params);
             return layout;
         }

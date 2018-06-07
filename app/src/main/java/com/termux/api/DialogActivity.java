@@ -590,8 +590,10 @@ public class DialogActivity extends AppCompatActivity {
 
             Dialog dialog = getDialogBuilder(activity, clickListener)
                     .setPositiveButton(null, null)
+                    .setOnDismissListener(null)
                     .create();
 
+            dialog.setCanceledOnTouchOutside(false);
             dialog.show();
 
             recognizer.startListening(speechIntent);
@@ -694,8 +696,15 @@ public class DialogActivity extends AppCompatActivity {
         // result that belongs to us
         InputResult inputResult = new InputResult();
 
+        // listener for our input result
+        InputResultListener resultListener;
+
         // view that will be placed in our dialog
         T widgetView;
+
+        // our activity context
+        AppCompatActivity activity;
+
 
         // method to be implemented that handles creating view that is placed in our dialog
         abstract T createWidgetView(AppCompatActivity activity);
@@ -707,6 +716,7 @@ public class DialogActivity extends AppCompatActivity {
 
 
         InputDialog(AppCompatActivity activity) {
+            this.activity = activity;
             widgetView = createWidgetView(activity);
             initActivityDisplay(activity);
         }
@@ -714,12 +724,19 @@ public class DialogActivity extends AppCompatActivity {
 
         @Override
         public void create(AppCompatActivity activity, final InputResultListener resultListener) {
+            this.resultListener = resultListener;
+
             // Handle OK and Cancel button clicks
             DialogInterface.OnClickListener clickListener = getClickListener(resultListener);
 
             // Dialog interface that will display to user
             Dialog dialog = getDialogBuilder(activity, clickListener).create();
             dialog.show();
+        }
+
+        void postCanceledResult() {
+            inputResult.code = Dialog.BUTTON_NEGATIVE;
+            resultListener.onResult(inputResult);
         }
 
         void initActivityDisplay(Activity activity) {
@@ -751,6 +768,17 @@ public class DialogActivity extends AppCompatActivity {
                     };
         }
 
+        DialogInterface.OnDismissListener getDismissListener() {
+            return new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialogInterface) {
+                    // force dismiss behavior on single tap outside of dialog
+                    activity.onBackPressed();
+                    onDismissed();
+                }
+            };
+        }
+
         /**
          * Creates a dialog builder to initialize a dialog w/ a view and button click listeners
          * @param activity
@@ -765,6 +793,7 @@ public class DialogActivity extends AppCompatActivity {
                     .setTitle(intent.hasExtra("input_title") ? intent.getStringExtra("input_title") : "")
                     .setNegativeButton(getNegativeButtonText(), clickListener)
                     .setPositiveButton(getPositiveButtonText(), clickListener)
+                    .setOnDismissListener(getDismissListener())
                     .setView(layoutView);
 
         }
@@ -775,6 +804,10 @@ public class DialogActivity extends AppCompatActivity {
 
         String getPositiveButtonText() {
             return "OK";
+        }
+
+        void onDismissed() {
+            postCanceledResult();
         }
 
         /**

@@ -27,6 +27,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -154,6 +155,8 @@ public class DialogActivity extends AppCompatActivity {
             switch (type == null ? "" : type) {
                 case "confirm":
                     return new ConfirmInputMethod(activity);
+                case "counter":
+                    return new CounterInputMethod(activity);
                 case "date":
                     return new DateInputMethod(activity);
                 case "radio":
@@ -247,6 +250,89 @@ public class DialogActivity extends AppCompatActivity {
         @Override
         String getPositiveButtonText() {
             return "Yes";
+        }
+    }
+
+
+    /**
+     * Counter InputMethod
+     * Allow users to increment or decrement a number in a given range
+     */
+    static class CounterInputMethod extends InputDialog<View> {
+        static final int DEFAULT_MIN = 0;
+        static final int DEFAULT_MAX = 100;
+
+        int min = DEFAULT_MIN;
+        int max = DEFAULT_MAX;
+        int counter;
+
+        TextView counterLabel;
+
+        CounterInputMethod(AppCompatActivity activity) {
+            super(activity);
+        }
+
+        @Override
+        View createWidgetView(AppCompatActivity activity) {
+            View layout = View.inflate(activity, R.layout.dialog_counter, null);
+            counterLabel = layout.findViewById(R.id.counterTextView);
+
+            final Button incrementButton = layout.findViewById(R.id.incrementButton);
+            incrementButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    increment();
+                }
+            });
+
+            final Button decrementButton = layout.findViewById(R.id.decrementButton);
+            decrementButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    decrement();
+                }
+            });
+            updateCounterRange();
+
+            return layout;
+        }
+
+        void updateCounterRange() {
+            final Intent intent = activity.getIntent();
+            min = intent.getIntExtra("min", DEFAULT_MIN);
+            max = intent.getIntExtra("max", DEFAULT_MAX);
+
+            if ((min > max) || (max < min)) {
+                // illegal range
+                inputResult.error = "Invalid min max range!";
+                postCanceledResult();
+                dialog.dismiss();
+            }
+            counter = min;
+            updateLabel();
+        }
+
+        @Override
+        String getResult() {
+            return counterLabel.getText().toString();
+        }
+
+        void updateLabel() {
+            counterLabel.setText(String.valueOf(counter));
+        }
+
+        void increment() {
+            if ((counter + 1) <= max) {
+                ++counter;
+                updateLabel();
+            }
+        }
+
+        void decrement() {
+            if ((counter - 1) >= min) {
+                --counter;
+                updateLabel();
+            }
         }
     }
 
@@ -702,6 +788,9 @@ public class DialogActivity extends AppCompatActivity {
         // view that will be placed in our dialog
         T widgetView;
 
+        // dialog that holds everything
+        Dialog dialog;
+
         // our activity context
         AppCompatActivity activity;
 
@@ -730,7 +819,7 @@ public class DialogActivity extends AppCompatActivity {
             DialogInterface.OnClickListener clickListener = getClickListener(resultListener);
 
             // Dialog interface that will display to user
-            Dialog dialog = getDialogBuilder(activity, clickListener).create();
+            dialog = getDialogBuilder(activity, clickListener).create();
             dialog.show();
         }
 

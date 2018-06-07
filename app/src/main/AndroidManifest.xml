@@ -50,7 +50,7 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light" >
         <receiver android:name="com.termux.api.TermuxApiReceiver"/>
-        <activity android:name="com.termux.api.DialogActivity" android:theme="@android:style/Theme.Material.Light.Dialog.Alert" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
+        <activity android:name="com.termux.api.DialogActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
         <activity android:name=".FingerprintAPI$FingerprintActivity" android:theme="@android:style/Theme.NoDisplay"
                   android:noHistory="true"
                   android:excludeFromRecents="true"

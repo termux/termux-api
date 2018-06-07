@@ -2,6 +2,7 @@ package com.termux.api;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -13,15 +14,23 @@ import android.os.Bundle;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.support.annotation.NonNull;
+import android.support.design.widget.BottomSheetDialog;
+import android.support.design.widget.BottomSheetDialogFragment;
+import android.support.v4.widget.NestedScrollView;
+import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
 import android.util.JsonWriter;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
@@ -33,11 +42,12 @@ import com.termux.api.util.TermuxApiPermissionActivity;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * API that allows receiving user input interactively in a variety of different ways
  */
-public class DialogActivity extends Activity {
+public class DialogActivity extends AppCompatActivity {
 
     static boolean resultReturned = false;
 
@@ -85,6 +95,27 @@ public class DialogActivity extends Activity {
     }
 
     /**
+     * Extract value extras from intent into String array
+     * @param intent
+     * @return
+     */
+    static String[] getInputValues(Intent intent) {
+        String[] items = new String[] { };
+
+        if (intent != null && intent.hasExtra("input_values")) {
+            String[] temp = intent.getStringExtra("input_values").split(",");
+            items = new String[temp.length];
+
+            // remove possible whitespace from strings in temp array
+            for (int j = 0; j < temp.length; ++j) {
+                String s = temp[j];
+                items[j] = s.trim();
+            }
+        }
+        return items;
+    }
+
+    /**
      * Writes the InputResult to the console
      * @param context
      * @param result
@@ -116,7 +147,7 @@ public class DialogActivity extends Activity {
      */
     static class InputMethodFactory {
 
-        public static InputMethod get(final String type, final Activity activity) {
+        public static InputMethod get(final String type, final AppCompatActivity activity) {
 
             switch (type == null ? "" : type) {
                 case "confirm":
@@ -127,6 +158,8 @@ public class DialogActivity extends Activity {
                     return new TextInputMethod(activity);
                 case "time":
                     return new TimeInputMethod(activity);
+                case "sheet":
+                    return new BottomSheetInputMethod();
                 case "speech":
                     return new SpeechInputMethod(activity);
                 case "spinner":
@@ -134,7 +167,7 @@ public class DialogActivity extends Activity {
                 default:
                     return new InputMethod() {
                         @Override
-                        public void create(Activity activity, InputResultListener resultListener) {
+                        public void create(AppCompatActivity activity, InputResultListener resultListener) {
                             InputResult result = new InputResult();
                             result.error = "Unknown Input Method: " + type;
                             resultListener.onResult(result);
@@ -149,7 +182,7 @@ public class DialogActivity extends Activity {
      * Interface for creating an input method type
      */
     interface InputMethod {
-        void create(Activity activity, InputResultListener resultListener);
+        void create(AppCompatActivity activity, InputResultListener resultListener);
     }
 
 
@@ -184,7 +217,7 @@ public class DialogActivity extends Activity {
      */
     static class ConfirmInputMethod extends InputDialog<TextView> {
 
-        ConfirmInputMethod(Activity activity) {
+        ConfirmInputMethod(AppCompatActivity activity) {
             super(activity);
         }
 
@@ -195,7 +228,7 @@ public class DialogActivity extends Activity {
         }
 
         @Override
-        TextView createWidgetView(Activity activity) {
+        TextView createWidgetView(AppCompatActivity activity) {
             TextView textView = new TextView(activity);
             // TODO make this an option for the user to set?
             textView.setText("Confirm");
@@ -220,7 +253,7 @@ public class DialogActivity extends Activity {
      */
     static class DateInputMethod extends InputDialog<DatePicker> {
 
-        DateInputMethod(Activity activity) {
+        DateInputMethod(AppCompatActivity activity) {
             super(activity);
         }
 
@@ -237,7 +270,7 @@ public class DialogActivity extends Activity {
         }
 
         @Override
-        DatePicker createWidgetView(Activity activity) {
+        DatePicker createWidgetView(AppCompatActivity activity) {
             return new DatePicker(activity);
         }
     }
@@ -249,7 +282,7 @@ public class DialogActivity extends Activity {
      */
     static class TextInputMethod extends InputDialog<EditText> {
 
-        TextInputMethod(Activity activity) {
+        TextInputMethod(AppCompatActivity activity) {
             super(activity);
         }
 
@@ -259,7 +292,7 @@ public class DialogActivity extends Activity {
         }
 
         @Override
-        EditText createWidgetView(Activity activity) {
+        EditText createWidgetView(AppCompatActivity activity) {
             final Intent intent = activity.getIntent();
             EditText editText = new EditText(activity);
 
@@ -291,7 +324,7 @@ public class DialogActivity extends Activity {
      */
     static class TimeInputMethod extends InputDialog<TimePicker> {
 
-        TimeInputMethod(Activity activity) {
+        TimeInputMethod(AppCompatActivity activity) {
             super(activity);
         }
 
@@ -308,8 +341,127 @@ public class DialogActivity extends Activity {
         }
 
         @Override
-        TimePicker createWidgetView(Activity activity) {
+        TimePicker createWidgetView(AppCompatActivity activity) {
             return new TimePicker(activity);
+        }
+    }
+
+    /**
+     * BottomSheet InputMethod
+     * Allow users to select from a variety of options in a bottom sheet dialog
+     */
+    public static class BottomSheetInputMethod extends BottomSheetDialogFragment implements InputMethod {
+        private InputResultListener resultListener;
+
+
+        @Override
+        public void create(AppCompatActivity activity, InputResultListener resultListener) {
+            this.resultListener = resultListener;
+            show(activity.getSupportFragmentManager(), "BOTTOM_SHEET");
+        }
+
+        @NonNull
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            // create custom BottomSheetDialog that has friendlier dismissal behavior
+            return new BottomSheetDialog(getActivity(), getTheme()) {
+                @Override
+                public void onBackPressed() {
+                    super.onBackPressed();
+                    // make it so that user only has to hit back key one time to get rid of bottom sheet
+                    getActivity().onBackPressed();
+                    postCanceledResult();
+                }
+
+                @Override
+                public void cancel() {
+                    super.cancel();
+
+                    if (isCurrentAppTermux()) {
+                        showKeyboard();
+                    }
+                    // dismiss on single touch outside of dialog
+                    getActivity().onBackPressed();
+                    postCanceledResult();
+                }
+            };
+        }
+
+        @Override
+        public void setupDialog(final Dialog dialog, int style) {
+            LinearLayout layout = new LinearLayout(getContext());
+            layout.setMinimumHeight(100);
+            layout.setPadding(16, 16, 16, 16);
+            layout.setOrientation(LinearLayout.VERTICAL);
+
+            NestedScrollView scrollView = new NestedScrollView(getContext());
+            final String[] values = getInputValues(Objects.requireNonNull(getActivity()).getIntent());
+
+            for (final String value : values) {
+                final TextView textView = new TextView(getContext());
+                textView.setText(value);
+                textView.setTextSize(20);
+                textView.setPadding(56, 56, 56, 56);
+                textView.setOnClickListener(new View.OnClickListener() {
+
+                    @Override
+                    public void onClick(View view) {
+                        InputResult result = new InputResult();
+                        result.text = value;
+                        dialog.dismiss();
+                        resultListener.onResult(result);
+                    }
+                });
+
+                layout.addView(textView);
+            }
+            scrollView.addView(layout);
+            dialog.setContentView(scrollView);
+            hideKeyboard();
+        }
+
+        /**
+         * These keyboard methods exist to work around inconsistent show / hide behavior
+         * from canceling BottomSheetDialog and produces the desired result of hiding keyboard
+         * on creation of dialog and showing it after a selection or cancellation, as long as
+         * we are still within the Termux application
+         */
+
+        protected void hideKeyboard() {
+            getDialog().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+        }
+
+        protected void showKeyboard() {
+            getInputMethodManager().showSoftInput(getView(), InputMethodManager.SHOW_FORCED);
+        }
+
+        protected InputMethodManager getInputMethodManager() {
+            return (InputMethodManager) Objects.requireNonNull(getContext()).getSystemService(Context.INPUT_METHOD_SERVICE);
+        }
+
+        /**
+         * Checks to see if foreground application is Termux
+         * @return
+         */
+        protected boolean isCurrentAppTermux() {
+            final ActivityManager activityManager = (ActivityManager) Objects.requireNonNull(getContext()).getSystemService(Context.ACTIVITY_SERVICE);
+            final List<ActivityManager.RunningAppProcessInfo> runningProcesses = Objects.requireNonNull(activityManager).getRunningAppProcesses();
+            for (final ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
+                if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                    for (final String activeProcess : processInfo.pkgList) {
+                        if (activeProcess.equals("com.termux")) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        protected void postCanceledResult() {
+            InputResult result = new InputResult();
+            result.code = Dialog.BUTTON_NEGATIVE;
+            resultListener.onResult(result);
         }
     }
 
@@ -320,7 +472,7 @@ public class DialogActivity extends Activity {
      */
     static class SpinnerInputMethod extends InputDialog<Spinner> {
 
-        SpinnerInputMethod(Activity activity) {
+        SpinnerInputMethod(AppCompatActivity activity) {
             super(activity);
         }
 
@@ -330,31 +482,15 @@ public class DialogActivity extends Activity {
         }
 
         @Override
-        Spinner createWidgetView(Activity activity) {
+        Spinner createWidgetView(AppCompatActivity activity) {
             Spinner spinner = new Spinner(activity);
 
             final Intent intent = activity.getIntent();
-            final String[] items = getSpinnerItems(intent);
+            final String[] items = getInputValues(intent);
             final ArrayAdapter<String> adapter = new ArrayAdapter<>(activity, R.layout.spinner_item, items);
 
             spinner.setAdapter(adapter);
             return spinner;
-        }
-
-        String[] getSpinnerItems(Intent intent) {
-            String[] items = new String[] { };
-
-            if (intent.hasExtra("input_values")) {
-                String[] temp = intent.getStringExtra("input_values").split(",");
-                items = new String[temp.length];
-
-                // remove possible whitespace from strings in temp array
-                for (int j = 0; j < temp.length; ++j) {
-                    String s = temp[j];
-                    items[j] = s.trim();
-                }
-            }
-            return items;
         }
     }
 
@@ -365,12 +501,12 @@ public class DialogActivity extends Activity {
      */
     static class SpeechInputMethod extends InputDialog<TextView> {
 
-        SpeechInputMethod(Activity activity) {
+        SpeechInputMethod(AppCompatActivity activity) {
             super(activity);
         }
 
         @Override
-        TextView createWidgetView(Activity activity) {
+        TextView createWidgetView(AppCompatActivity activity) {
             TextView textView = new TextView(activity);
             textView.setText("Listening for speech...");
             textView.setTextSize(20);
@@ -378,7 +514,7 @@ public class DialogActivity extends Activity {
         }
 
         @Override
-        public void create(final Activity activity, final InputResultListener resultListener) {
+        public void create(final AppCompatActivity activity, final InputResultListener resultListener) {
             // Since we're using the microphone, we need to make sure we have proper permission
             if (!TermuxApiPermissionActivity.checkAndRequestPermissions(activity, activity.getIntent(), Manifest.permission.RECORD_AUDIO)) {
                 activity.finish();
@@ -424,7 +560,7 @@ public class DialogActivity extends Activity {
             return speechIntent;
         }
 
-        private SpeechRecognizer createSpeechRecognizer(Activity activity, final InputResultListener listener) {
+        private SpeechRecognizer createSpeechRecognizer(AppCompatActivity activity, final InputResultListener listener) {
             SpeechRecognizer recognizer = SpeechRecognizer.createSpeechRecognizer(activity);
             recognizer.setRecognitionListener(new RecognitionListener() {
 
@@ -444,7 +580,7 @@ public class DialogActivity extends Activity {
                  */
                 @Override
                 public void onError(int error) {
-                    String errorDescription = null;
+                    String errorDescription;
 
                     switch (error) {
                         case SpeechRecognizer.ERROR_AUDIO:
@@ -465,12 +601,11 @@ public class DialogActivity extends Activity {
                         case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
                             errorDescription = "ERROR_SPEECH_TIMEOUT";
                             break;
+                        default:
+                            errorDescription = "ERROR_UNKNOWN";
+                            break;
                     }
-
-                    if (errorDescription != null) {
-                        inputResult.error = errorDescription;
-                    }
-
+                    inputResult.error = errorDescription;
                     listener.onResult(inputResult);
                 }
 
@@ -514,7 +649,7 @@ public class DialogActivity extends Activity {
         T widgetView;
 
         // method to be implemented that handles creating view that is placed in our dialog
-        abstract T createWidgetView(Activity activity);
+        abstract T createWidgetView(AppCompatActivity activity);
 
         // method that should be implemented that handles returning a result obtained through user input
         String getResult() {
@@ -522,14 +657,14 @@ public class DialogActivity extends Activity {
         }
 
 
-        InputDialog(Activity activity) {
+        InputDialog(AppCompatActivity activity) {
             widgetView = createWidgetView(activity);
             initActivityDisplay(activity);
         }
 
 
         @Override
-        public void create(Activity activity, final InputResultListener resultListener) {
+        public void create(AppCompatActivity activity, final InputResultListener resultListener) {
             // Handle OK and Cancel button clicks
             DialogInterface.OnClickListener clickListener = getClickListener(resultListener);
 
@@ -549,7 +684,7 @@ public class DialogActivity extends Activity {
          * @param view
          * @return
          */
-        View getLayoutView(Activity activity, T view) {
+        View getLayoutView(AppCompatActivity activity, T view) {
             FrameLayout layout = getFrameLayout(activity);
             ViewGroup.LayoutParams params = layout.getLayoutParams();
             view.setLayoutParams(params);
@@ -573,7 +708,7 @@ public class DialogActivity extends Activity {
          * @param clickListener
          * @return
          */
-        AlertDialog.Builder getDialogBuilder(Activity activity, DialogInterface.OnClickListener clickListener) {
+        AlertDialog.Builder getDialogBuilder(AppCompatActivity activity, DialogInterface.OnClickListener clickListener) {
             final Intent intent = activity.getIntent();
             final View layoutView = getLayoutView(activity, widgetView);
 
@@ -598,7 +733,7 @@ public class DialogActivity extends Activity {
          * @param activity
          * @return
          */
-        FrameLayout getFrameLayout(Activity activity) {
+        FrameLayout getFrameLayout(AppCompatActivity activity) {
             FrameLayout layout = new FrameLayout(activity);
             FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 

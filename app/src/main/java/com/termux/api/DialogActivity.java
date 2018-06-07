@@ -31,6 +31,8 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
@@ -154,16 +156,18 @@ public class DialogActivity extends AppCompatActivity {
                     return new ConfirmInputMethod(activity);
                 case "date":
                     return new DateInputMethod(activity);
-                case "text":
-                    return new TextInputMethod(activity);
-                case "time":
-                    return new TimeInputMethod(activity);
+                case "radio":
+                    return new RadioInputMethod(activity);
                 case "sheet":
                     return new BottomSheetInputMethod();
                 case "speech":
                     return new SpeechInputMethod(activity);
                 case "spinner":
                     return new SpinnerInputMethod(activity);
+                case "text":
+                    return new TextInputMethod(activity);
+                case "time":
+                    return new TimeInputMethod(activity);
                 default:
                     return new InputMethod() {
                         @Override
@@ -343,6 +347,51 @@ public class DialogActivity extends AppCompatActivity {
         @Override
         TimePicker createWidgetView(AppCompatActivity activity) {
             return new TimePicker(activity);
+        }
+    }
+
+    /**
+     * Radio InputMethod
+     * Allow users to confirm from radio button options
+     */
+    static class RadioInputMethod extends InputDialog<RadioGroup> {
+        RadioGroup radioGroup;
+
+        RadioInputMethod(AppCompatActivity activity) {
+            super(activity);
+        }
+
+        @Override
+        RadioGroup createWidgetView(AppCompatActivity activity) {
+            radioGroup = new RadioGroup(activity);
+            radioGroup.setPadding(16, 16, 16, 16);
+
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            layoutParams.topMargin = 32;
+            layoutParams.bottomMargin = 32;
+
+            String[] values = getInputValues(activity.getIntent());
+
+            for (int j = 0; j < values.length; ++j) {
+                String value = values[j];
+
+                RadioButton button = new RadioButton(activity);
+                button.setText(value);
+                button.setId(j);
+                button.setTextSize(18);
+                button.setPadding(16, 16, 16, 16);
+                button.setLayoutParams(layoutParams);
+
+                radioGroup.addView(button);
+            }
+            return radioGroup;
+        }
+
+        @Override
+        String getResult() {
+            int radioIndex = radioGroup.indexOfChild(widgetView.findViewById(radioGroup.getCheckedRadioButtonId()));
+            RadioButton radioButton = (RadioButton) radioGroup.getChildAt(radioIndex);
+            return (radioButton != null) ? radioButton.getText().toString() : "";
         }
     }
 

@@ -52,6 +52,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "Download":
                 DownloadAPI.onReceive(this, context, intent);
                 break;
+            case "Fingerprint":
+                FingerprintAPI.onReceive(context, intent);
+                break;
             case "InfraredFrequencies":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.TRANSMIT_IR)) {
                     InfraredAPI.onReceiveCarrierFrequency(this, context, intent);

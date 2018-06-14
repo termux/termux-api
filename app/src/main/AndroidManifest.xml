@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.termux.api"
     android:sharedUserId="com.termux">
 
@@ -22,6 +23,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <!-- Some of the used permissions imply uses-feature, so we need to make it optional.
          See http://developer.android.com/guide/topics/manifest/uses-feature-element.html#permissions -->
@@ -47,6 +51,10 @@
         android:theme="@android:style/Theme.Material.Light" >
         <receiver android:name="com.termux.api.TermuxApiReceiver"/>
         <activity android:name="com.termux.api.DialogActivity" android:theme="@android:style/Theme.Material.Light.Dialog.Alert" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
+        <activity android:name=".FingerprintAPI$FingerprintActivity" android:theme="@android:style/Theme.NoDisplay"
+                  android:noHistory="true"
+                  android:excludeFromRecents="true"
+                  android:exported="false"/>
         <activity android:name="com.termux.api.util.TermuxApiPermissionActivity"
                   android:theme="@android:style/Theme.NoDisplay"
                   android:noHistory="true"

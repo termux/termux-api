@@ -4,7 +4,9 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.provider.CallLog;
+import android.os.Build;
+import android.provider.Settings;
+import android.widget.Toast;
 
 import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
@@ -20,11 +22,25 @@ public class TermuxApiReceiver extends BroadcastReceiver {
         }
 
         switch (apiMethod) {
-	    case "AudioInfo":
-	        AudioAPI.onReceive(this, context, intent);
-		break;
-	    case "BatteryStatus":
+            case "AudioInfo":
+                AudioAPI.onReceive(this, context, intent);
+                break;
+            case "BatteryStatus":
                 BatteryStatusAPI.onReceive(this, context, intent);
+                break;
+            case "Brightness":
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (!Settings.System.canWrite(context)) {
+                        TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.WRITE_SETTINGS);
+                        Toast.makeText(context, "Please enable permission for Termux:API", Toast.LENGTH_LONG).show();
+
+                        // user must enable WRITE_SETTINGS permission this special way
+                        Intent settingsIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                        context.startActivity(settingsIntent);
+                        return;
+                    }
+                }
+                BrightnessAPI.onReceive(this, context, intent);
                 break;
             case "CameraInfo":
                 CameraInfoAPI.onReceive(this, context, intent);
@@ -51,6 +67,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "Download":
                 DownloadAPI.onReceive(this, context, intent);
+                break;
+            case "Fingerprint":
+                FingerprintAPI.onReceive(context, intent);
                 break;
             case "InfraredFrequencies":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.TRANSMIT_IR)) {
@@ -134,6 +153,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "Vibrate":
                 VibrateAPI.onReceive(this, context, intent);
+                break;
+            case "Volume":
+                VolumeAPI.onReceive(this, context, intent);
                 break;
             case "Wallpaper":
                 WallpaperAPI.onReceive(context, intent);

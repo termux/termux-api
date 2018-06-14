@@ -16,7 +16,12 @@ public class AudioAPI {
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         final String SampleRate = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
         final String framesPerBuffer = am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
-        final String AudioUnprocessed = am.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED);
+        final String AudioUnprocessed;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            AudioUnprocessed = am.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED);
+        } else {
+            AudioUnprocessed = null;
+        }
         final int volume_level = am.getStreamVolume(AudioManager.STREAM_MUSIC);
         final int maxvolume_level = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final boolean bluetootha2dp = am.isBluetoothA2dpOn();
@@ -74,7 +79,9 @@ public class AudioAPI {
                 out.beginObject();
                 out.name("PROPERTY_OUTPUT_SAMPLE_RATE").value(SampleRate);
                 out.name("PROPERTY_OUTPUT_FRAMES_PER_BUFFER").value(framesPerBuffer);
-                out.name("PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED").value(AudioUnprocessed);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    out.name("PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED").value(AudioUnprocessed);
+                }
                 out.name("STREAM_MUSIC_VOLUME").value(volume_level);
                 out.name("STREAM_MUSIC_MAXVOLUME").value(maxvolume_level);
                 out.name("BLUETOOTH_A2DP_IS_ON").value(bluetootha2dp);

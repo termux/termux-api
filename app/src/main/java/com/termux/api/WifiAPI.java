@@ -112,4 +112,15 @@ public class WifiAPI {
         });
     }
 
+    static void onReceiveWifiEnable(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+            @Override
+            public void writeJson(JsonWriter out) {
+                WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                boolean state = intent.getBooleanExtra("enabled", false);
+                manager.setWifiEnabled(state);
+            }
+        });
+    }
+
 }

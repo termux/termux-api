@@ -21,7 +21,7 @@ public class WifiAPI {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
-                WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                WifiManager manager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 WifiInfo info = manager.getConnectionInfo();
                 out.beginObject();
                 if (info == null) {
@@ -53,7 +53,7 @@ public class WifiAPI {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
-                WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                WifiManager manager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 List<ScanResult> scans = manager.getScanResults();
                 if (scans == null) {
                     out.beginObject().name("API_ERROR").value("Failed getting scan results").endObject();

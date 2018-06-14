@@ -301,6 +301,7 @@ public class FingerprintAPI {
      */
     protected static void resetFingerprintResult() {
         fingerprintResult = new FingerprintResult();
+        postedResult = false;
     }
 
     /**

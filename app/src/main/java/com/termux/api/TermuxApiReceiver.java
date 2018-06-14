@@ -54,6 +54,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_CALL_LOG)) {
                     CallLogAPI.onReceive(context, intent);
                 }
+                break;
             case "Clipboard":
                 ClipboardAPI.onReceive(this, context, intent);
                 break;

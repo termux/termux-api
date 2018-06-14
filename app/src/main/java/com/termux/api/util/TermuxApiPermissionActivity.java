@@ -18,8 +18,6 @@ public class TermuxApiPermissionActivity extends Activity {
      */
     public static final String PERMISSIONS_EXTRA = "com.termux.api.permission_extra";
 
-    private ArrayList<String> permissionValues;
-
     /**
      * Check for and request permissions if necessary.
      *
@@ -70,7 +68,7 @@ public class TermuxApiPermissionActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        permissionValues = getIntent().getStringArrayListExtra(PERMISSIONS_EXTRA);
+        ArrayList<String> permissionValues = getIntent().getStringArrayListExtra(PERMISSIONS_EXTRA);
         requestPermissions(permissionValues.toArray(new String[0]), 123);
         finish();
     }

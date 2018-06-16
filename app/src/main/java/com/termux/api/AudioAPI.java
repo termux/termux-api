@@ -22,8 +22,6 @@ public class AudioAPI {
         } else {
             AudioUnprocessed = null;
         }
-        final int volume_level = am.getStreamVolume(AudioManager.STREAM_MUSIC);
-        final int maxvolume_level = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final boolean bluetootha2dp = am.isBluetoothA2dpOn();
         final boolean wiredhs = am.isWiredHeadsetOn();
 
@@ -67,8 +65,6 @@ public class AudioAPI {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                     out.name("PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED").value(AudioUnprocessed);
                 }
-                out.name("STREAM_MUSIC_VOLUME").value(volume_level);
-                out.name("STREAM_MUSIC_MAXVOLUME").value(maxvolume_level);
                 out.name("BLUETOOTH_A2DP_IS_ON").value(bluetootha2dp);
                 out.name("WIREDHEADSET_IS_CONNECTED").value(wiredhs);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

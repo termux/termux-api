@@ -56,8 +56,6 @@ public class AudioAPI {
                 out.beginObject();
                 out.name("PROPERTY_OUTPUT_SAMPLE_RATE").value(SampleRate);
                 out.name("PROPERTY_OUTPUT_FRAMES_PER_BUFFER").value(framesPerBuffer);
-                out.name("BLUETOOTH_A2DP_IS_ON").value(bluetootha2dp);
-                out.name("WIREDHEADSET_IS_CONNECTED").value(wiredhs);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     out.name("AUDIOTRACK_SAMPLE_RATE").value(sr);
                     out.name("AUDIOTRACK_BUFFER_SIZE_IN_FRAMES").value(bs);
@@ -68,6 +66,8 @@ public class AudioAPI {
                 } else {
                     out.name("AUDIOTRACK_NATIVE_OUTPUT_SAMPLE_RATE").value(nosr);
                 }
+                out.name("BLUETOOTH_A2DP_IS_ON").value(bluetootha2dp);
+                out.name("WIREDHEADSET_IS_CONNECTED").value(wiredhs);
                 out.endObject();
             }
         });

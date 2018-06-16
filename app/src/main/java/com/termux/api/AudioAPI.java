@@ -16,12 +16,6 @@ public class AudioAPI {
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         final String SampleRate = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
         final String framesPerBuffer = am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
-        final String AudioUnprocessed;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-            AudioUnprocessed = am.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED);
-        } else {
-            AudioUnprocessed = null;
-        }
         final boolean bluetootha2dp = am.isBluetoothA2dpOn();
         final boolean wiredhs = am.isWiredHeadsetOn();
 
@@ -62,9 +56,6 @@ public class AudioAPI {
                 out.beginObject();
                 out.name("PROPERTY_OUTPUT_SAMPLE_RATE").value(SampleRate);
                 out.name("PROPERTY_OUTPUT_FRAMES_PER_BUFFER").value(framesPerBuffer);
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                    out.name("PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED").value(AudioUnprocessed);
-                }
                 out.name("BLUETOOTH_A2DP_IS_ON").value(bluetootha2dp);
                 out.name("WIREDHEADSET_IS_CONNECTED").value(wiredhs);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

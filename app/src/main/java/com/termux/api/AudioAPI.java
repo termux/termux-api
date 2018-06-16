@@ -27,52 +27,37 @@ public class AudioAPI {
         final boolean bluetootha2dp = am.isBluetoothA2dpOn();
         final boolean wiredhs = am.isWiredHeadsetOn();
 
-        int _sr, _bs, _sr_ll, _bs_ll, _nosr;
-        _sr = _bs = _sr_ll = _bs_ll = _nosr = 0;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            int[] modes = {AudioTrack.PERFORMANCE_MODE_POWER_SAVING,
-                           AudioTrack.PERFORMANCE_MODE_LOW_LATENCY};
-            for (int mode: modes) {
-                AudioTrack at = new AudioTrack.Builder()
+        final int sr, bs, sr_ll, bs_ll, nosr;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            nosr = 0;
+            AudioTrack at;
+            at = new AudioTrack.Builder()
+                .setBufferSizeInBytes(4) // one 16bit 2ch frame
+                .build();
+            sr = at.getSampleRate();
+            bs = at.getBufferSizeInFrames();
+            at.release();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                at = new AudioTrack.Builder()
                     .setBufferSizeInBytes(4) // one 16bit 2ch frame
-                    .setPerformanceMode(mode)
+                    .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
                     .build();
-                if (mode == AudioTrack.PERFORMANCE_MODE_POWER_SAVING) {
-                    _sr = at.getSampleRate();
-                    _bs = at.getBufferSizeInFrames();
-                } else if (mode == AudioTrack.PERFORMANCE_MODE_LOW_LATENCY) {
-                    _sr_ll = at.getSampleRate();
-                    _bs_ll = at.getBufferSizeInFrames();
-                }
-                at.release();
-            }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            int[] flags = {0,AudioAttributes.FLAG_LOW_LATENCY};
-            for (int flag: flags) {
+            } else {
                 AudioAttributes aa = new AudioAttributes.Builder()
-                    .setFlags(flag)
+                    .setFlags(AudioAttributes.FLAG_LOW_LATENCY)
                     .build();
-                AudioTrack at = new AudioTrack.Builder()
+                at = new AudioTrack.Builder()
                     .setAudioAttributes(aa)
                     .setBufferSizeInBytes(4) // one 16bit 2ch frame
                     .build();
-                if (flag == 0) {
-                    _sr = at.getSampleRate();
-                    _bs = at.getBufferSizeInFrames();
-                } else if (flag == AudioAttributes.FLAG_LOW_LATENCY) {
-                    _sr_ll = at.getSampleRate();
-                    _bs_ll = at.getBufferSizeInFrames();
-                }
-                at.release();
             }
+            sr_ll = at.getSampleRate();
+            bs_ll = at.getBufferSizeInFrames();
+            at.release();
         } else {
-            _nosr = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
+            sr = bs = sr_ll = bs_ll = 0;
+            nosr = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
         }
-        final int sr = _sr;
-        final int bs = _bs;
-        final int sr_ll = _sr_ll;
-        final int bs_ll = _bs_ll;
-        final int nosr = _nosr;
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             public void writeJson(JsonWriter out) throws Exception {

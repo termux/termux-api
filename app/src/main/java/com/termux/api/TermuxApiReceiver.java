@@ -10,11 +10,19 @@ import android.widget.Toast;
 
 import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
+import com.termux.api.util.TermuxApiVerifyActivity;
 
 public class TermuxApiReceiver extends BroadcastReceiver {
+    private static final String TERMUX_OPENED = "com.termux.app.OPENED";
 
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(final Context context, Intent intent) {
+        // validate user has installed termux-api package when Termux first opened
+        if (TERMUX_OPENED.equals(intent.getAction())) {
+            TermuxApiVerifyActivity.checkAndNotifyToolStatus(context);
+            return;
+        }
+
         String apiMethod = intent.getStringExtra("api_method");
         if (apiMethod == null) {
             TermuxApiLogger.error("Missing 'api_method' extra");
@@ -176,5 +184,4 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 TermuxApiLogger.error("Unrecognized 'api_method' extra: '" + apiMethod + "'");
         }
     }
-
 }

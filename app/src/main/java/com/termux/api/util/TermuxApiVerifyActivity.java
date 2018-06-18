@@ -110,6 +110,7 @@ public class TermuxApiVerifyActivity extends Activity {
         // update packages and use our notification api to display success
         String command = "yes | pkg update && termux-notification --title 'Termux:API!' --content 'packages updated successfully!'";
         TermuxApiHelper.execTermuxCommand(this, command);
+        TermuxApiHelper.saveVersion(this);
     }
 
     /**

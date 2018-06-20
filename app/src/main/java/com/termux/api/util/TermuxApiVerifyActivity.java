@@ -93,7 +93,7 @@ public class TermuxApiVerifyActivity extends Activity {
         Toast.makeText(this, "Installing termux-api", Toast.LENGTH_SHORT).show();
 
         // install termux-api and use our notification api to display success
-        String command = "pkg install termux-api && termux-notification --title 'Termux:API!' --content 'termux-api package installed successfully!'";
+        String command = "pkg install termux-api && termux-notification --content 'termux-api package installed successfully!'";
         TermuxApiHelper.execTermuxCommand(this, command);
         TermuxApiHelper.saveVersion(this);
     }
@@ -108,7 +108,7 @@ public class TermuxApiVerifyActivity extends Activity {
         Toast.makeText(this, "Updated packages", Toast.LENGTH_SHORT).show();
 
         // update packages and use our notification api to display success
-        String command = "yes | pkg update && termux-notification --title 'Termux:API!' --content 'packages updated successfully!'";
+        String command = "yes | pkg update && termux-notification --content 'packages updated successfully!'";
         TermuxApiHelper.execTermuxCommand(this, command);
         TermuxApiHelper.saveVersion(this);
     }

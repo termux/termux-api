@@ -41,6 +41,7 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.termux.api.util.ResultReturner;
+import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
 
 import java.util.Calendar;
@@ -319,9 +320,10 @@ public class DialogActivity extends AppCompatActivity {
     static class CounterInputMethod extends InputDialog<View> {
         static final int DEFAULT_MIN = 0;
         static final int DEFAULT_MAX = 100;
+        static final int RANGE_LENGTH = 3;
 
-        int min = DEFAULT_MIN;
-        int max = DEFAULT_MAX;
+        int min;
+        int max;
         int counter;
 
         TextView counterLabel;
@@ -357,16 +359,25 @@ public class DialogActivity extends AppCompatActivity {
 
         void updateCounterRange() {
             final Intent intent = activity.getIntent();
-            min = intent.getIntExtra("min", DEFAULT_MIN);
-            max = intent.getIntExtra("max", DEFAULT_MAX);
 
-            if ((min > max) || (max < min)) {
-                // illegal range
-                inputResult.error = "Invalid min max range!";
-                postCanceledResult();
-                dialog.dismiss();
+            if (intent.hasExtra("input_range")) {
+                int[] values = intent.getIntArrayExtra("input_range");
+                if (values.length != RANGE_LENGTH) {
+                    inputResult.error = "Invalid range! Must be 3 int values!";
+                    postCanceledResult();
+                    dialog.dismiss();
+                } else {
+                    min = Math.min(values[0], values[1]);
+                    max = Math.max(values[0], values[1]);
+                    counter = values[2];
+                }
+            } else {
+                min = DEFAULT_MIN;
+                max = DEFAULT_MAX;
+
+                // halfway
+                counter = (DEFAULT_MAX - DEFAULT_MIN) /  2;
             }
-            counter = min;
             updateLabel();
         }
 

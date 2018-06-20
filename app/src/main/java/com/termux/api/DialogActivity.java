@@ -296,8 +296,10 @@ public class DialogActivity extends AppCompatActivity {
         @Override
         TextView createWidgetView(AppCompatActivity activity) {
             TextView textView = new TextView(activity);
-            // TODO make this an option for the user to set?
-            textView.setText("Confirm");
+            final Intent intent = activity.getIntent();
+
+            String text = intent.hasExtra("input_hint") ? intent.getStringExtra("input_hint") : "Confirm";
+            textView.setText(text);
             return textView;
         }
 

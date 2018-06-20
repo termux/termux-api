@@ -19,7 +19,7 @@ public class AudioAPI {
         final boolean bluetootha2dp = am.isBluetoothA2dpOn();
         final boolean wiredhs = am.isWiredHeadsetOn();
 
-        final int sr, bs, sr_ll, bs_ll, nosr;
+        final int sr, bs, sr_ll, bs_ll, sr_ps, bs_ps, nosr;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             nosr = 0;
             AudioTrack at;
@@ -29,6 +29,7 @@ public class AudioAPI {
             sr = at.getSampleRate();
             bs = at.getBufferSizeInFrames();
             at.release();
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 at = new AudioTrack.Builder()
                     .setBufferSizeInBytes(4) // one 16bit 2ch frame
@@ -46,8 +47,21 @@ public class AudioAPI {
             sr_ll = at.getSampleRate();
             bs_ll = at.getBufferSizeInFrames();
             at.release();
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                at = new AudioTrack.Builder()
+                    .setBufferSizeInBytes(4) // one 16bit 2ch frame
+                    .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_POWER_SAVING)
+                    .build();
+		sr_ps = at.getSampleRate();
+		bs_ps = at.getBufferSizeInFrames();
+		at.release();
+            } else {
+		sr_ps = sr;
+		bs_ps = bs;
+            }
         } else {
-            sr = bs = sr_ll = bs_ll = 0;
+            sr = bs = sr_ll = bs_ll = sr_ps = bs_ps = 0;
             nosr = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
         }
 
@@ -62,6 +76,10 @@ public class AudioAPI {
                     if (sr_ll != sr || bs_ll != bs) { // all or nothing
                         out.name("AUDIOTRACK_SAMPLE_RATE_LOW_LATENCY").value(sr_ll);
                         out.name("AUDIOTRACK_BUFFER_SIZE_IN_FRAMES_LOW_LATENCY").value(bs_ll);
+                    }
+                    if (sr_ps != sr || bs_ps != bs) { // all or nothing
+                        out.name("AUDIOTRACK_SAMPLE_RATE_POWER_SAVING").value(sr_ps);
+                        out.name("AUDIOTRACK_BUFFER_SIZE_IN_FRAMES_POWER_SAVING").value(bs_ps);
                     }
                 } else {
                     out.name("AUDIOTRACK_NATIVE_OUTPUT_SAMPLE_RATE").value(nosr);

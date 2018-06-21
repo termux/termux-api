@@ -725,7 +725,11 @@ public class DialogActivity extends AppCompatActivity {
         @Override
         TextView createWidgetView(AppCompatActivity activity) {
             TextView textView = new TextView(activity);
-            textView.setText("Listening for speech...");
+            final Intent intent = activity.getIntent();
+
+            String text = intent.hasExtra("input_hint") ? intent.getStringExtra("input_hint") : "Listening for speech...";
+
+            textView.setText(text);
             textView.setTextSize(20);
             return textView;
         }

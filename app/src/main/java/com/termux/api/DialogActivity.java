@@ -462,16 +462,25 @@ public class DialogActivity extends AppCompatActivity {
             }
 
             boolean multiLine = intent.getBooleanExtra("multiple_lines", false);
-            String type = intent.hasExtra("input_type") ? intent.getStringExtra("input_type") : "";
+            boolean numeric = intent.getBooleanExtra("numeric", false);
+            boolean password = intent.getBooleanExtra("password", false);
 
             int flags = InputType.TYPE_CLASS_TEXT;
 
-            if (type.equalsIgnoreCase("password")) {
-                flags |= InputType.TYPE_TEXT_VARIATION_PASSWORD;
-            } else if (multiLine) {
+            if (password) {
+                flags = numeric ? (flags | InputType.TYPE_NUMBER_VARIATION_PASSWORD) : (flags | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            }
+
+            if (multiLine) {
                 flags |= InputType.TYPE_TEXT_FLAG_MULTI_LINE;
                 editText.setLines(4);
             }
+
+            if (numeric) {
+                flags &= ~InputType.TYPE_CLASS_TEXT; // clear to allow only numbers
+                flags |= InputType.TYPE_CLASS_NUMBER;
+            }
+
             editText.setInputType(flags);
 
             return editText;

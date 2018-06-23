@@ -611,7 +611,7 @@ public class DialogActivity extends AppCompatActivity {
             layout.setPadding(16, 16, 16, 16);
             layout.setOrientation(LinearLayout.VERTICAL);
 
-            FrameLayout scrollView = new FrameLayout(getContext());
+            ScrollView scrollView = new ScrollView(getContext());
             final String[] values = getInputValues(Objects.requireNonNull(getActivity()).getIntent());
 
             for (final String value : values) {

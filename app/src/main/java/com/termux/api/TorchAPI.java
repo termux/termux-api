@@ -3,6 +3,7 @@ package com.termux.api;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
+import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -13,11 +14,24 @@ import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
 public class TorchAPI {
+    private static Camera legacyCamera;
+
 
     @TargetApi(Build.VERSION_CODES.M)
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         boolean enabled = intent.getBooleanExtra("enabled", false);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            toggleTorch(context, enabled);
+        } else {
+            // use legacy api for pre-marshmallow
+            legacyToggleTorch(enabled);
+        }
+        ResultReturner.noteDone(apiReceiver, intent);
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    private static void toggleTorch(Context context, boolean enabled) {
         try {
             final CameraManager cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
             String torchCameraId = getTorchCameraId(cameraManager);
@@ -30,7 +44,26 @@ public class TorchAPI {
         } catch (CameraAccessException e) {
             TermuxApiLogger.error("Error toggling torch", e);
         }
-        ResultReturner.noteDone(apiReceiver, intent);
+    }
+
+    private static void legacyToggleTorch(boolean enabled) {
+        TermuxApiLogger.info("Using legacy camera api to toggle torch");
+
+        if (legacyCamera == null) {
+            legacyCamera = Camera.open();
+        }
+
+        Camera.Parameters params = legacyCamera.getParameters();
+
+        if (enabled) {
+            params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+            legacyCamera.setParameters(params);
+            legacyCamera.startPreview();
+        } else {
+            legacyCamera.stopPreview();
+            legacyCamera.release();
+            legacyCamera = null;
+        }
     }
 
     private static String getTorchCameraId(CameraManager cameraManager) throws CameraAccessException {

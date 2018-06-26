@@ -17,6 +17,7 @@ import android.speech.SpeechRecognizer;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.BottomSheetDialogFragment;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
 import android.util.JsonWriter;
@@ -611,7 +612,7 @@ public class DialogActivity extends AppCompatActivity {
             layout.setPadding(16, 16, 16, 16);
             layout.setOrientation(LinearLayout.VERTICAL);
 
-            ScrollView scrollView = new ScrollView(getContext());
+            NestedScrollView scrollView = new NestedScrollView(getContext());
             final String[] values = getInputValues(Objects.requireNonNull(getActivity()).getIntent());
 
             for (final String value : values) {

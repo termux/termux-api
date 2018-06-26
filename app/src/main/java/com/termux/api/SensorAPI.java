@@ -93,7 +93,7 @@ public class SensorAPI {
             TermuxApiLogger.info("SensorAPI SensorReaderService onDestroy()");
         }
 
-        protected void cleanup() {
+        protected static void cleanup() {
             if (outputWriter != null && outputWriter.isRunning()) {
                 outputWriter.interrupt();
                 outputWriter = null;
@@ -334,9 +334,15 @@ public class SensorAPI {
                     TermuxApiLogger.error("SensorOutputWriter error", e);
                 }
             });
-            int delay = intent.getIntExtra("delay", 1000);
+
+            int delay = intent.getIntExtra("delay", SensorOutputWriter.DEFAULT_DELAY);
             TermuxApiLogger.info("Delay set to: " + delay);
             outputWriter.setDelay(delay);
+
+            int limit = intent.getIntExtra("limit", SensorOutputWriter.DEFAULT_LIMIT);
+            TermuxApiLogger.info("SensorOutput limit set to: " + limit);
+            outputWriter.setLimit(limit);
+
             return outputWriter;
         }
 
@@ -346,11 +352,15 @@ public class SensorAPI {
          */
         static class SensorOutputWriter extends Thread {
             // delay in milliseconds before posting new sensor reading
-            protected static final int DEFAULT_DELAY = 1000;
+            static final int DEFAULT_DELAY = 1000;
+
+            static final int DEFAULT_LIMIT = Integer.MAX_VALUE;
 
             protected String outputSocketAddress;
             protected boolean isRunning;
             protected int delay;
+            protected int counter;
+            protected int limit;
             protected SocketWriterErrorListener errorListener;
 
 
@@ -375,9 +385,14 @@ public class SensorAPI {
                 this.delay = delay;
             }
 
+            public void setLimit(int limit) {
+                this.limit = limit;
+            }
+
             @Override
             public void run() {
                 isRunning = true;
+                counter = 0;
 
                 try {
                     try (LocalSocket outputSocket = new LocalSocket()) {
@@ -395,6 +410,11 @@ public class SensorAPI {
                                 writer.write(sensorReadout.toString(INDENTATION) + "\n");
                                 writer.flush();
                                 semaphore.release();
+
+                                if (++counter >= limit) {
+                                    TermuxApiLogger.info("SensorOutput limit reached! Performing cleanup");
+                                    cleanup();
+                                }
                             }
                             TermuxApiLogger.info("SensorOutputWriter finished");
                         }

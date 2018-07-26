@@ -54,7 +54,7 @@ import java.util.Objects;
  */
 public class DialogActivity extends AppCompatActivity {
 
-    static boolean resultReturned = false;
+    private boolean resultReturned = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,15 +79,6 @@ public class DialogActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-        if (!resultReturned) {
-            postResult(this, null);
-        }
     }
 
     @Override

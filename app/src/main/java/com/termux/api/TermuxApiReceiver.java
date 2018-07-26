@@ -64,7 +64,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 }
                 break;
             case "Dialog":
-                context.startActivity(new Intent(context, DialogActivity.class).putExtras(intent.getExtras()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                context.startActivity(new Intent(context, DialogActivity.class).putExtras(intent.getExtras()).addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK));
                 break;
             case "Download":
                 DownloadAPI.onReceive(this, context, intent);

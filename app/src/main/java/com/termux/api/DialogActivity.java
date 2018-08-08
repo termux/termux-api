@@ -45,6 +45,7 @@ import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -126,7 +127,14 @@ public class DialogActivity extends AppCompatActivity {
 
                 out.name("code").value(result.code);
                 out.name("text").value(result.text);
-
+                if (result.values.size() > 0) {
+                    out.name("values");
+                    out.beginArray();
+                    for (String value : result.values) {
+                        out.value(value);
+                    }
+                    out.endArray();
+                }
                 if (!result.error.equals("")) {
                     out.name("error").value(result.error);
                 }
@@ -204,6 +212,7 @@ public class DialogActivity extends AppCompatActivity {
         public String text = "";
         public String error = "";
         public int code = 0;
+        public List<String> values = new ArrayList<>();
     }
 
 
@@ -254,15 +263,18 @@ public class DialogActivity extends AppCompatActivity {
         String getResult() {
             int checkBoxCount = widgetView.getChildCount();
 
+            List<String> values = new ArrayList<>();
             StringBuilder sb = new StringBuilder();
             sb.append("[");
 
             for (int j = 0; j < checkBoxCount; ++j) {
                 CheckBox box = widgetView.findViewById(j);
                 if (box.isChecked()) {
+                    values.add(box.getText().toString());
                     sb.append(box.getText().toString()).append(", ");
                 }
             }
+            inputResult.values = values;
             // remove trailing comma and add closing bracket
             return sb.toString().replaceAll(", $", "") + "]";
         }

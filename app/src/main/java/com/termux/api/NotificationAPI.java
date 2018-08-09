@@ -6,15 +6,17 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.UUID;
@@ -93,6 +95,46 @@ public class NotificationAPI {
         notification.setOnlyAlertOnce(alertOnce);
         notification.setWhen(System.currentTimeMillis());
 
+
+
+        String ImagePath = intent.getStringExtra("image-path");
+
+        if(ImagePath != null){
+            File imgFile = new  File(ImagePath);
+            if(imgFile.exists()) {
+                Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+
+                notification.setLargeIcon(myBitmap)
+                    .setStyle(new Notification.BigPictureStyle()
+                    .bigPicture(myBitmap));
+            }
+        }
+
+        String styleType = intent.getStringExtra("type");
+        if(styleType.equals("media")) {
+            String mediaPrevious = intent.getStringExtra("media-previous");
+            String mediaPause = intent.getStringExtra("media-pause");
+            String mediaPlay = intent.getStringExtra("media-play");
+            String mediaNext = intent.getStringExtra("media-next");
+
+            if (mediaPrevious != null && mediaPause != null && mediaPlay != null && mediaNext != null) {
+                notification.setSmallIcon(android.R.drawable.ic_media_play);
+
+                PendingIntent previousIntent = createAction(context, mediaPrevious);
+                PendingIntent pauseIntent = createAction(context, mediaPause);
+                PendingIntent playIntent = createAction(context, mediaPlay);
+                PendingIntent nextIntent = createAction(context, mediaNext);
+
+                notification.addAction(new Notification.Action(android.R.drawable.ic_media_previous, "previous", previousIntent));
+                notification.addAction(new Notification.Action(android.R.drawable.ic_media_pause, "pause", pauseIntent));
+                notification.addAction(new Notification.Action(android.R.drawable.ic_media_play, "play", playIntent));
+                notification.addAction(new Notification.Action(android.R.drawable.ic_media_next, "next", nextIntent));
+
+                notification.setStyle(new Notification.MediaStyle()
+                    .setShowActionsInCompactView(0, 1, 3));
+            }
+        }
+
         if (groupKey != null) notification.setGroup(groupKey);
 
         if (ledColor != 0) {
@@ -116,16 +158,7 @@ public class NotificationAPI {
         notification.setAutoCancel(true);
 
         if (actionExtra != null) {
-            String[] arguments = new String[]{"-c", actionExtra};
-            Uri executeUri = new Uri.Builder().scheme("com.termux.file")
-                    .path(BIN_SH)
-                    .appendQueryParameter("arguments", Arrays.toString(arguments))
-                    .build();
-            Intent executeIntent = new Intent(ACTION_EXECUTE, executeUri);
-            executeIntent.setClassName("com.termux", TERMUX_SERVICE);
-            executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
-            executeIntent.putExtra(EXTRA_ARGUMENTS, arguments);
-            PendingIntent pi = PendingIntent.getService(context, 0, executeIntent, 0);
+            PendingIntent pi = createAction(context, actionExtra);
             notification.setContentIntent(pi);
         }
 
@@ -133,32 +166,14 @@ public class NotificationAPI {
             String buttonText = intent.getStringExtra("button_text_" + button);
             String buttonAction = intent.getStringExtra("button_action_" + button);
             if (buttonText != null && buttonAction != null) {
-                String[] arguments = new String[]{"-c", buttonAction};
-                Uri executeUri = new Uri.Builder().scheme("com.termux.file")
-                        .path(BIN_SH)
-                        .appendQueryParameter("arguments", Arrays.toString(arguments))
-                        .build();
-                Intent executeIntent = new Intent(ACTION_EXECUTE, executeUri);
-                executeIntent.setClassName("com.termux", TERMUX_SERVICE);
-                executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
-                executeIntent.putExtra(EXTRA_ARGUMENTS, arguments);
-                PendingIntent pi = PendingIntent.getService(context, 0, executeIntent, 0);
+                PendingIntent pi = createAction(context, buttonAction);
                 notification.addAction(new Notification.Action(android.R.drawable.ic_input_add, buttonText, pi));
             }
         }
 
         String onDeleteActionExtra = intent.getStringExtra("on_delete_action");
         if (onDeleteActionExtra != null) {
-            String[] arguments = new String[]{"-c", onDeleteActionExtra};
-            Uri executeUri = new Uri.Builder().scheme("com.termux.file")
-                    .path(BIN_SH)
-                    .appendQueryParameter("arguments", Arrays.toString(arguments))
-                    .build();
-            Intent executeIntent = new Intent(ACTION_EXECUTE, executeUri);
-            executeIntent.setClassName("com.termux", TERMUX_SERVICE);
-            executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
-            executeIntent.putExtra(EXTRA_ARGUMENTS, arguments);
-            PendingIntent pi = PendingIntent.getService(context, 0, executeIntent, 0);
+            PendingIntent pi = createAction(context, onDeleteActionExtra);
             notification.setDeleteIntent(pi);
         }
 
@@ -198,4 +213,17 @@ public class NotificationAPI {
         }
     }
 
+    static PendingIntent createAction(final Context context, String action){
+        String[] arguments = new String[]{"-c", action};
+        Uri executeUri = new Uri.Builder().scheme("com.termux.file")
+                .path(BIN_SH)
+                .appendQueryParameter("arguments", Arrays.toString(arguments))
+                .build();
+        Intent executeIntent = new Intent(ACTION_EXECUTE, executeUri);
+        executeIntent.setClassName("com.termux", TERMUX_SERVICE);
+        executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
+        executeIntent.putExtra(EXTRA_ARGUMENTS, arguments);
+        PendingIntent pi = PendingIntent.getService(context, 0, executeIntent, 0);
+        return pi;
+    }
 }

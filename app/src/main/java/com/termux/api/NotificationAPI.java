@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
@@ -72,6 +73,8 @@ public class NotificationAPI {
 
         long[] vibratePattern = intent.getLongArrayExtra("vibrate");
         boolean useSound = intent.getBooleanExtra("sound", false);
+        boolean ongoing = intent.getBooleanExtra("ongoing", false);
+        boolean alertOnce = intent.getBooleanExtra("alert-once", true);
 
         String actionExtra = intent.getStringExtra("action");
 
@@ -79,12 +82,18 @@ public class NotificationAPI {
         if (id == null) id = UUID.randomUUID().toString();
         final String notificationId = id;
 
+        String groupKey = intent.getStringExtra("group");
+
         final Notification.Builder notification = new Notification.Builder(context);
         notification.setSmallIcon(R.drawable.ic_event_note_black_24dp);
         notification.setColor(0xFF000000);
         notification.setContentTitle(title);
         notification.setPriority(priority);
+        notification.setOngoing(ongoing);
+        notification.setOnlyAlertOnce(alertOnce);
         notification.setWhen(System.currentTimeMillis());
+
+        if (groupKey != null) notification.setGroup(groupKey);
 
         if (ledColor != 0) {
             notification.setLights(ledColor, ledOnMs, ledOffMs);

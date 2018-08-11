@@ -19,6 +19,7 @@ import com.termux.api.util.TermuxApiLogger;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.UUID;
 
 public class NotificationAPI {
@@ -111,7 +112,7 @@ public class NotificationAPI {
         }
 
         String styleType = intent.getStringExtra("type");
-        if(styleType.equals("media")) {
+        if(Objects.equals(styleType, "media")) {
             String mediaPrevious = intent.getStringExtra("media-previous");
             String mediaPause = intent.getStringExtra("media-pause");
             String mediaPlay = intent.getStringExtra("media-play");

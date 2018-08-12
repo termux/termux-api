@@ -1,7 +1,9 @@
 package com.termux.api;
 
 import android.Manifest;
+import android.app.Notification;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -96,6 +98,17 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "MicRecorder":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.RECORD_AUDIO)) {
                     MicRecorderAPI.onReceive(context, intent);
+                }
+                break;
+            case "NotificationList":
+                ComponentName cn = new ComponentName(context, NotificationService.class);
+                String flat = Settings.Secure.getString(context.getContentResolver(), "enabled_notification_listeners");
+                final boolean NotificationServiceEnabled = flat != null && flat.contains(cn.flattenToString());
+                if (!NotificationServiceEnabled) {
+                    Toast.makeText(context,"Please give Termux:API Notification Access", Toast.LENGTH_LONG).show();
+                    context.startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+                } else {
+                    NotificationListAPI.onReceive(this, context, intent);
                 }
                 break;
             case "Notification":

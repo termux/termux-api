@@ -50,7 +50,7 @@ public class SmsInboxAPI {
     public static void getAllSms(Context context, JsonWriter out, int offset, int limit) throws IOException {
         ContentResolver cr = context.getContentResolver();
         String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
-        try (Cursor c = cr.query(Telephony.Sms.Inbox.CONTENT_URI, null, null, null, sortOrder)) {
+        try (Cursor c = cr.query(Telephony.Sms.CONTENT_URI, null, null, null, sortOrder)) {
 
             c.moveToLast();
 

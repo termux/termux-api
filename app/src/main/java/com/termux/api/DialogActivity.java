@@ -45,6 +45,7 @@ import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -419,6 +420,18 @@ public class DialogActivity extends AppCompatActivity {
             Calendar calendar = Calendar.getInstance();
             calendar.set(year, month, day, 0, 0, 0);
 
+            final Intent intent = activity.getIntent();
+            if (intent.hasExtra("date_format")) {
+                String date_format = intent.getStringExtra("date_format");
+                try {
+                    SimpleDateFormat dateFormat = new SimpleDateFormat(date_format);
+                    dateFormat.setTimeZone(calendar.getTimeZone());
+                    return dateFormat.format(calendar.getTime());
+                } catch (Exception e) {
+                    inputResult.error = e.toString();
+                    postCanceledResult();
+                }
+            }
             return calendar.getTime().toString();
         }
 

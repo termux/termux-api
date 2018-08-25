@@ -20,16 +20,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Call with
- * <p/>
- * <pre>
- * $ am broadcast --user 0 -n net.aterm.extras/.SmsLister
- *
- * Broadcasting: Intent { cmp=net.aterm.extras/.SmsLister }
- * Broadcast completed: result=13, data="http://fornwall.net"
- * </pre>
- */
 public class SmsInboxAPI {
 
     private static final String[] DISPLAY_NAME_PROJECTION = {PhoneLookup.DISPLAY_NAME};
@@ -37,20 +27,21 @@ public class SmsInboxAPI {
     static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
         final int offset = intent.getIntExtra("offset", 0);
         final int limit = intent.getIntExtra("limit", 50);
+        final Uri contentURI = typeToContentURI(intent.getIntExtra("type", TextBasedSmsColumns.MESSAGE_TYPE_INBOX));
 
         ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
-                getAllSms(context, out, offset, limit);
+                getAllSms(context, out, offset, limit, contentURI);
             }
         });
     }
 
     @SuppressLint("SimpleDateFormat")
-    public static void getAllSms(Context context, JsonWriter out, int offset, int limit) throws IOException {
+    public static void getAllSms(Context context, JsonWriter out, int offset, int limit, Uri contentURI) throws IOException {
         ContentResolver cr = context.getContentResolver();
         String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
-        try (Cursor c = cr.query(Telephony.Sms.Inbox.CONTENT_URI, null, null, null, sortOrder)) {
+        try (Cursor c = cr.query(contentURI, null, null, null, sortOrder)) {
 
             c.moveToLast();
 
@@ -59,7 +50,7 @@ public class SmsInboxAPI {
 
             out.beginArray();
             for (int i = 0, count = c.getCount(); i < count; i++) {
-                // String smsId = c.getString(c.getColumnIndexOrThrow(Telephony.Sms.Inbox._ID));
+                int threadID = c.getInt(c.getColumnIndexOrThrow(TextBasedSmsColumns.THREAD_ID));
                 String smsAddress = c.getString(c.getColumnIndexOrThrow(TextBasedSmsColumns.ADDRESS));
                 String smsBody = c.getString(c.getColumnIndexOrThrow(TextBasedSmsColumns.BODY));
                 boolean read = (c.getInt(c.getColumnIndex(TextBasedSmsColumns.READ)) != 0);
@@ -67,8 +58,11 @@ public class SmsInboxAPI {
                 // long smsSentDate = c.getLong(c.getColumnIndexOrThrow(TextBasedSmsColumns.DATE_SENT));
 
                 String smsSenderName = getContactNameFromNumber(nameCache, context, smsAddress);
+                String messageType = getMessageType(c.getInt(c.getColumnIndexOrThrow(TextBasedSmsColumns.TYPE)));
 
                 out.beginObject();
+                out.name("threadid").value(threadID);
+                out.name("type").value(messageType);
                 out.name("read").value(read);
 
                 if (smsSenderName != null) {
@@ -101,5 +95,40 @@ public class SmsInboxAPI {
             return name;
         }
     }
+
+    private static String getMessageType(int type) {
+        switch (type)
+        {
+            case TextBasedSmsColumns.MESSAGE_TYPE_INBOX:
+                return "inbox";
+            case TextBasedSmsColumns.MESSAGE_TYPE_SENT:
+                return "sent";
+            case TextBasedSmsColumns.MESSAGE_TYPE_DRAFT:
+                return "draft";
+            case TextBasedSmsColumns.MESSAGE_TYPE_FAILED:
+                return "failed";
+            case TextBasedSmsColumns.MESSAGE_TYPE_OUTBOX:
+                return "outbox";
+            default:
+                return "";
+        }
+    }
+
+    private static Uri typeToContentURI(int type) {
+        switch (type) {
+            case TextBasedSmsColumns.MESSAGE_TYPE_ALL:
+                return Telephony.Sms.CONTENT_URI;
+            case TextBasedSmsColumns.MESSAGE_TYPE_SENT:
+                return Telephony.Sms.Sent.CONTENT_URI;
+            case TextBasedSmsColumns.MESSAGE_TYPE_DRAFT:
+                return Telephony.Sms.Draft.CONTENT_URI;
+            case TextBasedSmsColumns.MESSAGE_TYPE_OUTBOX:
+                return Telephony.Sms.Outbox.CONTENT_URI;
+            case TextBasedSmsColumns.MESSAGE_TYPE_INBOX:
+            default:
+                return Telephony.Sms.Inbox.CONTENT_URI;
+        }
+    }
+
 
 }

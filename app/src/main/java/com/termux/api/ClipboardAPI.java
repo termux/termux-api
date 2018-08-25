@@ -33,14 +33,14 @@ public class ClipboardAPI {
                     @Override
                     public void writeResult(PrintWriter out) {
                         if (clipData == null) {
-                            out.println();
+                            out.print("");
                         } else {
                             int itemCount = clipData.getItemCount();
                             for (int i = 0; i < itemCount; i++) {
                                 Item item = clipData.getItemAt(i);
                                 CharSequence text = item.coerceToText(context);
                                 if (!TextUtils.isEmpty(text)) {
-                                    out.println(text);
+                                    out.print(text);
                                 }
                             }
                         }
@@ -60,14 +60,14 @@ public class ClipboardAPI {
                     if (newClipText == null) {
                         // Get clip.
                         if (clipData == null) {
-                            out.println();
+                            out.print("");
                         } else {
                             int itemCount = clipData.getItemCount();
                             for (int i = 0; i < itemCount; i++) {
                                 Item item = clipData.getItemAt(i);
                                 CharSequence text = item.coerceToText(context);
                                 if (!TextUtils.isEmpty(text)) {
-                                    out.println(text);
+                                    out.print(text);
                                 }
                             }
                         }

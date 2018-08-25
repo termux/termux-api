@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
 
     defaultConfig {
         applicationId "com.termux.api"
         minSdkVersion 21
-        targetSdkVersion 27
-        versionCode 26
-        versionName "0.26"
+        targetSdkVersion 28
+        versionCode 27
+        versionName "0.27"
     }
 
     buildTypes {

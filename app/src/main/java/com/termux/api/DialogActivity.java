@@ -45,6 +45,7 @@ import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
 
+import java.util.ArrayList;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
@@ -127,7 +128,20 @@ public class DialogActivity extends AppCompatActivity {
 
                 out.name("code").value(result.code);
                 out.name("text").value(result.text);
-
+                if(result.index > -1) {
+                    out.name("index").value(result.index);
+                }
+                if (result.values.size() > 0) {
+                    out.name("values");
+                    out.beginArray();
+                    for (Value value : result.values) {
+                        out.beginObject();
+                        out.name("index").value(value.index);
+                        out.name("text").value(value.text);
+                        out.endObject();
+                    }
+                    out.endArray();
+                }
                 if (!result.error.equals("")) {
                     out.name("error").value(result.error);
                 }
@@ -205,8 +219,15 @@ public class DialogActivity extends AppCompatActivity {
         public String text = "";
         public String error = "";
         public int code = 0;
+        public static int index = -1;
+        public List<Value> values = new ArrayList<>();
     }
 
+
+    public static class Value {
+        public int index = -1;
+        public String text = "";
+    }
 
     /**
      * --------------------------------------
@@ -255,15 +276,21 @@ public class DialogActivity extends AppCompatActivity {
         String getResult() {
             int checkBoxCount = widgetView.getChildCount();
 
+            List<Value> values = new ArrayList<>();
             StringBuilder sb = new StringBuilder();
             sb.append("[");
 
             for (int j = 0; j < checkBoxCount; ++j) {
                 CheckBox box = widgetView.findViewById(j);
                 if (box.isChecked()) {
+                    Value value = new Value();
+                    value.index = j;
+                    value.text = box.getText().toString();
+                    values.add(value);
                     sb.append(box.getText().toString()).append(", ");
                 }
             }
+            inputResult.values = values;
             // remove trailing comma and add closing bracket
             return sb.toString().replaceAll(", $", "") + "]";
         }
@@ -563,6 +590,7 @@ public class DialogActivity extends AppCompatActivity {
         String getResult() {
             int radioIndex = radioGroup.indexOfChild(widgetView.findViewById(radioGroup.getCheckedRadioButtonId()));
             RadioButton radioButton = (RadioButton) radioGroup.getChildAt(radioIndex);
+            InputResult.index = radioIndex;
             return (radioButton != null) ? radioButton.getText().toString() : "";
         }
     }
@@ -619,9 +647,10 @@ public class DialogActivity extends AppCompatActivity {
             NestedScrollView scrollView = new NestedScrollView(getContext());
             final String[] values = getInputValues(Objects.requireNonNull(getActivity()).getIntent());
 
-            for (final String value : values) {
+            for (int i = 0; i < values.length; ++i) {
+                final int j = i;
                 final TextView textView = new TextView(getContext());
-                textView.setText(value);
+                textView.setText(values[j]);
                 textView.setTextSize(20);
                 textView.setPadding(56, 56, 56, 56);
                 textView.setOnClickListener(new View.OnClickListener() {
@@ -629,7 +658,8 @@ public class DialogActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View view) {
                         InputResult result = new InputResult();
-                        result.text = value;
+                        result.text = values[j];
+                        result.index = j;
                         dialog.dismiss();
                         resultListener.onResult(result);
                     }
@@ -700,6 +730,7 @@ public class DialogActivity extends AppCompatActivity {
 
         @Override
         String getResult() {
+            InputResult.index = widgetView.getSelectedItemPosition();
             return widgetView.getSelectedItem().toString();
         }
 

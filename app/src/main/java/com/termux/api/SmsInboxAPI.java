@@ -20,16 +20,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Call with
- * <p/>
- * <pre>
- * $ am broadcast --user 0 -n net.aterm.extras/.SmsLister
- *
- * Broadcasting: Intent { cmp=net.aterm.extras/.SmsLister }
- * Broadcast completed: result=13, data="http://fornwall.net"
- * </pre>
- */
 public class SmsInboxAPI {
 
     private static final String[] DISPLAY_NAME_PROJECTION = {PhoneLookup.DISPLAY_NAME};

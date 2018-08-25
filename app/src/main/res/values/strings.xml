@@ -5,4 +5,9 @@
     <string name="grant_permission">Grant permission</string>
 
     <string name="permission_description">Termux:API needs the following permission(s):\n</string>
+    <string name="learn_more">Learn more</string>
+    <string name="version">Termux:API - Version: %1$s</string>
+    <string name="tools_missing">The required \'termux-api\' package is missing! Please install it to use Termux:API functionality</string>
+    <string name="update_tools">Termux:API was updated and may have an update to the \'termux-api\' package</string>
+    <string name="no_update_reminder">Don\'t remind me to update again</string>
 </resources>

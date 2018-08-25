@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:orientation="vertical"
+android:padding="16dp">
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:lineSpacingMultiplier="1.5"
+        android:padding="8dp"
+        android:text="@string/update_tools"
+        android:textAlignment="center"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/updateButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="updateButtonClicked"
+        android:padding="8dp"
+        android:text="pkg update"
+        android:textAlignment="center"
+        android:textAllCaps="false"
+        android:typeface="monospace"
+        tools:ignore="HardcodedText" />
+
+    <CheckBox
+        android:id="@+id/checkBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
+        android:onClick="remindMeCheckBoxClicked"
+        android:padding="8dp"
+        android:text="@string/no_update_reminder" />
+
+    <TextView
+    android:id="@+id/learnMoreTextView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:clickable="true"
+    android:onClick="learnMoreButtonClicked"
+    android:padding="8dp"
+    android:text="@string/learn_more"
+    android:textAlignment="center"
+    android:textColor="@color/link"
+    android:textSize="16sp"
+    android:focusable="true" />
+</LinearLayout>

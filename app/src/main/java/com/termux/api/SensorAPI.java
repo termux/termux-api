@@ -177,7 +177,7 @@ public class SensorAPI {
         }
 
 
-        /**
+        /*
          * -----
          * Sensor Command Handlers
          * -----

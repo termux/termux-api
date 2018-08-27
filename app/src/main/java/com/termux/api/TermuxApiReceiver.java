@@ -1,7 +1,6 @@
 package com.termux.api;
 
 import android.Manifest;
-import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;

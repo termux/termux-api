@@ -42,11 +42,10 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
 
-import java.util.ArrayList;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -229,7 +228,7 @@ public class DialogActivity extends AppCompatActivity {
         public String text = "";
     }
 
-    /**
+    /*
      * --------------------------------------
      * InputMethod Implementations
      * --------------------------------------

@@ -22,7 +22,20 @@ public class ClipboardAPI {
         if (version2) {
             boolean set = intent.getBooleanExtra("set", false);
             if (set) {
-                ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
+                ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithInput() {
+                    protected String inputString;
+                    
+                    @Override
+                    public void setInput(InputStream inputStream) throws Exception {
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        byte[] buffer = new byte[1024];
+                        int l;
+                        while ((l = inputStream.read(buffer)) > 0) {
+                            baos.write(buffer, 0, l);
+                        }
+                        inputString = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                    }
+
                     @Override
                     public void writeResult(PrintWriter out) throws Exception {
                         clipboard.setPrimaryClip(ClipData.newPlainText("", inputString));

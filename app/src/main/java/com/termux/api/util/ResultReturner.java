@@ -49,6 +49,10 @@ public abstract class ResultReturner {
     public static abstract class WithStringInput extends WithInput {
         protected String inputString;
 
+        protected boolean trimInput() {
+            return true;
+        }
+
         @Override
         public final void setInput(InputStream inputStream) throws Exception {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -57,7 +61,8 @@ public abstract class ResultReturner {
             while ((l = inputStream.read(buffer)) > 0) {
                 baos.write(buffer, 0, l);
             }
-            inputString = new String(baos.toByteArray(), StandardCharsets.UTF_8).trim();
+            inputString = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+            if (trimInput()) inputString = inputString.trim();
         }
     }
 

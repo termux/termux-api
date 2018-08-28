@@ -24,7 +24,12 @@ public class ClipboardAPI {
             if (set) {
                 ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
                     @Override
-                    public void writeResult(PrintWriter out) throws Exception {
+                    protected boolean trimInput() {
+                        return false;
+                    }
+
+                    @Override
+                    public void writeResult(PrintWriter out) {
                         clipboard.setPrimaryClip(ClipData.newPlainText("", inputString));
                     }
                 });

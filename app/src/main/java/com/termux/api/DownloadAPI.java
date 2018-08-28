@@ -16,7 +16,7 @@ public class DownloadAPI {
     static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         ResultReturner.returnData(apiReceiver, intent, new ResultWriter() {
             @Override
-            public void writeResult(PrintWriter out) throws Exception {
+            public void writeResult(PrintWriter out) {
                 final Uri downloadUri = intent.getData();
                 if (downloadUri == null) {
                     out.println("No download URI specified");

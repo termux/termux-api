@@ -1,5 +1,6 @@
 package com.termux.api;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.location.LocationManager;
@@ -19,6 +20,7 @@ public class WifiAPI {
 
     static void onReceiveWifiConnectionInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+            @SuppressLint("HardwareIds")
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 WifiManager manager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -35,7 +37,7 @@ public class WifiAPI {
                     out.name("mac_address").value(info.getMacAddress());
                     out.name("network_id").value(info.getNetworkId());
                     out.name("rssi").value(info.getRssi());
-                    out.name("ssid").value(info.getSSID().replaceAll("\\\"", ""));
+                    out.name("ssid").value(info.getSSID().replaceAll("\"", ""));
                     out.name("ssid_hidden").value(info.getHiddenSSID());
                     out.name("supplicant_state").value(info.getSupplicantState().toString());
                 }

@@ -1,5 +1,6 @@
 package com.termux.api;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -110,6 +111,7 @@ public class TelephonyAPI {
 
     static void onReceiveTelephonyDeviceInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+            @SuppressLint("HardwareIds")
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 TelephonyManager manager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);

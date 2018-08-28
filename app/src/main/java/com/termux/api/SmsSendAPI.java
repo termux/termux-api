@@ -14,7 +14,7 @@ public class SmsSendAPI {
     static void onReceive(TermuxApiReceiver apiReceiver, final Intent intent) {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
             @Override
-            public void writeResult(PrintWriter out) throws Exception {
+            public void writeResult(PrintWriter out) {
                 final SmsManager smsManager = SmsManager.getDefault();
                 String[] recipients = intent.getStringArrayExtra("recipients");
 

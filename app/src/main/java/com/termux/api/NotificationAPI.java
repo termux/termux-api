@@ -180,7 +180,7 @@ public class NotificationAPI {
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
             @Override
-            public void writeResult(PrintWriter out) throws Exception {
+            public void writeResult(PrintWriter out) {
                 NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
                 if (!TextUtils.isEmpty(inputString)) {
@@ -224,7 +224,6 @@ public class NotificationAPI {
         executeIntent.setClassName("com.termux", TERMUX_SERVICE);
         executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
         executeIntent.putExtra(EXTRA_ARGUMENTS, arguments);
-        PendingIntent pi = PendingIntent.getService(context, 0, executeIntent, 0);
-        return pi;
+        return PendingIntent.getService(context, 0, executeIntent, 0);
     }
 }

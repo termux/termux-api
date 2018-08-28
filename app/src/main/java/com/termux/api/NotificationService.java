@@ -6,8 +6,7 @@ public class NotificationService extends NotificationListenerService {
     static NotificationService _this;
 
     public static NotificationService get() {
-        NotificationService ret = _this;
-        return ret;
+        return _this;
     }
 
     @Override

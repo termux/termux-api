@@ -22,7 +22,7 @@ public class StorageGetAPI {
     static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
             @Override
-            public void writeResult(PrintWriter out) throws Exception {
+            public void writeResult(PrintWriter out) {
                 final String fileExtra = intent.getStringExtra("file");
                 if (fileExtra == null || !new File(fileExtra).getParentFile().canWrite()) {
                     out.println("ERROR: Not a writable folder: " + fileExtra);

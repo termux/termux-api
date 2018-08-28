@@ -22,8 +22,6 @@ public class MediaPlayerAPI {
 
     /**
      * Starts our PlayerService
-     * @param context
-     * @param intent
      */
     static void onReceive(final Context context, final Intent intent) {
         // Create intent for starting our player service and make sure
@@ -38,8 +36,6 @@ public class MediaPlayerAPI {
     /**
      * Converts time in seconds to a formatted time string: HH:MM:SS
      * Hours will not be included if it is 0
-     * @param totalSeconds
-     * @return
      */
     public static String getTimeString(int totalSeconds) {
         int hours = (totalSeconds / 3600);
@@ -73,7 +69,6 @@ public class MediaPlayerAPI {
 
         /**
          * Returns our MediaPlayer instance and ensures it has all the necessary callbacks
-         * @return
          */
         protected MediaPlayer getMediaPlayer() {
             if (mediaPlayer == null) {
@@ -88,10 +83,6 @@ public class MediaPlayerAPI {
 
         /**
          * What we received from TermuxApiReceiver but now within this service
-         * @param intent
-         * @param flags
-         * @param startId
-         * @return
          */
         public int onStartCommand(Intent intent, int flags, int startId) {
             String command = intent.getAction();
@@ -166,16 +157,13 @@ public class MediaPlayerAPI {
 
         /**
          * Returns result of executing a media command to termux
-         * @param context
-         * @param intent
-         * @param result
          */
         protected static void postMediaCommandResult(final Context context, final Intent intent,
                                                      final MediaCommandResult result) {
 
             ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
                 @Override
-                public void writeResult(PrintWriter out) throws Exception {
+                public void writeResult(PrintWriter out) {
                     out.append(result.message + "\n");
                     if (result.error != null) {
                         out.append(result.error + "\n");
@@ -263,8 +251,6 @@ public class MediaPlayerAPI {
 
         /**
          * Creates string showing current position in active track
-         * @param player
-         * @return
          */
         protected static String getPlaybackPositionString(MediaPlayer player) {
             int duration = player.getDuration() / 1000;

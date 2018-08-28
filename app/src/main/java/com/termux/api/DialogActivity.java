@@ -94,8 +94,6 @@ public class DialogActivity extends AppCompatActivity {
 
     /**
      * Extract value extras from intent into String array
-     * @param intent
-     * @return
      */
     static String[] getInputValues(Intent intent) {
         String[] items = new String[] { };
@@ -115,8 +113,6 @@ public class DialogActivity extends AppCompatActivity {
 
     /**
      * Writes the InputResult to the console
-     * @param context
-     * @param result
      */
     protected void postResult(final Context context, final InputResult result) {
         ResultReturner.returnData(context, getIntent(), new ResultReturner.ResultJsonWriter() {
@@ -692,7 +688,6 @@ public class DialogActivity extends AppCompatActivity {
 
         /**
          * Checks to see if foreground application is Termux
-         * @return
          */
         protected boolean isCurrentAppTermux() {
             final ActivityManager activityManager = (ActivityManager) Objects.requireNonNull(getContext()).getSystemService(Context.ACTIVITY_SERVICE);
@@ -834,7 +829,6 @@ public class DialogActivity extends AppCompatActivity {
 
                 /**
                  * Get string description for error code
-                 * @param error
                  */
                 @Override
                 public void onError(int error) {
@@ -956,9 +950,6 @@ public class DialogActivity extends AppCompatActivity {
 
         /**
          * Places our generic widget view type inside a FrameLayout
-         * @param activity
-         * @param view
-         * @return
          */
         View getLayoutView(AppCompatActivity activity, T view) {
             FrameLayout layout = getFrameLayout(activity);
@@ -998,9 +989,6 @@ public class DialogActivity extends AppCompatActivity {
 
         /**
          * Creates a dialog builder to initialize a dialog w/ a view and button click listeners
-         * @param activity
-         * @param clickListener
-         * @return
          */
         AlertDialog.Builder getDialogBuilder(AppCompatActivity activity, DialogInterface.OnClickListener clickListener) {
             final Intent intent = activity.getIntent();
@@ -1029,8 +1017,6 @@ public class DialogActivity extends AppCompatActivity {
 
         /**
          * Create a basic frame layout that will add a margin around our main widget view
-         * @param activity
-         * @return
          */
         FrameLayout getFrameLayout(AppCompatActivity activity) {
             FrameLayout layout = new FrameLayout(activity);
@@ -1046,8 +1032,6 @@ public class DialogActivity extends AppCompatActivity {
 
         /**
          * Returns an InputResult containing code of our button and the text if we hit OK
-         * @param button
-         * @return
          */
         InputResult onDialogClick(int button) {
             // receive indication of whether the OK or CANCEL button is clicked

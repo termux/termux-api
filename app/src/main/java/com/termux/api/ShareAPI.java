@@ -52,7 +52,7 @@ public class ShareAPI {
             // Read text to share from stdin.
             ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
                 @Override
-                public void writeResult(PrintWriter out) throws Exception {
+                public void writeResult(PrintWriter out) {
                     if (TextUtils.isEmpty(inputString)) {
                         out.println("Error: Nothing to share");
                         return;
@@ -74,7 +74,7 @@ public class ShareAPI {
             // Share specified file.
             ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
                 @Override
-                public void writeResult(PrintWriter out) throws Exception {
+                public void writeResult(PrintWriter out) {
                     final File fileToShare = new File(fileExtra);
                     if (!(fileToShare.isFile() && fileToShare.canRead())) {
                         out.println("ERROR: Not a readable file: '" + fileToShare.getAbsolutePath() + "'");

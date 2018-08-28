@@ -66,8 +66,6 @@ public class FingerprintAPI {
 
     /**
      * Handles setup of fingerprint sensor and writes Fingerprint result to console
-     * @param context
-     * @param intent
      */
     static void onReceive(final Context context, final Intent intent) {
         resetFingerprintResult();
@@ -92,9 +90,6 @@ public class FingerprintAPI {
 
     /**
      * Writes the result of our fingerprint result to the console
-     * @param context
-     * @param intent
-     * @param result
      */
     protected static void postFingerprintResult(Context context, Intent intent, final FingerprintResult result) {
         ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
@@ -123,8 +118,6 @@ public class FingerprintAPI {
 
     /**
      * Ensure that we have a fingerprint sensor and that the user has already enrolled fingerprints
-     * @param fingerprintManager
-     * @return
      */
     @TargetApi(Build.VERSION_CODES.M)
     protected static boolean validateFingerprintSensor(Context context, FingerprintManager fingerprintManager) {
@@ -186,10 +179,6 @@ public class FingerprintAPI {
 
         /**
          * Handles authentication callback from our fingerprint sensor
-         * @param context
-         * @param intent
-         * @param fingerprintManager
-         * @param cipher
          */
         protected static void authenticateWithFingerprint(final Context context, final Intent intent, final FingerprintManager fingerprintManager, Cipher cipher) {
             FingerprintManager.AuthenticationCallback authenticationCallback = new FingerprintManager.AuthenticationCallback() {
@@ -237,9 +226,6 @@ public class FingerprintAPI {
         /**
          * Adds a timeout for our fingerprint sensor which will force a result return if we
          * haven't already received one
-         * @param context
-         * @param intent
-         * @param cancellationSignal
          */
         protected static void addSensorTimeout(final Context context, final Intent intent, final CancellationSignal cancellationSignal) {
             final Handler timeoutHandler = new Handler(Looper.getMainLooper());
@@ -255,10 +241,6 @@ public class FingerprintAPI {
             }, SENSOR_TIMEOUT);
         }
 
-        /**
-         * Generates our key
-         * @param keyStore
-         */
         protected static void generateKey(KeyStore keyStore) {
             try {
                 KeyGenerator keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE_NAME);
@@ -280,7 +262,6 @@ public class FingerprintAPI {
 
         /**
          * Create the cipher needed for use with our SecretKey
-         * @return
          */
         protected static Cipher getCipher() {
             Cipher cipher = null;
@@ -313,7 +294,6 @@ public class FingerprintAPI {
 
     /**
      * Add an error to our fingerprint result
-     * @param error
      */
     protected static void appendFingerprintError(String error) {
         fingerprintResult.errors.add(error);
@@ -321,7 +301,6 @@ public class FingerprintAPI {
 
     /**
      * Set the final result of our authentication
-     * @param authResult
      */
     protected static void setAuthResult(String authResult) {
         fingerprintResult.authResult = authResult;

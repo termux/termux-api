@@ -21,13 +21,13 @@ public class ToastAPI {
         final int durationExtra = intent.getBooleanExtra("short", false) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
         final int backgroundColor = getColorExtra(intent, "background", Color.GRAY);
         final int textColor = getColorExtra(intent, "text_color", Color.WHITE);
-        final int gravity = getGravityExtra(intent, Gravity.CENTER);
+        final int gravity = getGravityExtra(intent);
 
         final Handler handler = new Handler();
 
         ResultReturner.returnData(context, intent, new ResultReturner.WithStringInput() {
             @Override
-            public void writeResult(PrintWriter out) throws Exception {
+            public void writeResult(PrintWriter out) {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -63,14 +63,14 @@ public class ToastAPI {
         return color;
     }
 
-    protected static int getGravityExtra(Intent intent, int defaultGravity) {
+    protected static int getGravityExtra(Intent intent) {
         String extraGravity = intent.getStringExtra("gravity");
 
         switch (extraGravity == null ? "" : extraGravity) {
             case "top": return Gravity.TOP;
             case "middle": return Gravity.CENTER;
             case "bottom": return Gravity.BOTTOM;
-            default: return defaultGravity;
+            default: return Gravity.CENTER;
         }
     }
 

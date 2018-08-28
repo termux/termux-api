@@ -94,7 +94,7 @@ public class TextToSpeechAPI {
 
             ResultReturner.returnData(this, intent, new ResultReturner.WithInput() {
                 @Override
-                public void writeResult(PrintWriter out) throws Exception {
+                public void writeResult(PrintWriter out) {
 
                     try {
                         try {

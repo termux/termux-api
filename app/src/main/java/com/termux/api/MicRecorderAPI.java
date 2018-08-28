@@ -30,8 +30,6 @@ public class MicRecorderAPI {
 
     /**
      * Starts our MicRecorder service
-     * @param context
-     * @param intent
      */
     static void onReceive(final Context context, final Intent intent) {
         Intent recorderService = new Intent(context, MicRecorderService.class);
@@ -109,7 +107,6 @@ public class MicRecorderAPI {
 
         /**
          * Returns our MediaPlayer instance and ensures it has all the necessary callbacks
-         * @return
          */
         protected MediaRecorder getMediaRecorder() {
             if (mediaRecorder == null) {

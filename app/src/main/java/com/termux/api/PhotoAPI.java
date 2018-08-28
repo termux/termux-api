@@ -43,7 +43,7 @@ public class PhotoAPI {
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
             @Override
-            public void writeResult(PrintWriter stdout) throws Exception {
+            public void writeResult(PrintWriter stdout) {
                 if (!(outputDir.isDirectory() || outputDir.mkdirs())) {
                     stdout.println("Not a folder (and unable to create it): " + outputDir.getAbsolutePath());
                 } else {

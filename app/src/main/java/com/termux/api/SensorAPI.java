@@ -31,8 +31,6 @@ public class SensorAPI {
 
     /**
      * Starts our SensorReader service
-     * @param context
-     * @param intent
      */
     public static void onReceive(final Context context, final Intent intent) {
         Intent serviceIntent = new Intent(context, SensorReaderService.class);
@@ -165,7 +163,7 @@ public class SensorAPI {
 
             ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
                 @Override
-                public void writeResult(PrintWriter out) throws Exception {
+                public void writeResult(PrintWriter out) {
                     out.append(result.message + "\n");
                     if (result.error != null) {
                         out.append(result.error + "\n");
@@ -260,8 +258,6 @@ public class SensorAPI {
 
         /**
          * Gets a string array of all user requested sensor names to listen to
-         * @param intent
-         * @return
          */
         protected static String[] getUserRequestedSensors(Intent intent) {
             // sensor values passed to us from user
@@ -271,9 +267,6 @@ public class SensorAPI {
 
         /**
          * Gets a list of all sensors to listen to, that were requested and are available
-         * @param sensorManager
-         * @param requestedSensors
-         * @return
          */
         protected static List<Sensor> getSensorsToListenTo(SensorManager sensorManager, String[] requestedSensors, Intent intent) {
             List<Sensor> availableSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
@@ -320,8 +313,6 @@ public class SensorAPI {
 
         /**
          * Creates SensorOutputWriter to write sensor values to stdout
-         * @param intent
-         * @return
          */
         protected static SensorOutputWriter createSensorOutputWriter(Intent intent) {
             String socketAddress = intent.getStringExtra("socket_output");

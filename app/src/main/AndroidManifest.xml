@@ -48,7 +48,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light" >
+        android:theme="@android:style/Theme.Material.Light"
+        tools:ignore="GoogleAppIndexingWarning">
         <receiver android:name="com.termux.api.TermuxApiReceiver"/>
         <activity android:name="com.termux.api.DialogActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
         <activity android:name=".FingerprintAPI$FingerprintActivity" android:theme="@android:style/Theme.NoDisplay"

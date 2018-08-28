@@ -48,14 +48,11 @@ public class VolumeAPI {
 
     /**
      * Prints error to console
-     * @param context
-     * @param intent
-     * @param error
      */
     private static void printError(Context context, Intent intent, final String error) {
         ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
             @Override
-            public void writeResult(PrintWriter out) throws Exception {
+            public void writeResult(PrintWriter out) {
                 out.append(error + "\n");
                 out.flush();
                 out.close();
@@ -65,9 +62,6 @@ public class VolumeAPI {
 
     /**
      * Set volume for the specified audio stream
-     * @param intent
-     * @param audioManager
-     * @param stream
      */
     private static void setStreamVolume(Intent intent, AudioManager audioManager, int stream) {
         int volume = intent.getIntExtra("volume", audioManager.getStreamVolume(stream));
@@ -83,9 +77,6 @@ public class VolumeAPI {
 
     /**
      * Print information about all available audio streams
-     * @param context
-     * @param intent
-     * @param audioManager
      */
     private static void printAllStreamInfo(Context context, Intent intent, final AudioManager audioManager) {
         ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
@@ -99,9 +90,6 @@ public class VolumeAPI {
 
     /**
      * Get info for all streams
-     * @param audioManager
-     * @param out
-     * @throws IOException
      */
     private static void getStreamsInfo(AudioManager audioManager, JsonWriter out) throws IOException {
         out.beginArray();
@@ -115,10 +103,6 @@ public class VolumeAPI {
 
     /**
      * Get info for specific stream
-     * @param audioManager
-     * @param out
-     * @param stream
-     * @throws IOException
      */
     protected static void getStreamInfo(AudioManager audioManager, JsonWriter out, int stream) throws IOException {
         out.beginObject();
@@ -132,8 +116,6 @@ public class VolumeAPI {
 
     /**
      * Get proper audio stream based on String type
-     * @param type
-     * @return
      */
     protected static int getAudioStream(String type) {
         switch (type == null ? "" : type) {

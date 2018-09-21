@@ -10,7 +10,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:padding="16dp"
-        android:text="▲"
+        android:text="@string/triangle"
         android:textSize="28sp" />
 
     <TextView
@@ -18,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
-        android:text="0"
+        android:text="@string/zero"
         android:textAlignment="center"
         android:textSize="24sp"
         android:textStyle="bold" />
@@ -29,6 +29,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:padding="16dp"
-        android:text="▼"
+        android:text="@string/upsidedown_triangle"
         android:textSize="28sp" />
 </LinearLayout>

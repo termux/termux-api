@@ -10,4 +10,4 @@
     android:paddingLeft="0dp"
     android:paddingRight="0dp"
     android:ellipsize="marquee"
-    android:textAlignment="inherit"/>
+    android:textAlignment="inherit" />

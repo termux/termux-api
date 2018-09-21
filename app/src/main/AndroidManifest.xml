@@ -4,7 +4,9 @@
     package="com.termux.api"
     android:sharedUserId="com.termux">
 
-    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
 
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
     <uses-permission android:name="android.permission.READ_SMS" />
@@ -23,7 +25,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission android:name="android.permission.WRITE_SETTINGS"
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
@@ -40,7 +43,9 @@
 
     <!-- This permission is not used, but a permission is needed on the sharedfiles contentprovider,
          which will always use FLAG_GRANT_READ_URI_PERMISSION. -->
-    <permission android:name="com.termux.sharedfiles.READ" android:protectionLevel="signature" />
+    <permission
+        android:name="com.termux.sharedfiles.READ"
+        android:protectionLevel="signature" />
 
     <application
         android:allowBackup="true"
@@ -50,32 +55,50 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light"
         tools:ignore="GoogleAppIndexingWarning">
-        <receiver android:name="com.termux.api.TermuxApiReceiver"/>
-        <activity android:name="com.termux.api.DialogActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
-        <activity android:name=".FingerprintAPI$FingerprintActivity" android:theme="@android:style/Theme.NoDisplay"
-                  android:noHistory="true"
-                  android:excludeFromRecents="true"
-                  android:exported="false"/>
-        <activity android:name="com.termux.api.util.TermuxApiPermissionActivity"
-                  android:theme="@android:style/Theme.NoDisplay"
-                  android:noHistory="true"
-                  android:excludeFromRecents="true"
-                  android:exported="false"/>
-        <activity android:name="com.termux.api.StorageGetAPI$StorageActivity"
-                  android:theme="@android:style/Theme.Translucent.NoTitleBar"
-                  android:excludeFromRecents="true"
-                  android:exported="false"/>
-        <service android:name="com.termux.api.SpeechToTextAPI$SpeechToTextService"/>
+        <receiver android:name="com.termux.api.TermuxApiReceiver" />
+
+        <activity
+            android:name="com.termux.api.DialogActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@style/DialogTheme" />
+        <activity
+            android:name=".FingerprintAPI$FingerprintActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay" />
+        <activity
+            android:name="com.termux.api.util.TermuxApiPermissionActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay" />
+        <activity
+            android:name="com.termux.api.StorageGetAPI$StorageActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <service android:name="com.termux.api.SpeechToTextAPI$SpeechToTextService" />
         <service android:name="com.termux.api.TextToSpeechAPI$TextToSpeechService" />
-        <service android:name=".SensorAPI$SensorReaderService"/>
-        <provider android:authorities="com.termux.sharedfiles"
+        <service android:name=".SensorAPI$SensorReaderService" />
+
+        <provider
+            android:authorities="com.termux.sharedfiles"
             android:readPermission="com.termux.sharedfiles.READ"
             android:exported="true"
             android:grantUriPermissions="true"
             android:name="com.termux.api.ShareAPI$ContentProvider" />
-        <service android:name=".MediaPlayerAPI$PlayerService" android:exported="false"/>
-        <service android:name=".MicRecorderAPI$MicRecorderService" android:exported="false"/>
-        <service android:name=".WallpaperAPI$WallpaperService"/>
+
+        <service
+            android:name=".MediaPlayerAPI$PlayerService"
+            android:exported="false" />
+        <service
+            android:name=".MicRecorderAPI$MicRecorderService"
+            android:exported="false" />
+        <service android:name=".WallpaperAPI$WallpaperService" />
         <service
             android:name=".NotificationService"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
@@ -87,5 +110,4 @@
             </intent-filter>
         </service>
     </application>
-
 </manifest>

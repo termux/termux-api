@@ -5,4 +5,7 @@
     <string name="grant_permission">Grant permission</string>
 
     <string name="permission_description">Termux:API needs the following permission(s):\n</string>
+    <string name="triangle">▲</string>
+    <string name="upsidedown_triangle">▼</string>
+    <string name="zero">0</string>
 </resources>

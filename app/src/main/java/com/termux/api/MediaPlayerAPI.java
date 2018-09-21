@@ -12,7 +12,6 @@ import com.termux.api.util.TermuxApiLogger;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 /**
  * API that enables playback of standard audio formats such as:
@@ -51,7 +50,6 @@ public class MediaPlayerAPI {
         result += String.format("%02d:%02d", mins, secs);
         return result;
     }
-
 
     /**
      * All media functionality exists in this background service
@@ -131,49 +129,6 @@ public class MediaPlayerAPI {
             mediaPlayer.reset();
         }
 
-        protected static MediaCommandHandler getMediaCommandHandler(final String command) {
-            switch (command == null ? "" : command) {
-                case "info":
-                    return infoHandler;
-                case "play":
-                    return playHandler;
-                case "pause":
-                    return pauseHandler;
-                case "resume":
-                    return resumeHandler;
-                case "stop":
-                    return stopHandler;
-                default:
-                    return new MediaCommandHandler() {
-                        @Override
-                        public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
-                            MediaCommandResult result = new MediaCommandResult();
-                            result.error = "Unknown command: " + command;
-                            return result;
-                        };
-                    };
-            }
-        }
-
-        /**
-         * Returns result of executing a media command to termux
-         */
-        protected static void postMediaCommandResult(final Context context, final Intent intent,
-                                                     final MediaCommandResult result) {
-
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.append(result.message + "\n");
-                    if (result.error != null) {
-                        out.append(result.error + "\n");
-                    }
-                    out.flush();
-                    out.close();
-                }
-            });
-        }
-
         /**
          * -----
          * Media Command Handlers
@@ -187,20 +142,21 @@ public class MediaPlayerAPI {
 
                 if (hasTrack) {
                     String status = player.isPlaying() ? "Playing" : "Paused";
-                    result.message = String.format("Status: %s\nTrack: %s\nCurrent Position: %s", status, trackName, getPlaybackPositionString(player));
+                    result.message = String.format(
+                            "Status: %s\nTrack: %s\nCurrent Position: %s", status, trackName,
+                            getPlaybackPositionString(player));
                 } else {
                     result.message = "No track currently!";
                 }
                 return result;
             }
         };
-
         static MediaCommandHandler playHandler = new MediaCommandHandler() {
             @Override
             public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
                 MediaCommandResult result = new MediaCommandResult();
 
-                File mediaFile = null;
+                File mediaFile;
                 try {
                     mediaFile = new File(intent.getStringExtra("file"));
                 } catch (NullPointerException e) {
@@ -229,6 +185,47 @@ public class MediaPlayerAPI {
                 return result;
             }
         };
+        static MediaCommandHandler resumeHandler = new MediaCommandHandler() {
+            @Override
+            public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
+                MediaCommandResult result = new MediaCommandResult();
+                if (hasTrack) {
+                    String positionString = String.format("Track: %s\nCurrent Position: %s", trackName,
+                            getPlaybackPositionString(player));
+
+                    if (player.isPlaying()) {
+                        result.message = "Already playing track!\n" + positionString;
+                    } else {
+                        player.start();
+                        result.message = "Resumed playback\n" + positionString;
+                    }
+                } else {
+                    result.message = "No previous track to resume!\nPlease supply a new media file";
+                }
+                return result;
+            }
+        };
+
+        protected static MediaCommandHandler getMediaCommandHandler(final String command) {
+            switch (command == null ? "" : command) {
+                case "info":
+                    return infoHandler;
+                case "play":
+                    return playHandler;
+                case "pause":
+                    return pauseHandler;
+                case "resume":
+                    return resumeHandler;
+                case "stop":
+                    return stopHandler;
+                default:
+                    return (player, context, intent) -> {
+                        MediaCommandResult result = new MediaCommandResult();
+                        result.error = "Unknown command: " + command;
+                        return result;
+                    };
+            }
+        }
 
         static MediaCommandHandler pauseHandler = new MediaCommandHandler() {
             @Override
@@ -258,25 +255,21 @@ public class MediaPlayerAPI {
             return getTimeString(position) + " / " + getTimeString(duration);
         }
 
-        static MediaCommandHandler resumeHandler = new MediaCommandHandler() {
-            @Override
-            public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
-                MediaCommandResult result = new MediaCommandResult();
-                if (hasTrack) {
-                    String positionString = String.format("Track: %s\nCurrent Position: %s", trackName, getPlaybackPositionString(player));
+        /**
+         * Returns result of executing a media command to termux
+         */
+        protected static void postMediaCommandResult(final Context context, final Intent intent,
+                                                     final MediaCommandResult result) {
 
-                    if (player.isPlaying()) {
-                        result.message = "Already playing track!\n" + positionString;
-                    } else {
-                        player.start();
-                        result.message = "Resumed playback\n" + positionString;
-                    }
-                } else {
-                    result.message = "No previous track to resume!\nPlease supply a new media file";
+            ResultReturner.returnData(context, intent, out -> {
+                out.append(result.message).append("\n");
+                if (result.error != null) {
+                    out.append(result.error).append("\n");
                 }
-                return result;
-            }
-        };
+                out.flush();
+                out.close();
+            });
+        }
 
         static MediaCommandHandler stopHandler = new MediaCommandHandler() {
             @Override

@@ -38,7 +38,8 @@ public class SmsInboxAPI {
     }
 
     @SuppressLint("SimpleDateFormat")
-    public static void getAllSms(Context context, JsonWriter out, int offset, int limit, Uri contentURI) throws IOException {
+    public static void getAllSms(Context context, JsonWriter out,
+                                 int offset, int limit, Uri contentURI) throws IOException {
         ContentResolver cr = context.getContentResolver();
         String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
         try (Cursor c = cr.query(contentURI, null, null, null, sortOrder)) {
@@ -89,7 +90,8 @@ public class SmsInboxAPI {
         if (cache.containsKey(number))
             return cache.get(number);
         Uri contactUri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
-        try (Cursor c = context.getContentResolver().query(contactUri, DISPLAY_NAME_PROJECTION, null, null, null)) {
+        try (Cursor c = context.getContentResolver().query(contactUri,
+                DISPLAY_NAME_PROJECTION, null, null, null)) {
             String name = c.moveToFirst() ? c.getString(c.getColumnIndex(PhoneLookup.DISPLAY_NAME)) : null;
             cache.put(number, name);
             return name;
@@ -97,8 +99,7 @@ public class SmsInboxAPI {
     }
 
     private static String getMessageType(int type) {
-        switch (type)
-        {
+        switch (type) {
             case TextBasedSmsColumns.MESSAGE_TYPE_INBOX:
                 return "inbox";
             case TextBasedSmsColumns.MESSAGE_TYPE_SENT:
@@ -129,6 +130,4 @@ public class SmsInboxAPI {
                 return Telephony.Sms.Inbox.CONTENT_URI;
         }
     }
-
-
 }

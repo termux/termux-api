@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.Engine;
 import android.speech.tts.TextToSpeech.EngineInfo;
-import android.speech.tts.TextToSpeech.OnInitListener;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.JsonWriter;
 
@@ -27,6 +26,20 @@ public class TextToSpeechAPI {
 
     public static void onReceive(final Context context, Intent intent) {
         context.startService(new Intent(context, TextToSpeechService.class).putExtras(intent.getExtras()));
+    }
+
+    private static Locale getLocale(String language, String region, String variant) {
+        Locale result;
+        if (region != null) {
+            if (variant != null) {
+                result = new Locale(language, region, variant);
+            } else {
+                result = new Locale(language, region);
+            }
+        } else {
+            result = new Locale(language);
+        }
+        return result;
     }
 
     public static class TextToSpeechService extends IntentService {
@@ -80,15 +93,12 @@ public class TextToSpeechAPI {
             }
             final int streamToUse = streamToUseInt;
 
-            mTts = new TextToSpeech(this, new OnInitListener() {
-                @Override
-                public void onInit(int status) {
-                    if (status == TextToSpeech.SUCCESS) {
-                        mTtsLatch.countDown();
-                    } else {
-                        TermuxApiLogger.error("Failed tts initialization: status=" + status);
-                        stopSelf();
-                    }
+            mTts = new TextToSpeech(this, status -> {
+                if (status == TextToSpeech.SUCCESS) {
+                    mTtsLatch.countDown();
+                } else {
+                    TermuxApiLogger.error("Failed tts initialization: status=" + status);
+                    stopSelf();
                 }
             }, speechEngine);
 
@@ -189,19 +199,5 @@ public class TextToSpeechAPI {
                 }
             });
         }
-    }
-
-    private static Locale getLocale(String language, String region, String variant) {
-        Locale result = null;
-        if (region != null) {
-            if (variant != null) {
-                result = new Locale(language, region, variant);
-            } else {
-                result = new Locale(language, region);
-            }
-        } else {
-            result = new Locale(language);
-        }
-        return result;
     }
 }

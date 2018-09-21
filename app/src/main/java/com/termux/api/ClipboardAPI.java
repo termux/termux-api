@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.text.TextUtils;
 
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.ResultReturner.ResultWriter;
 
 import java.io.PrintWriter;
 
@@ -34,19 +33,16 @@ public class ClipboardAPI {
                     }
                 });
             } else {
-                ResultReturner.returnData(apiReceiver, intent, new ResultWriter() {
-                    @Override
-                    public void writeResult(PrintWriter out) {
-                        if (clipData == null) {
-                            out.print("");
-                        } else {
-                            int itemCount = clipData.getItemCount();
-                            for (int i = 0; i < itemCount; i++) {
-                                Item item = clipData.getItemAt(i);
-                                CharSequence text = item.coerceToText(context);
-                                if (!TextUtils.isEmpty(text)) {
-                                    out.print(text);
-                                }
+                ResultReturner.returnData(apiReceiver, intent, out -> {
+                    if (clipData == null) {
+                        out.print("");
+                    } else {
+                        int itemCount = clipData.getItemCount();
+                        for (int i = 0; i < itemCount; i++) {
+                            Item item = clipData.getItemAt(i);
+                            CharSequence text = item.coerceToText(context);
+                            if (!TextUtils.isEmpty(text)) {
+                                out.print(text);
                             }
                         }
                     }
@@ -59,21 +55,18 @@ public class ClipboardAPI {
                 clipboard.setPrimaryClip(ClipData.newPlainText("", newClipText));
             }
 
-            ResultReturner.returnData(apiReceiver, intent, new ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    if (newClipText == null) {
-                        // Get clip.
-                        if (clipData == null) {
-                            out.print("");
-                        } else {
-                            int itemCount = clipData.getItemCount();
-                            for (int i = 0; i < itemCount; i++) {
-                                Item item = clipData.getItemAt(i);
-                                CharSequence text = item.coerceToText(context);
-                                if (!TextUtils.isEmpty(text)) {
-                                    out.print(text);
-                                }
+            ResultReturner.returnData(apiReceiver, intent, out -> {
+                if (newClipText == null) {
+                    // Get clip.
+                    if (clipData == null) {
+                        out.print("");
+                    } else {
+                        int itemCount = clipData.getItemCount();
+                        for (int i = 0; i < itemCount; i++) {
+                            Item item = clipData.getItemAt(i);
+                            CharSequence text = item.coerceToText(context);
+                            if (!TextUtils.isEmpty(text)) {
+                                out.print(text);
                             }
                         }
                     }
@@ -81,5 +74,4 @@ public class ClipboardAPI {
             });
         }
     }
-
 }

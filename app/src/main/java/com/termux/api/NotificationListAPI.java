@@ -9,7 +9,6 @@ import android.util.JsonWriter;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
 
-
 public class NotificationListAPI {
 
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
@@ -21,7 +20,6 @@ public class NotificationListAPI {
             }
         });
     }
-
 
     static void listNotifications(Context context, JsonWriter out) throws Exception {
         NotificationService notificationService = NotificationService.get();
@@ -65,5 +63,5 @@ public class NotificationListAPI {
                     .name("content").value(text).endObject();
         }
         out.endArray();
-        }
     }
+}

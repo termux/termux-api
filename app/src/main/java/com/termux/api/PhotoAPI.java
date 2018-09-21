@@ -2,6 +2,7 @@ package com.termux.api;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -15,6 +16,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Looper;
+import android.support.v4.app.ActivityCompat;
 import android.util.Size;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -33,7 +35,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-public class PhotoAPI {
+public abstract class PhotoAPI extends Context {
 
     static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
         final String filePath = intent.getStringExtra("file");
@@ -41,59 +43,25 @@ public class PhotoAPI {
         final File outputDir = outputFile.getParentFile();
         final String cameraId = Objects.toString(intent.getStringExtra("camera"), "0");
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter stdout) {
-                if (!(outputDir.isDirectory() || outputDir.mkdirs())) {
-                    stdout.println("Not a folder (and unable to create it): " + outputDir.getAbsolutePath());
-                } else {
-                    takePicture(stdout, context, outputFile, cameraId);
-                }
+        ResultReturner.returnData(apiReceiver, intent, stdout -> {
+            if (!(outputDir.isDirectory() || outputDir.mkdirs())) {
+                stdout.println("Not a folder (and unable to create it): " + outputDir.getAbsolutePath());
+            } else {
+                takePicture(stdout, context, outputFile, cameraId);
             }
         });
-    }
-
-    private static void takePicture(final PrintWriter stdout, final Context context, final File outputFile, String cameraId) {
-        try {
-            final CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
-
-            Looper.prepare();
-            final Looper looper = Looper.myLooper();
-
-            //noinspection MissingPermission
-            manager.openCamera(cameraId, new CameraDevice.StateCallback() {
-                @Override
-                public void onOpened(final CameraDevice camera) {
-                    try {
-                        proceedWithOpenedCamera(context, manager, camera, outputFile, looper, stdout);
-                    } catch (Exception e) {
-                        TermuxApiLogger.error("Exception in onOpened()", e);
-                        closeCamera(camera, looper);
-                    }
-                }
-
-                @Override
-                public void onDisconnected(CameraDevice camera) {
-                    TermuxApiLogger.info("onDisconnected() from camera");
-                }
-
-                @Override
-                public void onError(CameraDevice camera, int error) {
-                    TermuxApiLogger.error("Failed opening camera: " + error);
-                    closeCamera(camera, looper);
-                }
-            }, null);
-
-            Looper.loop();
-        } catch (Exception e) {
-            TermuxApiLogger.error("Error getting camera", e);
-        }
     }
 
     // See answer on http://stackoverflow.com/questions/31925769/pictures-with-camera2-api-are-really-dark
     // See https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html#createCaptureSession(java.util.List<android.view.Surface>, android.hardware.camera2.CameraCaptureSession.StateCallback, android.os.Handler)
     // for information about guaranteed support for output sizes and formats.
-    static void proceedWithOpenedCamera(final Context context, final CameraManager manager, final CameraDevice camera, final File outputFile, final Looper looper, final PrintWriter stdout) throws CameraAccessException, IllegalArgumentException {
+    static void proceedWithOpenedCamera(final Context context,
+                                        final CameraManager manager,
+                                        final CameraDevice camera,
+                                        final File outputFile,
+                                        final Looper looper,
+                                        final PrintWriter stdout)
+            throws CameraAccessException, IllegalArgumentException {
         final List<Surface> outputSurfaces = new ArrayList<>();
 
         final CameraCharacteristics characteristics = manager.getCameraCharacteristics(camera.getId());
@@ -108,40 +76,32 @@ public class PhotoAPI {
 
         // Use largest available size:
         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        Comparator<Size> bySize = new Comparator<Size>() {
-            @Override
-            public int compare(Size lhs, Size rhs) {
-                // Cast to ensure multiplications won't overflow:
-                return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
-            }
+        Comparator<Size> bySize = (lhs, rhs) -> {
+            // Cast to ensure multiplications won't overflow:
+            return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
         };
         List<Size> sizes = Arrays.asList(map.getOutputSizes(ImageFormat.JPEG));
         Size largest = Collections.max(sizes, bySize);
 
         final ImageReader mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, 2);
-        mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+        mImageReader.setOnImageAvailableListener(reader -> new Thread() {
             @Override
-            public void onImageAvailable(final ImageReader reader) {
-                new Thread() {
-                    @Override
-                    public void run() {
-                        try (final Image mImage = reader.acquireNextImage()) {
-                            ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-                            byte[] bytes = new byte[buffer.remaining()];
-                            buffer.get(bytes);
-                            try (FileOutputStream output = new FileOutputStream(outputFile)) {
-                                output.write(bytes);
-                            } catch (Exception e) {
-                                stdout.println("Error writing image: " + e.getMessage());
-                                TermuxApiLogger.error("Error writing image", e);
-                            } finally {
-                                closeCamera(camera, looper);
-                            }
-                        }
+            public void run() {
+                try (final Image mImage = reader.acquireNextImage()) {
+                    ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
+                    byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    try (FileOutputStream output = new FileOutputStream(outputFile)) {
+                        output.write(bytes);
+                    } catch (Exception e) {
+                        stdout.println("Error writing image: " + e.getMessage());
+                        TermuxApiLogger.error("Error writing image", e);
+                    } finally {
+                        closeCamera(camera, looper);
                     }
-                }.start();
+                }
             }
-        }, null);
+        }.start(), null);
         final Surface imageReaderSurface = mImageReader.getSurface();
         outputSurfaces.add(imageReaderSurface);
 
@@ -172,7 +132,8 @@ public class PhotoAPI {
         }, null);
     }
 
-    static void saveImage(final CameraDevice camera, CameraCaptureSession session, CaptureRequest request) throws CameraAccessException {
+    static void saveImage(final CameraDevice camera, CameraCaptureSession session, CaptureRequest request)
+            throws CameraAccessException {
         session.capture(request, new CameraCaptureSession.CaptureCallback() {
             @Override
             public void onCaptureCompleted(CameraCaptureSession completedSession, CaptureRequest request, TotalCaptureResult result) {
@@ -180,6 +141,53 @@ public class PhotoAPI {
                 closeCamera(camera, null);
             }
         }, null);
+    }
+
+    private void takePicture(final PrintWriter stdout, final Context context, final File outputFile, String cameraId) {
+        try {
+            final CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+
+            Looper.prepare();
+            final Looper looper = Looper.myLooper();
+
+            //noinspection MissingPermission
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            manager.openCamera(cameraId, new CameraDevice.StateCallback() {
+                @Override
+                public void onOpened(final CameraDevice camera) {
+                    try {
+                        proceedWithOpenedCamera(context, manager, camera, outputFile, looper, stdout);
+                    } catch (Exception e) {
+                        TermuxApiLogger.error("Exception in onOpened()", e);
+                        closeCamera(camera, looper);
+                    }
+                }
+
+                @Override
+                public void onDisconnected(CameraDevice camera) {
+                    TermuxApiLogger.info("onDisconnected() from camera");
+                }
+
+                @Override
+                public void onError(CameraDevice camera, int error) {
+                    TermuxApiLogger.error("Failed opening camera: " + error);
+                    closeCamera(camera, looper);
+                }
+            }, null);
+
+            Looper.loop();
+        } catch (Exception e) {
+            TermuxApiLogger.error("Error getting camera", e);
+        }
     }
 
     /**
@@ -242,5 +250,4 @@ public class PhotoAPI {
         }
         if (looper != null) looper.quit();
     }
-
 }

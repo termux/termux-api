@@ -118,11 +118,10 @@ public class WifiAPI {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) {
-                WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                WifiManager manager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 boolean state = intent.getBooleanExtra("enabled", false);
                 manager.setWifiEnabled(state);
             }
         });
     }
-
 }

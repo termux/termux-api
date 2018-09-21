@@ -15,7 +15,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -41,7 +40,8 @@ public class MicRecorderAPI {
     /**
      * All recording functionality exists in this background service
      */
-    public static class MicRecorderService extends Service implements MediaRecorder.OnInfoListener, MediaRecorder.OnErrorListener {
+    public static class MicRecorderService extends Service
+            implements MediaRecorder.OnInfoListener, MediaRecorder.OnErrorListener {
         protected static final int MIN_RECORDING_LIMIT = 1000;
 
         // default max recording duration in seconds
@@ -69,41 +69,56 @@ public class MicRecorderAPI {
             return Service.START_NOT_STICKY;
         }
 
-        protected static RecorderCommandHandler getRecorderCommandHandler(final String command) {
-            switch (command == null ? "" : command) {
-                case "info":
-                    return infoHandler;
-                case "record":
-                    return recordHandler;
-                case "quit":
-                    return quitHandler;
-                default:
-                    return new RecorderCommandHandler() {
-                        @Override
-                        public RecorderCommandResult handle(MediaRecorder recorder, Context context, Intent intent) {
-                            RecorderCommandResult result = new RecorderCommandResult();
-                            result.error = "Unknown command: " + command;
-                            return result;
+        /**
+         * -----
+         * Recorder Command Handlers
+         * -----
+         */
+
+        static RecorderCommandHandler infoHandler = (recorder, context, intent) -> {
+            RecorderCommandResult result = new RecorderCommandResult();
+            result.message = getRecordingInfoJSONString();
+            return result;
+        };
+        static RecorderCommandHandler recordHandler = new RecorderCommandHandler() {
+            @Override
+            public RecorderCommandResult handle(MediaRecorder recorder, Context context, Intent intent) {
+                RecorderCommandResult result = new RecorderCommandResult();
+
+                String filename = intent.hasExtra("file") ?
+                        intent.getStringExtra("file") : getDefaultRecordingFilename();
+
+                int duration = intent.getIntExtra("limit", DEFAULT_RECORDING_LIMIT);
+                duration = duration < MIN_RECORDING_LIMIT ? MIN_RECORDING_LIMIT : duration;
+
+                file = new File(filename);
+
+                TermuxApiLogger.info("MediaRecording file is: " + file.getAbsoluteFile());
+
+                if (file.exists()) {
+                    result.error = String.format("File: %s already exists! Please specify a different filename", file.getName());
+                } else {
+                    if (isRecording) {
+                        result.error = "Recording already in progress!";
+                    } else {
+                        try {
+                            recorder.setOutputFile(filename);
+                            recorder.setMaxDuration(duration);
+                            mediaRecorder.prepare();
+                            mediaRecorder.start();
+                            isRecording = true;
+                            result.message = String.format("Recording started: %s \nMax Duration: %s",
+                                    file.getAbsoluteFile(), MediaPlayerAPI.getTimeString(duration / 1000));
+
+                        } catch (IllegalStateException | IOException e) {
+                            TermuxApiLogger.error("MediaRecorder error", e);
+                            result.error = "Recording error: " + e.getMessage();
                         }
-                    };
-            }
-        }
-
-        protected static void postRecordCommandResult(final Context context, final Intent intent,
-                                                      final RecorderCommandResult result) {
-
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.append(result.message + "\n");
-                    if (result.error != null) {
-                        out.append(result.error + "\n");
                     }
-                    out.flush();
-                    out.close();
                 }
-            });
-        }
+                return result;
+            }
+        };
 
         /**
          * Returns our MediaPlayer instance and ensures it has all the necessary callbacks
@@ -162,10 +177,21 @@ public class MicRecorderAPI {
             cleanupMediaRecorder();
         }
 
-        protected static String getDefaultRecordingFilename() {
-            DateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy_HH-mm-ss");
-            Date date = new Date();
-            return Environment.getExternalStorageDirectory().getAbsolutePath() + "/TermuxAudioRecording_" + dateFormat.format(date) + ".3gp";
+        protected static RecorderCommandHandler getRecorderCommandHandler(final String command) {
+            switch (command == null ? "" : command) {
+                case "info":
+                    return infoHandler;
+                case "record":
+                    return recordHandler;
+                case "quit":
+                    return quitHandler;
+                default:
+                    return (recorder, context, intent) -> {
+                        RecorderCommandResult result = new RecorderCommandResult();
+                        result.error = "Unknown command: " + command;
+                        return result;
+                    };
+            }
         }
 
         protected static String getRecordingInfoJSONString() {
@@ -184,60 +210,25 @@ public class MicRecorderAPI {
             return result;
         }
 
+        protected static void postRecordCommandResult(final Context context, final Intent intent,
+                                                      final RecorderCommandResult result) {
 
-        /**
-         * -----
-         * Recorder Command Handlers
-         * -----
-         */
-
-        static RecorderCommandHandler infoHandler = new RecorderCommandHandler() {
-            @Override
-            public RecorderCommandResult handle(MediaRecorder recorder, Context context, Intent intent) {
-                RecorderCommandResult result = new RecorderCommandResult();
-                result.message = getRecordingInfoJSONString();
-                return result;
-            }
-        };
-
-        static RecorderCommandHandler recordHandler = new RecorderCommandHandler() {
-            @Override
-            public RecorderCommandResult handle(MediaRecorder recorder, Context context, Intent intent) {
-                RecorderCommandResult result = new RecorderCommandResult();
-
-                String filename = intent.hasExtra("file") ? intent.getStringExtra("file") : getDefaultRecordingFilename();
-
-                int duration = intent.getIntExtra("limit", DEFAULT_RECORDING_LIMIT);
-                duration = duration < MIN_RECORDING_LIMIT ? MIN_RECORDING_LIMIT : duration;
-
-                file = new File(filename);
-
-                TermuxApiLogger.info("MediaRecording file is: " + file.getAbsoluteFile());
-
-                if (file.exists()) {
-                    result.error = String.format("File: %s already exists! Please specify a different filename", file.getName());
-                } else {
-                    if (isRecording) {
-                        result.error = "Recording already in progress!";
-                    } else {
-                        try {
-                            recorder.setOutputFile(filename);
-                            recorder.setMaxDuration(duration);
-                            mediaRecorder.prepare();
-                            mediaRecorder.start();
-                            isRecording = true;
-                            result.message = String.format("Recording started: %s \nMax Duration: %s",
-                                    file.getAbsoluteFile(), MediaPlayerAPI.getTimeString(duration / 1000));
-
-                        } catch (IllegalStateException | IOException e) {
-                            TermuxApiLogger.error("MediaRecorder error", e);
-                            result.error = "Recording error: " + e.getMessage();
-                        }
-                    }
+            ResultReturner.returnData(context, intent, out -> {
+                out.append(result.message).append("\n");
+                if (result.error != null) {
+                    out.append(result.error).append("\n");
                 }
-                return result;
-            }
-        };
+                out.flush();
+                out.close();
+            });
+        }
+
+        protected static String getDefaultRecordingFilename() {
+            DateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy_HH-mm-ss");
+            Date date = new Date();
+            return Environment.getExternalStorageDirectory()
+                    .getAbsolutePath() + "/TermuxAudioRecording_" + dateFormat.format(date) + ".3gp";
+        }
 
         static RecorderCommandHandler quitHandler = new RecorderCommandHandler() {
             @Override

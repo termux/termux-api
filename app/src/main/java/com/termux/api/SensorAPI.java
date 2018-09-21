@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-
 /**
  * API that allows you to listen to all sensors on device
  */
@@ -138,6 +137,28 @@ public class SensorAPI {
             }
         };
 
+        /**
+         * Handler for returning a list of all available sensors
+         */
+        static SensorCommandHandler listHandler = (sensorManager, context, intent) -> {
+            SensorCommandResult result = new SensorCommandResult();
+            JSONArray sensorArray = new JSONArray();
+            List<Sensor> sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL);
+
+            try {
+                for (int j = 0; j < sensorList.size(); ++j) {
+                    Sensor sensor = sensorList.get(j);
+                    sensorArray.put(sensor.getName());
+                }
+                JSONObject output = new JSONObject();
+                output.put("sensors", sensorArray);
+                result.message = output.toString(INDENTATION);
+            } catch (JSONException e) {
+                TermuxApiLogger.error("listHandler JSON error", e);
+            }
+            return result;
+        };
+
         protected static SensorCommandHandler getSensorCommandHandler(final String command) {
             switch (command == null ? "" : command) {
                 case "list":
@@ -147,31 +168,12 @@ public class SensorAPI {
                 case "sensors":
                     return sensorHandler;
                 default:
-                    return new SensorCommandHandler() {
-                        @Override
-                        public SensorCommandResult handle(SensorManager sensorManager, Context context, Intent intent) {
-                            SensorCommandResult result = new SensorCommandResult();
-                            result.message = "Unknown command: " + command;
-                            return result;
-                        }
+                    return (sensorManager, context, intent) -> {
+                        SensorCommandResult result = new SensorCommandResult();
+                        result.message = "Unknown command: " + command;
+                        return result;
                     };
             }
-        }
-
-        private void postSensorCommandResult(final Context context, final Intent intent,
-                                             final SensorCommandResult result) {
-
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.append(result.message + "\n");
-                    if (result.error != null) {
-                        out.append(result.error + "\n");
-                    }
-                    out.flush();
-                    out.close();
-                }
-            });
         }
 
 
@@ -181,31 +183,40 @@ public class SensorAPI {
          * -----
          */
 
-
         /**
-         * Handler for returning a list of all available sensors
+         * Gets a list of all sensors to listen to, that were requested and are available
          */
-        static SensorCommandHandler listHandler = new SensorCommandHandler() {
-            @Override
-            public SensorCommandResult handle(SensorManager sensorManager, Context context, Intent intent) {
-                SensorCommandResult result = new SensorCommandResult();
-                JSONArray sensorArray = new JSONArray();
-                List<Sensor> sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL);
+        protected static List<Sensor> getSensorsToListenTo(SensorManager sensorManager,
+                                                           String[] requestedSensors, Intent intent) {
+            List<Sensor> availableSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
+            List<Sensor> sensorsToListenTo = new ArrayList<>();
 
-                try {
-                    for (int j = 0; j < sensorList.size(); ++j) {
-                        Sensor sensor = sensorList.get(j);
-                        sensorArray.put(sensor.getName());
-                    }
-                    JSONObject output = new JSONObject();
-                    output.put("sensors", sensorArray);
-                    result.message = output.toString(INDENTATION);
-                } catch (JSONException e) {
-                    TermuxApiLogger.error("listHandler JSON error", e);
+            boolean listenToAll = intent.getBooleanExtra("all", false);
+
+            if (listenToAll) {
+                for (Sensor sensor : availableSensors) {
+                    sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
                 }
-                return result;
+                sensorsToListenTo = availableSensors;
+                TermuxApiLogger.info("Listening to ALL sensors");
+            } else {
+
+                // try to find matching sensors that were sent in request
+                for (String sensorName : requestedSensors) {
+                    // ignore case
+                    sensorName = sensorName.toUpperCase();
+
+                    for (Sensor sensor : availableSensors) {
+                        if (sensor.getName().toUpperCase().contains(sensorName)) {
+                            sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
+                            sensorsToListenTo.add(sensor);
+                            break;
+                        }
+                    }
+                }
             }
-        };
+            return sensorsToListenTo;
+        }
 
         /**
          * Handler for managing cleaning up sensor resources
@@ -266,64 +277,15 @@ public class SensorAPI {
         }
 
         /**
-         * Gets a list of all sensors to listen to, that were requested and are available
-         */
-        protected static List<Sensor> getSensorsToListenTo(SensorManager sensorManager, String[] requestedSensors, Intent intent) {
-            List<Sensor> availableSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
-            List<Sensor> sensorsToListenTo = new ArrayList<>();
-
-            boolean listenToAll = intent.getBooleanExtra("all", false);
-
-            if (listenToAll) {
-                for (Sensor sensor : availableSensors) {
-                    sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
-                }
-                sensorsToListenTo = availableSensors;
-                TermuxApiLogger.info("Listening to ALL sensors");
-            } else {
-
-                // try to find matching sensors that were sent in request
-                for (String sensorName : requestedSensors) {
-                    // ignore case
-                    sensorName = sensorName.toUpperCase();
-
-                    for (Sensor sensor : availableSensors) {
-                        if (sensor.getName().toUpperCase().contains(sensorName)) {
-                            sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
-                            sensorsToListenTo.add(sensor);
-                            break;
-                        }
-                    }
-                }
-            }
-            return sensorsToListenTo;
-        }
-
-        /**
-         * Clears out sensorEventListener as well as our sensorReadout JSON object
-         */
-        protected static void clearSensorValues() {
-            // prevent duplicate listeners
-            sensorManager.unregisterListener(sensorEventListener);
-
-            // clear out old values
-            sensorReadout = new JSONObject();
-        }
-
-
-        /**
          * Creates SensorOutputWriter to write sensor values to stdout
          */
         protected static SensorOutputWriter createSensorOutputWriter(Intent intent) {
             String socketAddress = intent.getStringExtra("socket_output");
 
             outputWriter = new SensorOutputWriter(socketAddress);
-            outputWriter.setOnErrorListener(new SocketWriterErrorListener() {
-                @Override
-                public void onError(Exception e) {
-                    outputWriter = null;
-                    TermuxApiLogger.error("SensorOutputWriter error", e);
-                }
+            outputWriter.setOnErrorListener(e -> {
+                outputWriter = null;
+                TermuxApiLogger.error("SensorOutputWriter error", e);
             });
 
             int delay = intent.getIntExtra("delay", SensorOutputWriter.DEFAULT_DELAY);
@@ -337,6 +299,29 @@ public class SensorAPI {
             return outputWriter;
         }
 
+        /**
+         * Clears out sensorEventListener as well as our sensorReadout JSON object
+         */
+        protected static void clearSensorValues() {
+            // prevent duplicate listeners
+            sensorManager.unregisterListener(sensorEventListener);
+
+            // clear out old values
+            sensorReadout = new JSONObject();
+        }
+
+        private void postSensorCommandResult(final Context context, final Intent intent,
+                                             final SensorCommandResult result) {
+
+            ResultReturner.returnData(context, intent, out -> {
+                out.append(result.message).append("\n");
+                if (result.error != null) {
+                    out.append(result.error).append("\n");
+                }
+                out.flush();
+                out.close();
+            });
+        }
 
         /**
          * Handles continuously writing Sensor info to an OutputStream asynchronously
@@ -384,7 +369,6 @@ public class SensorAPI {
             public void run() {
                 isRunning = true;
                 counter = 0;
-
                 try {
                     try (LocalSocket outputSocket = new LocalSocket()) {
                         outputSocket.connect(new LocalSocketAddress(this.outputSocketAddress));
@@ -434,7 +418,6 @@ public class SensorAPI {
         void onError(Exception e);
     }
 
-
     /**
      * Interface for handling sensor commands
      */
@@ -455,6 +438,4 @@ public class SensorAPI {
         SINGLE,
         CONTINUOUS
     }
-
 }
-

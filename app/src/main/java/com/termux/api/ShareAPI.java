@@ -66,53 +66,53 @@ public class ShareAPI {
                     if (titleExtra != null) sendIntent.putExtra(Intent.EXTRA_SUBJECT, titleExtra);
                     sendIntent.setType(contentTypeExtra == null ? "text/plain" : contentTypeExtra);
 
-                    context.startActivity(Intent.createChooser(sendIntent, context.getResources().getText(R.string.share_file_chooser_title)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    context.startActivity(Intent.createChooser(sendIntent, context.getResources().getText(R.string.share_file_chooser_title))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 
                 }
             });
         } else {
             // Share specified file.
-            ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    final File fileToShare = new File(fileExtra);
-                    if (!(fileToShare.isFile() && fileToShare.canRead())) {
-                        out.println("ERROR: Not a readable file: '" + fileToShare.getAbsolutePath() + "'");
-                        return;
-                    }
-
-                    Intent sendIntent = new Intent();
-                    sendIntent.setAction(finalIntentAction);
-                    Uri uriToShare = Uri.withAppendedPath(Uri.parse("content://com.termux.sharedfiles/"), fileExtra);
-                    sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-                    String contentTypeToUse;
-                    if (contentTypeExtra == null) {
-                        String fileName = fileToShare.getName();
-                        int lastDotIndex = fileName.lastIndexOf('.');
-                        String fileExtension = fileName.substring(lastDotIndex + 1, fileName.length());
-                        MimeTypeMap mimeTypes = MimeTypeMap.getSingleton();
-                        // Lower casing makes it work with e.g. "JPG":
-                        contentTypeToUse = mimeTypes.getMimeTypeFromExtension(fileExtension.toLowerCase());
-                        if (contentTypeToUse == null) contentTypeToUse = "application/octet-stream";
-                    } else {
-                        contentTypeToUse = contentTypeExtra;
-                    }
-
-                    if (titleExtra != null) sendIntent.putExtra(Intent.EXTRA_SUBJECT, titleExtra);
-
-                    if (Intent.ACTION_SEND.equals(finalIntentAction)) {
-                        sendIntent.putExtra(Intent.EXTRA_STREAM, uriToShare);
-                        sendIntent.setType(contentTypeToUse);
-                    } else {
-                        sendIntent.setDataAndType(uriToShare, contentTypeToUse);
-                    }
-
-                    if (!defaultReceiverExtra) {
-                        sendIntent = Intent.createChooser(sendIntent, context.getResources().getText(R.string.share_file_chooser_title)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    }
-                    context.startActivity(sendIntent);
+            ResultReturner.returnData(apiReceiver, intent, out -> {
+                final File fileToShare = new File(fileExtra);
+                if (!(fileToShare.isFile() && fileToShare.canRead())) {
+                    out.println("ERROR: Not a readable file: '" + fileToShare.getAbsolutePath() + "'");
+                    return;
                 }
+
+                Intent sendIntent = new Intent();
+                sendIntent.setAction(finalIntentAction);
+                Uri uriToShare = Uri.withAppendedPath(Uri.parse("content://com.termux.sharedfiles/"), fileExtra);
+                sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                String contentTypeToUse;
+                if (contentTypeExtra == null) {
+                    String fileName = fileToShare.getName();
+                    int lastDotIndex = fileName.lastIndexOf('.');
+                    String fileExtension = fileName.substring(lastDotIndex + 1, fileName.length());
+                    MimeTypeMap mimeTypes = MimeTypeMap.getSingleton();
+                    // Lower casing makes it work with e.g. "JPG":
+                    contentTypeToUse = mimeTypes.getMimeTypeFromExtension(fileExtension.toLowerCase());
+                    if (contentTypeToUse == null) contentTypeToUse = "application/octet-stream";
+                } else {
+                    contentTypeToUse = contentTypeExtra;
+                }
+
+                if (titleExtra != null) sendIntent.putExtra(Intent.EXTRA_SUBJECT, titleExtra);
+
+                if (Intent.ACTION_SEND.equals(finalIntentAction)) {
+                    sendIntent.putExtra(Intent.EXTRA_STREAM, uriToShare);
+                    sendIntent.setType(contentTypeToUse);
+                } else {
+                    sendIntent.setDataAndType(uriToShare, contentTypeToUse);
+                }
+
+                if (!defaultReceiverExtra) {
+                    sendIntent = Intent.createChooser(sendIntent, context.getResources()
+                            .getText(R.string.share_file_chooser_title))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                }
+                context.startActivity(sendIntent);
             });
         }
     }

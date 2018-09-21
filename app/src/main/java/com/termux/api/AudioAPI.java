@@ -24,25 +24,25 @@ public class AudioAPI {
             nosr = 0;
             AudioTrack at;
             at = new AudioTrack.Builder()
-                .setBufferSizeInBytes(4) // one 16bit 2ch frame
-                .build();
+                    .setBufferSizeInBytes(4) // one 16bit 2ch frame
+                    .build();
             sr = at.getSampleRate();
             bs = at.getBufferSizeInFrames();
             at.release();
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 at = new AudioTrack.Builder()
-                    .setBufferSizeInBytes(4) // one 16bit 2ch frame
-                    .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
-                    .build();
+                        .setBufferSizeInBytes(4) // one 16bit 2ch frame
+                        .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+                        .build();
             } else {
                 AudioAttributes aa = new AudioAttributes.Builder()
-                    .setFlags(AudioAttributes.FLAG_LOW_LATENCY)
-                    .build();
+                        .setFlags(AudioAttributes.FLAG_LOW_LATENCY)
+                        .build();
                 at = new AudioTrack.Builder()
-                    .setAudioAttributes(aa)
-                    .setBufferSizeInBytes(4) // one 16bit 2ch frame
-                    .build();
+                        .setAudioAttributes(aa)
+                        .setBufferSizeInBytes(4) // one 16bit 2ch frame
+                        .build();
             }
             sr_ll = at.getSampleRate();
             bs_ll = at.getBufferSizeInFrames();
@@ -50,15 +50,15 @@ public class AudioAPI {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 at = new AudioTrack.Builder()
-                    .setBufferSizeInBytes(4) // one 16bit 2ch frame
-                    .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_POWER_SAVING)
-                    .build();
-		sr_ps = at.getSampleRate();
-		bs_ps = at.getBufferSizeInFrames();
-		at.release();
+                        .setBufferSizeInBytes(4) // one 16bit 2ch frame
+                        .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_POWER_SAVING)
+                        .build();
+                sr_ps = at.getSampleRate();
+                bs_ps = at.getBufferSizeInFrames();
+                at.release();
             } else {
-		sr_ps = sr;
-		bs_ps = bs;
+                sr_ps = sr;
+                bs_ps = bs;
             }
         } else {
             sr = bs = sr_ll = bs_ll = sr_ps = bs_ps = 0;
@@ -90,5 +90,4 @@ public class AudioAPI {
             }
         });
     }
-
 }

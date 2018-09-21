@@ -97,22 +97,21 @@ public class NotificationAPI {
         notification.setWhen(System.currentTimeMillis());
 
 
-
         String ImagePath = intent.getStringExtra("image-path");
 
-        if(ImagePath != null){
-            File imgFile = new  File(ImagePath);
-            if(imgFile.exists()) {
+        if (ImagePath != null) {
+            File imgFile = new File(ImagePath);
+            if (imgFile.exists()) {
                 Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
 
                 notification.setLargeIcon(myBitmap)
-                    .setStyle(new Notification.BigPictureStyle()
-                    .bigPicture(myBitmap));
+                        .setStyle(new Notification.BigPictureStyle()
+                                .bigPicture(myBitmap));
             }
         }
 
         String styleType = intent.getStringExtra("type");
-        if(Objects.equals(styleType, "media")) {
+        if (Objects.equals(styleType, "media")) {
             String mediaPrevious = intent.getStringExtra("media-previous");
             String mediaPause = intent.getStringExtra("media-pause");
             String mediaPlay = intent.getStringExtra("media-play");
@@ -132,7 +131,7 @@ public class NotificationAPI {
                 notification.addAction(new Notification.Action(android.R.drawable.ic_media_next, "next", nextIntent));
 
                 notification.setStyle(new Notification.MediaStyle()
-                    .setShowActionsInCompactView(0, 1, 3));
+                        .setShowActionsInCompactView(0, 1, 3));
             }
         }
 
@@ -214,7 +213,7 @@ public class NotificationAPI {
         }
     }
 
-    static PendingIntent createAction(final Context context, String action){
+    static PendingIntent createAction(final Context context, String action) {
         String[] arguments = new String[]{"-c", action};
         Uri executeUri = new Uri.Builder().scheme("com.termux.file")
                 .path(BIN_SH)

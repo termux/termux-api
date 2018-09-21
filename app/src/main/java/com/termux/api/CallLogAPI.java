@@ -3,8 +3,10 @@ package com.termux.api;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.provider.CallLog;
+import android.support.v4.app.ActivityCompat;
 import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
@@ -18,7 +20,7 @@ import java.util.Locale;
 /**
  * API that allows you to get call log history information
  */
-public class CallLogAPI {
+public abstract class CallLogAPI extends Context {
 
     static void onReceive(final Context context, final Intent intent) {
         final int offset = intent.getIntExtra("offset", 0);
@@ -32,10 +34,39 @@ public class CallLogAPI {
 
     }
 
-    private static void getCallLogs(Context context, JsonWriter out, int offset, int limit) throws IOException {
+    private static String getCallTypeString(int type) {
+        switch (type) {
+            case CallLog.Calls.BLOCKED_TYPE:
+                return "BLOCKED";
+            case CallLog.Calls.INCOMING_TYPE:
+                return "INCOMING";
+            case CallLog.Calls.MISSED_TYPE:
+                return "MISSED";
+            case CallLog.Calls.OUTGOING_TYPE:
+                return "OUTGOING";
+            case CallLog.Calls.REJECTED_TYPE:
+                return "REJECTED";
+            case CallLog.Calls.VOICEMAIL_TYPE:
+                return "VOICEMAIL";
+            default:
+                return "UNKNOWN_TYPE";
+        }
+    }
+
+    private void getCallLogs(Context context, JsonWriter out, int offset, int limit) throws IOException {
         ContentResolver cr = context.getContentResolver();
         String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
 
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
         try (Cursor cur = cr.query(CallLog.Calls.CONTENT_URI, null, null, null, sortOrder)) {
             cur.moveToLast();
 
@@ -61,18 +92,6 @@ public class CallLogAPI {
                 out.endObject();
             }
             out.endArray();
-        }
-    }
-
-    private static String getCallTypeString(int type) {
-        switch (type) {
-            case CallLog.Calls.BLOCKED_TYPE:    return "BLOCKED";
-            case CallLog.Calls.INCOMING_TYPE:   return "INCOMING";
-            case CallLog.Calls.MISSED_TYPE:     return "MISSED";
-            case CallLog.Calls.OUTGOING_TYPE:   return "OUTGOING";
-            case CallLog.Calls.REJECTED_TYPE:   return "REJECTED";
-            case CallLog.Calls.VOICEMAIL_TYPE:  return "VOICEMAIL";
-            default: return "UNKNOWN_TYPE";
         }
     }
 

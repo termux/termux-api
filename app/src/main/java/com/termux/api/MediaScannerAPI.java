@@ -3,7 +3,6 @@ package com.termux.api;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaScannerConnection;
-import android.net.Uri;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
@@ -23,30 +22,23 @@ public class MediaScannerAPI {
             filePaths[i] = filePaths[i].replace("\\,", ",");
         }
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter out) {
-                scanFiles(out, context, filePaths, totalScanned, verbose);
-                if (recursive) scanFilesRecursively(out, context, filePaths, totalScanned, verbose);
-                out.println(String.format("Finished scanning %d file(s)", totalScanned[0]));
-            }
+        ResultReturner.returnData(apiReceiver, intent, out -> {
+            scanFiles(out, context, filePaths, totalScanned, verbose);
+            if (recursive) scanFilesRecursively(out, context, filePaths, totalScanned, verbose);
+            out.println(String.format("Finished scanning %d file(s)", totalScanned[0]));
         });
     }
 
-    private static void scanFiles(PrintWriter out, Context context, String[] filePaths, Integer[] totalScanned, final Boolean verbose) {
-        MediaScannerConnection.scanFile(
-                context.getApplicationContext(),
-                filePaths,
-                null,
-                new MediaScannerConnection.OnScanCompletedListener() {
-                    @Override
-                    public void onScanCompleted(String path, Uri uri) {
-                        TermuxApiLogger.info("'" + path + "'" + (uri != null ? " -> '" + uri + "'" : ""));
-                    }
-                });
+    private static void scanFiles(PrintWriter out,
+                                  Context context,
+                                  String[] filePaths,
+                                  Integer[] totalScanned,
+                                  final Boolean verbose) {
+        MediaScannerConnection.scanFile(context.getApplicationContext(), filePaths, null,
+                (path, uri) -> TermuxApiLogger.info("'" + path + "'" + (uri != null ? " -> '" + uri + "'" : "")));
 
         if (verbose) for (String path : filePaths) {
-                out.println(path);
+            out.println(path);
         }
 
         totalScanned[0] += filePaths.length;

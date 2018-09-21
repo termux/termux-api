@@ -18,7 +18,8 @@ import java.io.PrintWriter;
 public class ToastAPI {
 
     public static void onReceive(final Context context, Intent intent) {
-        final int durationExtra = intent.getBooleanExtra("short", false) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
+        final int durationExtra = intent.getBooleanExtra("short", false) ?
+                Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
         final int backgroundColor = getColorExtra(intent, "background", Color.GRAY);
         final int textColor = getColorExtra(intent, "text_color", Color.WHITE);
         final int gravity = getGravityExtra(intent);
@@ -28,21 +29,18 @@ public class ToastAPI {
         ResultReturner.returnData(context, intent, new ResultReturner.WithStringInput() {
             @Override
             public void writeResult(PrintWriter out) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast toast = Toast.makeText(context, inputString, durationExtra);
-                        View toastView = toast.getView();
+                handler.post(() -> {
+                    Toast toast = Toast.makeText(context, inputString, durationExtra);
+                    View toastView = toast.getView();
 
-                        Drawable background = toastView.getBackground();
-                        background.setTint(backgroundColor);
+                    Drawable background = toastView.getBackground();
+                    background.setTint(backgroundColor);
 
-                        TextView textView = toastView.findViewById(android.R.id.message);
-                        textView.setTextColor(textColor);
+                    TextView textView = toastView.findViewById(android.R.id.message);
+                    textView.setTextColor(textColor);
 
-                        toast.setGravity(gravity, 0, 0);
-                        toast.show();
-                    }
+                    toast.setGravity(gravity, 0, 0);
+                    toast.show();
                 });
             }
         });
@@ -67,11 +65,14 @@ public class ToastAPI {
         String extraGravity = intent.getStringExtra("gravity");
 
         switch (extraGravity == null ? "" : extraGravity) {
-            case "top": return Gravity.TOP;
-            case "middle": return Gravity.CENTER;
-            case "bottom": return Gravity.BOTTOM;
-            default: return Gravity.CENTER;
+            case "top":
+                return Gravity.TOP;
+            case "middle":
+                return Gravity.CENTER;
+            case "bottom":
+                return Gravity.BOTTOM;
+            default:
+                return Gravity.CENTER;
         }
     }
-
 }

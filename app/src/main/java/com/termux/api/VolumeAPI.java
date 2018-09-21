@@ -9,25 +9,25 @@ import android.util.SparseArray;
 import com.termux.api.util.ResultReturner;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 
 public class VolumeAPI {
     private static final int STREAM_UNKNOWN = -1;
 
     // string representations for each of the available audio streams
     private static SparseArray<String> streamMap = new SparseArray<>();
+
     static {
-        streamMap.append(AudioManager.STREAM_ALARM,         "alarm");
-        streamMap.append(AudioManager.STREAM_MUSIC,         "music");
-        streamMap.append(AudioManager.STREAM_NOTIFICATION,  "notification");
-        streamMap.append(AudioManager.STREAM_RING,          "ring");
-        streamMap.append(AudioManager.STREAM_SYSTEM,        "system");
-        streamMap.append(AudioManager.STREAM_VOICE_CALL,    "call");
+        streamMap.append(AudioManager.STREAM_ALARM, "alarm");
+        streamMap.append(AudioManager.STREAM_MUSIC, "music");
+        streamMap.append(AudioManager.STREAM_NOTIFICATION, "notification");
+        streamMap.append(AudioManager.STREAM_RING, "ring");
+        streamMap.append(AudioManager.STREAM_SYSTEM, "system");
+        streamMap.append(AudioManager.STREAM_VOICE_CALL, "call");
     }
 
 
     static void onReceive(final TermuxApiReceiver receiver, final Context context, final Intent intent) {
-        final AudioManager audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+        final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         String action = intent.getAction();
 
         if ("set-volume".equals(action)) {
@@ -50,13 +50,10 @@ public class VolumeAPI {
      * Prints error to console
      */
     private static void printError(Context context, Intent intent, final String error) {
-        ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter out) {
-                out.append(error + "\n");
-                out.flush();
-                out.close();
-            }
+        ResultReturner.returnData(context, intent, out -> {
+            out.append(error).append("\n");
+            out.flush();
+            out.close();
         });
     }
 
@@ -119,13 +116,20 @@ public class VolumeAPI {
      */
     protected static int getAudioStream(String type) {
         switch (type == null ? "" : type) {
-            case "alarm":           return AudioManager.STREAM_ALARM;
-            case "call":            return AudioManager.STREAM_VOICE_CALL;
-            case "notification":    return AudioManager.STREAM_NOTIFICATION;
-            case "ring":            return AudioManager.STREAM_RING;
-            case "system":          return AudioManager.STREAM_SYSTEM;
-            case "music":           return AudioManager.STREAM_MUSIC;
-            default:                return STREAM_UNKNOWN;
+            case "alarm":
+                return AudioManager.STREAM_ALARM;
+            case "call":
+                return AudioManager.STREAM_VOICE_CALL;
+            case "notification":
+                return AudioManager.STREAM_NOTIFICATION;
+            case "ring":
+                return AudioManager.STREAM_RING;
+            case "system":
+                return AudioManager.STREAM_SYSTEM;
+            case "music":
+                return AudioManager.STREAM_MUSIC;
+            default:
+                return STREAM_UNKNOWN;
         }
     }
 }

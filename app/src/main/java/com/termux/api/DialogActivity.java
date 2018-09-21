@@ -58,23 +58,23 @@ public class DialogActivity extends AppCompatActivity {
 
     private boolean resultReturned = false;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        final Intent intent = getIntent();
-        final Context context = this;
+    /**
+     * Extract value extras from intent into String array
+     */
+    static String[] getInputValues(Intent intent) {
+        String[] items = new String[]{};
 
+        if (intent != null && intent.hasExtra("input_values")) {
+            String[] temp = intent.getStringExtra("input_values").split(",");
+            items = new String[temp.length];
 
-        String methodType = intent.hasExtra("input_method") ? intent.getStringExtra("input_method") : "";
-
-        InputMethod method = InputMethodFactory.get(methodType, this);
-        method.create(this, new InputResultListener() {
-            @Override
-            public void onResult(final InputResult result) {
-                postResult(context, result);
-                finish();
+            // remove possible whitespace from strings in temp array
+            for (int j = 0; j < temp.length; ++j) {
+                String s = temp[j];
+                items[j] = s.trim();
             }
-        });
+        }
+        return items;
     }
 
     @Override
@@ -92,23 +92,19 @@ public class DialogActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Extract value extras from intent into String array
-     */
-    static String[] getInputValues(Intent intent) {
-        String[] items = new String[] { };
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        final Intent intent = getIntent();
+        final Context context = this;
 
-        if (intent != null && intent.hasExtra("input_values")) {
-            String[] temp = intent.getStringExtra("input_values").split(",");
-            items = new String[temp.length];
+        String methodType = intent.hasExtra("input_method") ? intent.getStringExtra("input_method") : "";
 
-            // remove possible whitespace from strings in temp array
-            for (int j = 0; j < temp.length; ++j) {
-                String s = temp[j];
-                items[j] = s.trim();
-            }
-        }
-        return items;
+        InputMethod method = InputMethodFactory.get(methodType, this);
+        method.create(this, result -> {
+            postResult(context, result);
+            finish();
+        });
     }
 
     /**
@@ -123,8 +119,8 @@ public class DialogActivity extends AppCompatActivity {
 
                 out.name("code").value(result.code);
                 out.name("text").value(result.text);
-                if(result.index > -1) {
-                    out.name("index").value(result.index);
+                if (InputResult.index > -1) {
+                    out.name("index").value(InputResult.index);
                 }
                 if (result.values.size() > 0) {
                     out.name("values");
@@ -178,13 +174,10 @@ public class DialogActivity extends AppCompatActivity {
                 case "time":
                     return new TimeInputMethod(activity);
                 default:
-                    return new InputMethod() {
-                        @Override
-                        public void create(AppCompatActivity activity, InputResultListener resultListener) {
-                            InputResult result = new InputResult();
-                            result.error = "Unknown Input Method: " + type;
-                            resultListener.onResult(result);
-                        }
+                    return (activity1, resultListener) -> {
+                        InputResult result = new InputResult();
+                        result.error = "Unknown Input Method: " + type;
+                        resultListener.onResult(result);
                     };
             }
         }
@@ -355,20 +348,10 @@ public class DialogActivity extends AppCompatActivity {
             counterLabel = layout.findViewById(R.id.counterTextView);
 
             final Button incrementButton = layout.findViewById(R.id.incrementButton);
-            incrementButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    increment();
-                }
-            });
+            incrementButton.setOnClickListener(view -> increment());
 
             final Button decrementButton = layout.findViewById(R.id.decrementButton);
-            decrementButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    decrement();
-                }
-            });
+            decrementButton.setOnClickListener(view -> decrement());
             updateCounterRange();
 
             return layout;
@@ -393,7 +376,7 @@ public class DialogActivity extends AppCompatActivity {
                 max = DEFAULT_MAX;
 
                 // halfway
-                counter = (DEFAULT_MAX - DEFAULT_MIN) /  2;
+                counter = (DEFAULT_MAX - DEFAULT_MIN) / 2;
             }
             updateLabel();
         }
@@ -648,16 +631,12 @@ public class DialogActivity extends AppCompatActivity {
                 textView.setText(values[j]);
                 textView.setTextSize(20);
                 textView.setPadding(56, 56, 56, 56);
-                textView.setOnClickListener(new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View view) {
-                        InputResult result = new InputResult();
-                        result.text = values[j];
-                        result.index = j;
-                        dialog.dismiss();
-                        resultListener.onResult(result);
-                    }
+                textView.setOnClickListener(view -> {
+                    InputResult result = new InputResult();
+                    result.text = values[j];
+                    InputResult.index = j;
+                    dialog.dismiss();
+                    resultListener.onResult(result);
                 });
 
                 layout.addView(textView);
@@ -711,7 +690,6 @@ public class DialogActivity extends AppCompatActivity {
         }
     }
 
-
     /**
      * Spinner InputMethod
      * Allow users to make a selection based on a list of specified values
@@ -757,7 +735,8 @@ public class DialogActivity extends AppCompatActivity {
             TextView textView = new TextView(activity);
             final Intent intent = activity.getIntent();
 
-            String text = intent.hasExtra("input_hint") ? intent.getStringExtra("input_hint") : "Listening for speech...";
+            String text = intent.hasExtra("input_hint") ?
+                    intent.getStringExtra("input_hint") : "Listening for speech...";
 
             textView.setText(text);
             textView.setTextSize(20);
@@ -767,7 +746,8 @@ public class DialogActivity extends AppCompatActivity {
         @Override
         public void create(final AppCompatActivity activity, final InputResultListener resultListener) {
             // Since we're using the microphone, we need to make sure we have proper permission
-            if (!TermuxApiPermissionActivity.checkAndRequestPermissions(activity, activity.getIntent(), Manifest.permission.RECORD_AUDIO)) {
+            if (!TermuxApiPermissionActivity.checkAndRequestPermissions(
+                    activity, activity.getIntent(), Manifest.permission.RECORD_AUDIO)) {
                 activity.finish();
             }
 
@@ -782,12 +762,9 @@ public class DialogActivity extends AppCompatActivity {
 
             // create intermediate InputResultListener so that we can stop our speech listening
             // if user hits the cancel button
-            DialogInterface.OnClickListener clickListener = getClickListener(new InputResultListener() {
-                @Override
-                public void onResult(InputResult result) {
-                    recognizer.stopListening();
-                    resultListener.onResult(result);
-                }
+            DialogInterface.OnClickListener clickListener = getClickListener(result -> {
+                recognizer.stopListening();
+                resultListener.onResult(result);
             });
 
             Dialog dialog = getDialogBuilder(activity, clickListener)
@@ -802,7 +779,8 @@ public class DialogActivity extends AppCompatActivity {
         }
 
         private boolean hasSpeechRecognizer(Context context) {
-            List<ResolveInfo> installList = context.getPackageManager().queryIntentActivities(new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), 0);
+            List<ResolveInfo> installList = context.getPackageManager().queryIntentActivities(
+                    new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), 0);
             return !installList.isEmpty();
         }
 
@@ -864,25 +842,32 @@ public class DialogActivity extends AppCompatActivity {
 
                 // unused
                 @Override
-                public void onEndOfSpeech() { }
+                public void onEndOfSpeech() {
+                }
 
                 @Override
-                public void onReadyForSpeech(Bundle bundle) { }
+                public void onReadyForSpeech(Bundle bundle) {
+                }
 
                 @Override
-                public void onBeginningOfSpeech() { }
+                public void onBeginningOfSpeech() {
+                }
 
                 @Override
-                public void onRmsChanged(float v) { }
+                public void onRmsChanged(float v) {
+                }
 
                 @Override
-                public void onBufferReceived(byte[] bytes) { }
+                public void onBufferReceived(byte[] bytes) {
+                }
 
                 @Override
-                public void onPartialResults(Bundle bundle) { }
+                public void onPartialResults(Bundle bundle) {
+                }
 
                 @Override
-                public void onEvent(int i, Bundle bundle) { }
+                public void onEvent(int i, Bundle bundle) {
+                }
             });
             return recognizer;
         }
@@ -891,6 +876,7 @@ public class DialogActivity extends AppCompatActivity {
 
     /**
      * Base Dialog class to extend from for adding specific views / widgets to a Dialog interface
+     *
      * @param <T> Main view type that will be displayed within dialog
      */
     abstract static class InputDialog<T extends View> implements InputMethod {
@@ -924,7 +910,6 @@ public class DialogActivity extends AppCompatActivity {
             widgetView = createWidgetView(activity);
             initActivityDisplay(activity);
         }
-
 
         @Override
         public void create(AppCompatActivity activity, final InputResultListener resultListener) {
@@ -967,30 +952,25 @@ public class DialogActivity extends AppCompatActivity {
         }
 
         DialogInterface.OnClickListener getClickListener(final InputResultListener listener) {
-            return new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int button) {
-                            InputResult result = onDialogClick(button);
-                            listener.onResult(result);
-                        }
-                    };
+            return (dialogInterface, button) -> {
+                InputResult result = onDialogClick(button);
+                listener.onResult(result);
+            };
         }
 
         DialogInterface.OnDismissListener getDismissListener() {
-            return new DialogInterface.OnDismissListener() {
-                @Override
-                public void onDismiss(DialogInterface dialogInterface) {
-                    // force dismiss behavior on single tap outside of dialog
-                    activity.onBackPressed();
-                    onDismissed();
-                }
+            return dialogInterface -> {
+                // force dismiss behavior on single tap outside of dialog
+                activity.onBackPressed();
+                onDismissed();
             };
         }
 
         /**
          * Creates a dialog builder to initialize a dialog w/ a view and button click listeners
          */
-        AlertDialog.Builder getDialogBuilder(AppCompatActivity activity, DialogInterface.OnClickListener clickListener) {
+        AlertDialog.Builder getDialogBuilder(AppCompatActivity activity,
+                                             DialogInterface.OnClickListener clickListener) {
             final Intent intent = activity.getIntent();
             final View layoutView = getLayoutView(activity, widgetView);
 
@@ -1020,7 +1000,9 @@ public class DialogActivity extends AppCompatActivity {
          */
         FrameLayout getFrameLayout(AppCompatActivity activity) {
             FrameLayout layout = new FrameLayout(activity);
-            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
 
             final int margin = 56;
             params.setMargins(margin, margin, margin, margin);

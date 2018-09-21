@@ -30,31 +30,30 @@ import javax.crypto.SecretKey;
  * This API allows users to use device fingerprint sensor as an authentication mechanism
  */
 public class FingerprintAPI {
-    protected static final String TAG             = "FingerprintAPI";
-    protected static final String KEY_NAME        = "TermuxFingerprintAPIKey";
-    protected static final String KEYSTORE_NAME   = "AndroidKeyStore";
+    protected static final String TAG = "FingerprintAPI";
+    protected static final String KEY_NAME = "TermuxFingerprintAPIKey";
+    protected static final String KEYSTORE_NAME = "AndroidKeyStore";
 
     // milliseconds to wait before canceling
     protected static final int SENSOR_TIMEOUT = 10000;
 
     // maximum authentication attempts before locked out
-    protected static final int MAX_ATTEMPTS   = 5;
+    protected static final int MAX_ATTEMPTS = 5;
 
     // error constants
-    protected static final String ERROR_UNSUPPORTED_OS_VERSION    = "ERROR_UNSUPPORTED_OS_VERSION";
-    protected static final String ERROR_NO_HARDWARE               = "ERROR_NO_HARDWARE";
-    protected static final String ERROR_NO_ENROLLED_FINGERPRINTS  = "ERROR_NO_ENROLLED_FINGERPRINTS";
-    protected static final String ERROR_KEY_GENERATOR             = "ERROR_KEY_GENERATOR";
-    protected static final String ERROR_CIPHER                    = "ERROR_CIPHER";
-    protected static final String ERROR_TIMEOUT                   = "ERROR_TIMEOUT";
-    protected static final String ERROR_TOO_MANY_FAILED_ATTEMPTS  = "ERROR_TOO_MANY_FAILED_ATTEMPTS";
-    protected static final String ERROR_LOCKOUT                   = "ERROR_LOCKOUT";
+    protected static final String ERROR_UNSUPPORTED_OS_VERSION = "ERROR_UNSUPPORTED_OS_VERSION";
+    protected static final String ERROR_NO_HARDWARE = "ERROR_NO_HARDWARE";
+    protected static final String ERROR_NO_ENROLLED_FINGERPRINTS = "ERROR_NO_ENROLLED_FINGERPRINTS";
+    protected static final String ERROR_KEY_GENERATOR = "ERROR_KEY_GENERATOR";
+    protected static final String ERROR_CIPHER = "ERROR_CIPHER";
+    protected static final String ERROR_TIMEOUT = "ERROR_TIMEOUT";
+    protected static final String ERROR_TOO_MANY_FAILED_ATTEMPTS = "ERROR_TOO_MANY_FAILED_ATTEMPTS";
+    protected static final String ERROR_LOCKOUT = "ERROR_LOCKOUT";
 
     // fingerprint authentication result constants
     protected static final String AUTH_RESULT_SUCCESS = "AUTH_RESULT_SUCCESS";
     protected static final String AUTH_RESULT_FAILURE = "AUTH_RESULT_FAILURE";
     protected static final String AUTH_RESULT_UNKNOWN = "AUTH_RESULT_UNKNOWN";
-
 
 
     // store result of fingerprint initialization / authentication
@@ -71,7 +70,7 @@ public class FingerprintAPI {
         resetFingerprintResult();
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            FingerprintManager fingerprintManager = (FingerprintManager)context.getSystemService(Context.FINGERPRINT_SERVICE);
+            FingerprintManager fingerprintManager = (FingerprintManager) context.getSystemService(Context.FINGERPRINT_SERVICE);
 
             // make sure we have a valid fingerprint sensor before attempting to launch Fingerprint activity
             if (validateFingerprintSensor(context, fingerprintManager)) {
@@ -138,7 +137,6 @@ public class FingerprintAPI {
     }
 
 
-
     /**
      * Activity that is necessary for authenticating w/ fingerprint sensor
      */
@@ -150,31 +148,6 @@ public class FingerprintAPI {
             super.onCreate(savedInstanceState);
             handleFingerprint();
             finish();
-        }
-
-        /**
-         * Handle setup and listening of fingerprint sensor
-         */
-        protected void handleFingerprint() {
-            FingerprintManager fingerprintManager = (FingerprintManager)getSystemService(Context.FINGERPRINT_SERVICE);
-            Cipher cipher = null;
-            boolean hasError = false;
-
-            try {
-                KeyStore keyStore = KeyStore.getInstance(KEYSTORE_NAME);
-                generateKey(keyStore);
-                cipher = getCipher();
-                keyStore.load(null);
-                SecretKey key = (SecretKey) keyStore.getKey(KEY_NAME, null);
-                cipher.init(Cipher.ENCRYPT_MODE, key);
-            } catch (Exception e) {
-                TermuxApiLogger.error(TAG, e);
-                hasError = true;
-            }
-
-            if (cipher != null && !hasError) {
-                authenticateWithFingerprint(this, getIntent(), fingerprintManager, cipher);
-            }
         }
 
         /**
@@ -210,7 +183,8 @@ public class FingerprintAPI {
 
                 // unused
                 @Override
-                public void onAuthenticationHelp(int helpCode, CharSequence helpString) { }
+                public void onAuthenticationHelp(int helpCode, CharSequence helpString) {
+                }
             };
 
             Toast.makeText(context, "Scan fingerprint", Toast.LENGTH_LONG).show();
@@ -229,16 +203,38 @@ public class FingerprintAPI {
          */
         protected static void addSensorTimeout(final Context context, final Intent intent, final CancellationSignal cancellationSignal) {
             final Handler timeoutHandler = new Handler(Looper.getMainLooper());
-            timeoutHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if (!postedResult) {
-                        appendFingerprintError(ERROR_TIMEOUT);
-                        cancellationSignal.cancel();
-                        postFingerprintResult(context, intent, fingerprintResult);
-                    }
+            timeoutHandler.postDelayed(() -> {
+                if (!postedResult) {
+                    appendFingerprintError(ERROR_TIMEOUT);
+                    cancellationSignal.cancel();
+                    postFingerprintResult(context, intent, fingerprintResult);
                 }
             }, SENSOR_TIMEOUT);
+        }
+
+        /**
+         * Handle setup and listening of fingerprint sensor
+         */
+        protected void handleFingerprint() {
+            FingerprintManager fingerprintManager = (FingerprintManager) getSystemService(Context.FINGERPRINT_SERVICE);
+            Cipher cipher = null;
+            boolean hasError = false;
+
+            try {
+                KeyStore keyStore = KeyStore.getInstance(KEYSTORE_NAME);
+                generateKey(keyStore);
+                cipher = getCipher();
+                keyStore.load(null);
+                SecretKey key = (SecretKey) keyStore.getKey(KEY_NAME, null);
+                cipher.init(Cipher.ENCRYPT_MODE, key);
+            } catch (Exception e) {
+                TermuxApiLogger.error(TAG, e);
+                hasError = true;
+            }
+
+            if (cipher != null && !hasError) {
+                authenticateWithFingerprint(this, getIntent(), fingerprintManager, cipher);
+            }
         }
 
         protected static void generateKey(KeyStore keyStore) {
@@ -305,7 +301,6 @@ public class FingerprintAPI {
     protected static void setAuthResult(String authResult) {
         fingerprintResult.authResult = authResult;
     }
-
 
     /**
      * Simple class to encapsulate information about result of a fingerprint authentication attempt

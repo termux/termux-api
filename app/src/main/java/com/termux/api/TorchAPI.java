@@ -16,7 +16,6 @@ import com.termux.api.util.TermuxApiLogger;
 public class TorchAPI {
     private static Camera legacyCamera;
 
-
     @TargetApi(Build.VERSION_CODES.M)
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         boolean enabled = intent.getBooleanExtra("enabled", false);
@@ -67,7 +66,7 @@ public class TorchAPI {
     }
 
     private static String getTorchCameraId(CameraManager cameraManager) throws CameraAccessException {
-        String[] cameraIdList =  cameraManager.getCameraIdList();
+        String[] cameraIdList = cameraManager.getCameraIdList();
         String result = null;
 
         for (String id : cameraIdList) {

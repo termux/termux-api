@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.IntentService;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -23,6 +22,41 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class SpeechToTextAPI {
 
+    public static void runFromActivity(final Activity context) {
+        PackageManager pm = context.getPackageManager();
+        List<ResolveInfo> installedList = pm.queryIntentActivities(new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), 0);
+        boolean speechRecognitionInstalled = !installedList.isEmpty();
+
+        if (speechRecognitionInstalled) {
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Select an application"); // user hint
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
+            intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1); // quantity of results we want to receive
+            // context.startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
+        } else {
+            // confirm
+            // button
+            // Install Button click handler
+            new AlertDialog.Builder(context)
+                    .setMessage("For recognition it’s necessary to install \"Google Voice Search\"")
+                    .setTitle("Install Voice Search from Google Play?")
+                    .setPositiveButton("Install", (dialog, which) -> {
+                        Intent intent = new Intent(Intent.ACTION_VIEW,
+                                Uri.parse("market://details?id=com.google.android.voicesearch"));
+                        // setting flags to avoid going in application history (Activity call stack)
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+                        context.startActivity(intent);
+                    })
+                    .setNegativeButton("Cancel", null) // cancel button
+                    .create()
+                    .show();
+        }
+    }
+
+    public static void onReceive(final Context context, Intent intent) {
+        context.startService(new Intent(context, SpeechToTextService.class).putExtras(intent.getExtras()));
+    }
+
     public static class SpeechToTextService extends IntentService {
 
         private static final String STOP_ELEMENT = "";
@@ -36,7 +70,7 @@ public class SpeechToTextAPI {
         }
 
         protected SpeechRecognizer mSpeechRecognizer;
-        final LinkedBlockingQueue<String> queueu = new LinkedBlockingQueue<>();
+        final LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
 
         @Override
         public void onCreate() {
@@ -55,7 +89,7 @@ public class SpeechToTextAPI {
                 public void onResults(Bundle results) {
                     List<String> recognitions = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                     TermuxApiLogger.error("RecognitionListener#onResults(" + recognitions + ")");
-                    queueu.addAll(recognitions);
+                    queue.addAll(recognitions);
                 }
 
                 @Override
@@ -68,7 +102,7 @@ public class SpeechToTextAPI {
                     // Do nothing.
                     List<String> strings = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                     TermuxApiLogger.error("RecognitionListener#onPartialResults(" + strings + ")");
-                    queueu.addAll(strings);
+                    queue.addAll(strings);
                 }
 
                 @Override
@@ -96,13 +130,13 @@ public class SpeechToTextAPI {
                             description = Integer.toString(error);
                     }
                     TermuxApiLogger.error("RecognitionListener#onError(" + description + ")");
-                    queueu.add(STOP_ELEMENT);
+                    queue.add(STOP_ELEMENT);
                 }
 
                 @Override
                 public void onEndOfSpeech() {
                     TermuxApiLogger.error("RecognitionListener#onEndOfSpeech()");
-                    queueu.add(STOP_ELEMENT);
+                    queue.add(STOP_ELEMENT);
                 }
 
                 @Override
@@ -121,20 +155,23 @@ public class SpeechToTextAPI {
             boolean speechRecognitionInstalled = !installedList.isEmpty();
 
             if (!speechRecognitionInstalled) {
-                new AlertDialog.Builder(context).setMessage("For recognition it’s necessary to install \"Google Voice Search\"")
-                        .setTitle("Install Voice Search from Google Play?").setPositiveButton("Install", new DialogInterface.OnClickListener() { // confirm
-                    // button
-                    // Install Button click handler
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent installIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.voicesearch"));
-                        // setting flags to avoid going in application history (Activity call
-                        // stack)
-                        installIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
-                        context.startActivity(installIntent);
-                    }
-                }).setNegativeButton("Cancel", null) // cancel button
-                        .create().show();
+                // confirm
+                // button
+                // Install Button click handler
+                new AlertDialog.Builder(context)
+                        .setMessage("For recognition it’s necessary to install \"Google Voice Search\"")
+                        .setTitle("Install Voice Search from Google Play?")
+                        .setPositiveButton("Install", (dialog, which) -> {
+                            Intent installIntent = new Intent(Intent.ACTION_VIEW,
+                                    Uri.parse("market://details?id=com.google.android.voicesearch"));
+                            // setting flags to avoid going in application history (Activity call
+                            // stack)
+                            installIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+                            context.startActivity(installIntent);
+                        })
+                        .setNegativeButton("Cancel", null) // cancel button
+                        .create()
+                        .show();
             }
 
             Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -160,8 +197,8 @@ public class SpeechToTextAPI {
                 @Override
                 public void writeResult(PrintWriter out) throws Exception {
                     while (true) {
-                        String s = queueu.take();
-                        if (s == STOP_ELEMENT) {
+                        String s = queue.take();
+                        if (s.equals(STOP_ELEMENT)) {
                             return;
                         } else {
                             out.println(s);
@@ -169,40 +206,6 @@ public class SpeechToTextAPI {
                     }
                 }
             });
-
         }
     }
-
-    public static void onReceive(final Context context, Intent intent) {
-        context.startService(new Intent(context, SpeechToTextService.class).putExtras(intent.getExtras()));
-    }
-
-    public static void runFromActivity(final Activity context) {
-        PackageManager pm = context.getPackageManager();
-        List<ResolveInfo> installedList = pm.queryIntentActivities(new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), 0);
-        boolean speechRecognitionInstalled = !installedList.isEmpty();
-
-        if (speechRecognitionInstalled) {
-            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Select an application"); // user hint
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
-            intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1); // quantity of results we want to receive
-            // context.startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
-        } else {
-            new AlertDialog.Builder(context).setMessage("For recognition it’s necessary to install \"Google Voice Search\"")
-                    .setTitle("Install Voice Search from Google Play?").setPositiveButton("Install", new DialogInterface.OnClickListener() { // confirm
-                // button
-                // Install Button click handler
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.voicesearch"));
-                    // setting flags to avoid going in application history (Activity call stack)
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
-                    context.startActivity(intent);
-                }
-            }).setNegativeButton("Cancel", null) // cancel button
-                    .create().show();
-        }
-    }
-
 }

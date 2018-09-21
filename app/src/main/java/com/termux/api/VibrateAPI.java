@@ -23,5 +23,4 @@ public class VibrateAPI {
 
         ResultReturner.noteDone(apiReceiver, intent);
     }
-
 }

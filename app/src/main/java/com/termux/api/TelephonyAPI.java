@@ -3,8 +3,10 @@ package com.termux.api;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.support.v4.app.ActivityCompat;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoCdma;
 import android.telephony.CellInfoGsm;
@@ -34,6 +36,16 @@ public class TelephonyAPI {
                 TelephonyManager manager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
                 out.beginArray();
 
+                if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return;
+                }
                 for (CellInfo cellInfo : manager.getAllCellInfo()) {
                     out.beginObject();
                     if (cellInfo instanceof CellInfoGsm) {
@@ -108,15 +120,15 @@ public class TelephonyAPI {
         });
     }
 
-
-    static void onReceiveTelephonyDeviceInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+    static void onReceiveTelephonyDeviceInfo(TermuxApiReceiver apiReceiver,
+                                             final Context context,
+                                             final Intent intent) {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             @SuppressLint("HardwareIds")
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 TelephonyManager manager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
                 out.beginObject();
-
                 {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         out.name("data_enabled").value(Boolean.toString(manager.isDataEnabled()));
@@ -167,7 +179,27 @@ public class TelephonyAPI {
                     }
                     out.name("data_state").value(dataStateString);
 
+                    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+                        return;
+                    }
                     out.name("device_id").value(manager.getDeviceId());
+                    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+                        return;
+                    }
                     out.name("device_software_version").value(manager.getDeviceSoftwareVersion());
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

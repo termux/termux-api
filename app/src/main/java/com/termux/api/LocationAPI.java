@@ -2,12 +2,14 @@ package com.termux.api;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.support.v4.app.ActivityCompat;
 import android.util.JsonWriter;
 import android.util.Log;
 
@@ -32,12 +34,15 @@ public class LocationAPI {
                 String provider = intent.getStringExtra("provider");
                 if (provider == null)
                     provider = LocationManager.GPS_PROVIDER;
-                if (!(provider.equals(LocationManager.GPS_PROVIDER) || provider.equals(LocationManager.NETWORK_PROVIDER) || provider
+                if (!(provider.equals(LocationManager.GPS_PROVIDER) ||
+                        provider.equals(LocationManager.NETWORK_PROVIDER) ||
+                        provider
                         .equals(LocationManager.PASSIVE_PROVIDER))) {
                     out.beginObject()
                             .name("API_ERROR")
                             .value("Unsupported provider '" + provider + "' - only '" + LocationManager.GPS_PROVIDER + "', '"
-                                    + LocationManager.NETWORK_PROVIDER + "' and '" + LocationManager.PASSIVE_PROVIDER + "' supported").endObject();
+                                    + LocationManager.NETWORK_PROVIDER + "' and '" + LocationManager.PASSIVE_PROVIDER + "' supported")
+                            .endObject();
                     return;
                 }
 
@@ -46,11 +51,33 @@ public class LocationAPI {
                     request = REQUEST_ONCE;
                 switch (request) {
                     case REQUEST_LAST_KNOWN:
+                        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            // TODO: Consider calling
+                            //    ActivityCompat#requestPermissions
+                            // here to request the missing permissions, and then overriding
+                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                            //                                          int[] grantResults)
+                            // to handle the case where the user grants the permission. See the documentation
+                            // for ActivityCompat#requestPermissions for more details.
+                            return;
+                        }
                         Location lastKnownLocation = manager.getLastKnownLocation(provider);
                         locationToJson(lastKnownLocation, out);
                         break;
                     case REQUEST_ONCE:
                         Looper.prepare();
+                        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            // TODO: Consider calling
+                            //    ActivityCompat#requestPermissions
+                            // here to request the missing permissions, and then overriding
+                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                            //                                          int[] grantResults)
+                            // to handle the case where the user grants the permission. See the documentation
+                            // for ActivityCompat#requestPermissions for more details.
+                            return;
+                        }
                         manager.requestSingleUpdate(provider, new LocationListener() {
 
                             @Override
@@ -83,6 +110,17 @@ public class LocationAPI {
                         break;
                     case REQUEST_UPDATES:
                         Looper.prepare();
+                        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            // TODO: Consider calling
+                            //    ActivityCompat#requestPermissions
+                            // here to request the missing permissions, and then overriding
+                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                            //                                          int[] grantResults)
+                            // to handle the case where the user grants the permission. See the documentation
+                            // for ActivityCompat#requestPermissions for more details.
+                            return;
+                        }
                         manager.requestLocationUpdates(provider, 5000, 50.f, new LocationListener() {
 
                             @Override
@@ -127,8 +165,9 @@ public class LocationAPI {
                     default:
                         out.beginObject()
                                 .name("API_ERROR")
-                                .value("Unsupported request '" + request + "' - only '" + REQUEST_LAST_KNOWN + "', '" + REQUEST_ONCE + "' and '" + REQUEST_UPDATES
-                                        + "' supported").endObject();
+                                .value("Unsupported request '" + request + "' - only '" + REQUEST_LAST_KNOWN +
+                                        "', '" + REQUEST_ONCE + "' and '" + REQUEST_UPDATES + "' supported")
+                                .endObject();
                 }
             }
         });

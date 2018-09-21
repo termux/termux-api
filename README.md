@@ -5,12 +5,13 @@ Termux API
 This is an app exposing Android API to command line usage and scripts or programs.
 
 - [Termux:API on Google Play](https://play.google.com/store/apps/details?id=com.termux.api)
+- [Termux:API on F-Droid](https://f-droid.org/packages/com.termux.api)
 
 When developing or packaging, note that this app needs to be signed with the same key as the main Termux app for permissions to work (only the main Termux app are allowed to call the API methods in this app).
 
 License
 =======
-Released under the [GPLv3 license](http://www.gnu.org/licenses/gpl-3.0.en.html).
+Released under the [GPLv3 license](https://www.gnu.org/licenses/gpl-3.0.html).
 
 How API calls are made through the termux-api helper binary
 ===========================================================

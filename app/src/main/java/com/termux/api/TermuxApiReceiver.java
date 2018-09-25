@@ -83,6 +83,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     InfraredAPI.onReceiveTransmit(this, context, intent);
                 }
                 break;
+            case "Keystore":
+                KeystoreAPI.onReceive(this, intent);
+                break;
             case "Location":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.ACCESS_FINE_LOCATION)) {
                     LocationAPI.onReceive(this, context, intent);

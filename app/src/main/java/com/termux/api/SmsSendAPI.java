@@ -1,26 +1,34 @@
 package com.termux.api;
 
+import android.content.Context;
 import android.content.Intent;
 import android.telephony.SmsManager;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
 public class SmsSendAPI {
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
+    static void onReceive(Context context, final JSONObject opts) {
+        ResultReturner.returnData(context, new ResultReturner.WithStringInput() {
             @Override
             public void writeResult(PrintWriter out) {
                 final SmsManager smsManager = SmsManager.getDefault();
-                String[] recipients = intent.getStringArrayExtra("recipients");
+                JSONArray recipientsJson = opts.optJSONArray("recipients");
+                String[] recipients = new String[recipientsJson.length()];
+                for(int i = 0; i < recipientsJson.length(); i++){
+                    recipients[i] = recipientsJson.optString(i);
+                }
 
                 if (recipients == null) {
                     // Used by old versions of termux-send-sms.
-                    String recipient = intent.getStringExtra("recipient");
+                    String recipient = opts.optString("recipient");
                     if (recipient != null) recipients = new String[]{recipient};
                 }
 

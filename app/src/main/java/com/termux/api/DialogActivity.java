@@ -42,7 +42,12 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.termux.api.util.ResultReturner;
+import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -57,6 +62,7 @@ import java.util.Objects;
 public class DialogActivity extends AppCompatActivity {
 
     private boolean resultReturned = false;
+    public static JSONObject opts = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +70,13 @@ public class DialogActivity extends AppCompatActivity {
         final Intent intent = getIntent();
         final Context context = this;
 
+        try {
+            opts = new JSONObject(intent.getStringExtra("data"));
+        } catch (JSONException e) {
+            TermuxApiLogger.error("Not valid JSON in intent extra.");
+        }
 
-        String methodType = intent.hasExtra("input_method") ? intent.getStringExtra("input_method") : "";
+        String methodType = opts.optString("input_method", "");
 
         InputMethod method = InputMethodFactory.get(methodType, this);
         method.create(this, new InputResultListener() {
@@ -93,20 +104,13 @@ public class DialogActivity extends AppCompatActivity {
     }
 
     /**
-     * Extract value extras from intent into String array
+     * Extract values from jsonArray into String array
      */
-    static String[] getInputValues(Intent intent) {
-        String[] items = new String[] { };
 
-        if (intent != null && intent.hasExtra("input_values")) {
-            String[] temp = intent.getStringExtra("input_values").split(",");
-            items = new String[temp.length];
-
-            // remove possible whitespace from strings in temp array
-            for (int j = 0; j < temp.length; ++j) {
-                String s = temp[j];
-                items[j] = s.trim();
-            }
+    static String[] getInputValues(JSONArray jsonArray) {
+        String[] items = new String[jsonArray.length()];
+        for(int i = 0; i < jsonArray.length(); i++){
+            items[i] = jsonArray.optString(i).trim();
         }
         return items;
     }
@@ -115,7 +119,7 @@ public class DialogActivity extends AppCompatActivity {
      * Writes the InputResult to the console
      */
     protected void postResult(final Context context, final InputResult result) {
-        ResultReturner.returnData(context, getIntent(), new ResultReturner.ResultJsonWriter() {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
 
             @Override
             public void writeJson(JsonWriter out) throws Exception {
@@ -250,7 +254,7 @@ public class DialogActivity extends AppCompatActivity {
             layoutParams.topMargin = 32;
             layoutParams.bottomMargin = 32;
 
-            String[] values = getInputValues(activity.getIntent());
+            String[] values = getInputValues(opts.optJSONArray("input_values"));
 
             for (int j = 0; j < values.length; ++j) {
                 String value = values[j];
@@ -311,9 +315,8 @@ public class DialogActivity extends AppCompatActivity {
         @Override
         TextView createWidgetView(AppCompatActivity activity) {
             TextView textView = new TextView(activity);
-            final Intent intent = activity.getIntent();
 
-            String text = intent.hasExtra("input_hint") ? intent.getStringExtra("input_hint") : "Confirm";
+            String text = opts.optString("input_hint", "Confirm");
             textView.setText(text);
             return textView;
         }
@@ -375,10 +378,14 @@ public class DialogActivity extends AppCompatActivity {
         }
 
         void updateCounterRange() {
-            final Intent intent = activity.getIntent();
+            if (!opts.isNull("input_range")) {
+                JSONArray valuesJson = opts.optJSONArray("input_range");
 
-            if (intent.hasExtra("input_range")) {
-                int[] values = intent.getIntArrayExtra("input_range");
+                int[] values = new int[valuesJson.length()];
+                for(int i = 0; i < valuesJson.length(); i++){
+                    values[i] = valuesJson.optInt(i);
+                }
+
                 if (values.length != RANGE_LENGTH) {
                     inputResult.error = "Invalid range! Must be 3 int values!";
                     postCanceledResult();
@@ -442,9 +449,8 @@ public class DialogActivity extends AppCompatActivity {
             Calendar calendar = Calendar.getInstance();
             calendar.set(year, month, day, 0, 0, 0);
 
-            final Intent intent = activity.getIntent();
-            if (intent.hasExtra("date_format")) {
-                String date_format = intent.getStringExtra("date_format");
+            if (!opts.isNull("date_format")) {
+                String date_format = opts.optString("date_format");
                 try {
                     SimpleDateFormat dateFormat = new SimpleDateFormat(date_format);
                     dateFormat.setTimeZone(calendar.getTimeZone());
@@ -481,16 +487,15 @@ public class DialogActivity extends AppCompatActivity {
 
         @Override
         EditText createWidgetView(AppCompatActivity activity) {
-            final Intent intent = activity.getIntent();
             EditText editText = new EditText(activity);
 
-            if (intent.hasExtra("input_hint")) {
-                editText.setHint(intent.getStringExtra("input_hint"));
+            if (!opts.isNull("input_hint")) {
+                editText.setHint(opts.optString("input_hint"));
             }
 
-            boolean multiLine = intent.getBooleanExtra("multiple_lines", false);
-            boolean numeric = intent.getBooleanExtra("numeric", false);
-            boolean password = intent.getBooleanExtra("password", false);
+            boolean multiLine = opts.optBoolean("multiple_lines", false);
+            boolean numeric = opts.optBoolean("numeric", false);
+            boolean password = opts.optBoolean("password", false);
 
             int flags = InputType.TYPE_CLASS_TEXT;
 
@@ -564,7 +569,7 @@ public class DialogActivity extends AppCompatActivity {
             layoutParams.topMargin = 32;
             layoutParams.bottomMargin = 32;
 
-            String[] values = getInputValues(activity.getIntent());
+            String[] values = getInputValues(opts.optJSONArray("input_values"));
 
             for (int j = 0; j < values.length; ++j) {
                 String value = values[j];
@@ -640,12 +645,12 @@ public class DialogActivity extends AppCompatActivity {
             layout.setOrientation(LinearLayout.VERTICAL);
 
             NestedScrollView scrollView = new NestedScrollView(getContext());
-            final String[] values = getInputValues(Objects.requireNonNull(getActivity()).getIntent());
+            final JSONArray values =  opts.optJSONArray("input_values");
 
-            for (int i = 0; i < values.length; ++i) {
+            for (int i = 0; i < values.length(); ++i) {
                 final int j = i;
                 final TextView textView = new TextView(getContext());
-                textView.setText(values[j]);
+                textView.setText(values.optString(j));
                 textView.setTextSize(20);
                 textView.setPadding(56, 56, 56, 56);
                 textView.setOnClickListener(new View.OnClickListener() {
@@ -653,7 +658,7 @@ public class DialogActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View view) {
                         InputResult result = new InputResult();
-                        result.text = values[j];
+                        result.text = values.optString(j);
                         result.index = j;
                         dialog.dismiss();
                         resultListener.onResult(result);
@@ -732,8 +737,7 @@ public class DialogActivity extends AppCompatActivity {
         Spinner createWidgetView(AppCompatActivity activity) {
             Spinner spinner = new Spinner(activity);
 
-            final Intent intent = activity.getIntent();
-            final String[] items = getInputValues(intent);
+            final String[] items = getInputValues(opts.optJSONArray("input_values"));
             final ArrayAdapter<String> adapter = new ArrayAdapter<>(activity, R.layout.spinner_item, items);
 
             spinner.setAdapter(adapter);
@@ -755,9 +759,8 @@ public class DialogActivity extends AppCompatActivity {
         @Override
         TextView createWidgetView(AppCompatActivity activity) {
             TextView textView = new TextView(activity);
-            final Intent intent = activity.getIntent();
 
-            String text = intent.hasExtra("input_hint") ? intent.getStringExtra("input_hint") : "Listening for speech...";
+            String text = !opts.isNull("input_hint") ? opts.optString("input_hint") : "Listening for speech...";
 
             textView.setText(text);
             textView.setTextSize(20);
@@ -767,7 +770,7 @@ public class DialogActivity extends AppCompatActivity {
         @Override
         public void create(final AppCompatActivity activity, final InputResultListener resultListener) {
             // Since we're using the microphone, we need to make sure we have proper permission
-            if (!TermuxApiPermissionActivity.checkAndRequestPermissions(activity, activity.getIntent(), Manifest.permission.RECORD_AUDIO)) {
+            if (!TermuxApiPermissionActivity.checkAndRequestPermissions(activity, Manifest.permission.RECORD_AUDIO)) {
                 activity.finish();
             }
 
@@ -991,11 +994,10 @@ public class DialogActivity extends AppCompatActivity {
          * Creates a dialog builder to initialize a dialog w/ a view and button click listeners
          */
         AlertDialog.Builder getDialogBuilder(AppCompatActivity activity, DialogInterface.OnClickListener clickListener) {
-            final Intent intent = activity.getIntent();
             final View layoutView = getLayoutView(activity, widgetView);
 
             return new AlertDialog.Builder(activity)
-                    .setTitle(intent.hasExtra("input_title") ? intent.getStringExtra("input_title") : "")
+                    .setTitle(opts.optString("input_title", ""))
                     .setNegativeButton(getNegativeButtonText(), clickListener)
                     .setPositiveButton(getPositiveButtonText(), clickListener)
                     .setOnDismissListener(getDismissListener())

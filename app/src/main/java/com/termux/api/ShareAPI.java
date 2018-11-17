@@ -14,18 +14,20 @@ import android.webkit.MimeTypeMap;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 
 public class ShareAPI {
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        final String fileExtra = intent.getStringExtra("file");
-        final String titleExtra = intent.getStringExtra("title");
-        final String contentTypeExtra = intent.getStringExtra("content-type");
-        final boolean defaultReceiverExtra = intent.getBooleanExtra("default-receiver", false);
-        final String actionExtra = intent.getStringExtra("action");
+    static void onReceive(final Context context, JSONObject opts) {
+        final String fileExtra = opts.optString("file");
+        final String titleExtra = opts.optString("title");
+        final String contentTypeExtra = opts.optString("content-type");
+        final boolean defaultReceiverExtra = opts.optBoolean("default-receiver", false);
+        final String actionExtra = opts.optString("action");
 
         String intentAction = null;
         if (actionExtra == null) {
@@ -50,7 +52,7 @@ public class ShareAPI {
 
         if (fileExtra == null) {
             // Read text to share from stdin.
-            ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
+            ResultReturner.returnData(context, new ResultReturner.WithStringInput() {
                 @Override
                 public void writeResult(PrintWriter out) {
                     if (TextUtils.isEmpty(inputString)) {
@@ -72,7 +74,7 @@ public class ShareAPI {
             });
         } else {
             // Share specified file.
-            ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
+            ResultReturner.returnData(context, new ResultReturner.ResultWriter() {
                 @Override
                 public void writeResult(PrintWriter out) {
                     final File fileToShare = new File(fileExtra);

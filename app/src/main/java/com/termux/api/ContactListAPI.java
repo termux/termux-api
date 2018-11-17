@@ -15,8 +15,8 @@ import com.termux.api.util.ResultReturner.ResultJsonWriter;
 
 public class ContactListAPI {
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
+    static void onReceive(final Context context) {
+        ResultReturner.returnData(context, new ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 listContacts(context, out);

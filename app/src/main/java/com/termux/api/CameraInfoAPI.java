@@ -1,7 +1,6 @@
 package com.termux.api;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -16,8 +15,8 @@ import com.termux.api.util.ResultReturner.ResultJsonWriter;
 
 public class CameraInfoAPI {
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
+    static void onReceive(final Context context) {
+        ResultReturner.returnData(context, new ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 final CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);

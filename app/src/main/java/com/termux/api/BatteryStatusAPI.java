@@ -12,8 +12,8 @@ import com.termux.api.util.TermuxApiLogger;
 
 public class BatteryStatusAPI {
 
-    public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
+    public static void onReceive(final Context context) {
+        ResultReturner.returnData(context, new ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 Intent batteryStatus = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));

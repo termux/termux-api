@@ -32,10 +32,10 @@ public class SensorAPI {
     /**
      * Starts our SensorReader service
      */
-    public static void onReceive(final Context context, final Intent intent) {
+    public static void onReceive(final Context context, final JSONObject opts) {
         Intent serviceIntent = new Intent(context, SensorReaderService.class);
-        serviceIntent.setAction(intent.getAction());
-        serviceIntent.putExtras(intent.getExtras());
+        serviceIntent.setAction(opts.optString("action"));
+        serviceIntent.putExtra("opts", opts.toString());
         context.startService(serviceIntent);
     }
 
@@ -161,7 +161,7 @@ public class SensorAPI {
         private void postSensorCommandResult(final Context context, final Intent intent,
                                              final SensorCommandResult result) {
 
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
+            ResultReturner.returnData(context, new ResultReturner.ResultWriter() {
                 @Override
                 public void writeResult(PrintWriter out) {
                     out.append(result.message + "\n");

@@ -16,6 +16,8 @@ import android.util.Log;
 
 import com.termux.api.util.ResultReturner;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 
 /**
@@ -27,8 +29,8 @@ public class TelephonyAPI {
         if (value != Integer.MAX_VALUE) out.name(name).value(value);
     }
 
-    static void onReceiveTelephonyCellInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+    static void onReceiveTelephonyCellInfo(final Context context) {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 TelephonyManager manager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
@@ -109,8 +111,8 @@ public class TelephonyAPI {
     }
 
 
-    static void onReceiveTelephonyDeviceInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+    static void onReceiveTelephonyDeviceInfo(final Context context) {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             @SuppressLint("HardwareIds")
             @Override
             public void writeJson(JsonWriter out) throws Exception {
@@ -295,11 +297,11 @@ public class TelephonyAPI {
         });
     }
 
-    static void onReceiveTelephonyCall(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        String numberExtra = intent.getStringExtra("number");
+    static void onReceiveTelephonyCall(final Context context, JSONObject opts) {
+        String numberExtra = opts.optString("number");
         if (numberExtra == null) {
             Log.e("termux-api", "No 'number extra");
-            ResultReturner.noteDone(apiReceiver, intent);
+            ResultReturner.noteDone(context);
         }
 
         Uri data = Uri.parse("tel:" + numberExtra);
@@ -314,7 +316,7 @@ public class TelephonyAPI {
             Log.e("termux-api", "Exception in phone call", e);
         }
 
-        ResultReturner.noteDone(apiReceiver, intent);
+        ResultReturner.noteDone(context);
     }
 
 }

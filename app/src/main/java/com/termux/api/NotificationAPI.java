@@ -16,6 +16,9 @@ import android.text.TextUtils;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -35,8 +38,8 @@ public class NotificationAPI {
     /**
      * Show a notification. Driven by the termux-show-notification script.
      */
-    static void onReceiveShowNotification(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        String priorityExtra = intent.getStringExtra("priority");
+    static void onReceiveShowNotification(final Context context, JSONObject opts) {
+        String priorityExtra = opts.optString("priority");
         if (priorityExtra == null) priorityExtra = "default";
         int priority;
         switch (priorityExtra) {
@@ -57,9 +60,9 @@ public class NotificationAPI {
                 break;
         }
 
-        String title = intent.getStringExtra("title");
+        String title = opts.optString("title");
 
-        String lightsArgbExtra = intent.getStringExtra("led-color");
+        String lightsArgbExtra = opts.optString("led-color");
 
         int ledColor = 0;
 
@@ -71,21 +74,28 @@ public class NotificationAPI {
             }
         }
 
-        int ledOnMs = intent.getIntExtra("led-on", 800);
-        int ledOffMs = intent.getIntExtra("led-off", 800);
+        int ledOnMs = opts.optInt("led-on", 800);
+        int ledOffMs = opts.optInt("led-off", 800);
 
-        long[] vibratePattern = intent.getLongArrayExtra("vibrate");
-        boolean useSound = intent.getBooleanExtra("sound", false);
-        boolean ongoing = intent.getBooleanExtra("ongoing", false);
-        boolean alertOnce = intent.getBooleanExtra("alert-once", true);
 
-        String actionExtra = intent.getStringExtra("action");
+        JSONArray vibratePatternJson = opts.optJSONArray("vibrate");
+        long[] vibratePattern = new long[vibratePatternJson.length()];
 
-        String id = intent.getStringExtra("id");
+        for(int i = 0; i < vibratePatternJson.length(); i++){
+            vibratePattern[i] = vibratePatternJson.optLong(i);
+        }
+
+        boolean useSound = opts.optBoolean("sound", false);
+        boolean ongoing = opts.optBoolean("ongoing", false);
+        boolean alertOnce = opts.optBoolean("alert-once", true);
+
+        String actionExtra = opts.optString("action");
+
+        String id = opts.optString("id");
         if (id == null) id = UUID.randomUUID().toString();
         final String notificationId = id;
 
-        String groupKey = intent.getStringExtra("group");
+        String groupKey = opts.optString("group");
 
         final Notification.Builder notification = new Notification.Builder(context);
         notification.setSmallIcon(R.drawable.ic_event_note_black_24dp);
@@ -98,7 +108,7 @@ public class NotificationAPI {
 
 
 
-        String ImagePath = intent.getStringExtra("image-path");
+        String ImagePath = opts.optString("image-path");
 
         if(ImagePath != null){
             File imgFile = new  File(ImagePath);
@@ -111,12 +121,12 @@ public class NotificationAPI {
             }
         }
 
-        String styleType = intent.getStringExtra("type");
+        String styleType = opts.optString("type");
         if(Objects.equals(styleType, "media")) {
-            String mediaPrevious = intent.getStringExtra("media-previous");
-            String mediaPause = intent.getStringExtra("media-pause");
-            String mediaPlay = intent.getStringExtra("media-play");
-            String mediaNext = intent.getStringExtra("media-next");
+            String mediaPrevious = opts.optString("media-previous");
+            String mediaPause = opts.optString("media-pause");
+            String mediaPlay = opts.optString("media-play");
+            String mediaNext = opts.optString("media-next");
 
             if (mediaPrevious != null && mediaPause != null && mediaPlay != null && mediaNext != null) {
                 notification.setSmallIcon(android.R.drawable.ic_media_play);
@@ -164,21 +174,21 @@ public class NotificationAPI {
         }
 
         for (int button = 1; button <= 3; button++) {
-            String buttonText = intent.getStringExtra("button_text_" + button);
-            String buttonAction = intent.getStringExtra("button_action_" + button);
+            String buttonText = opts.optString("button_text_" + button);
+            String buttonAction = opts.optString("button_action_" + button);
             if (buttonText != null && buttonAction != null) {
                 PendingIntent pi = createAction(context, buttonAction);
                 notification.addAction(new Notification.Action(android.R.drawable.ic_input_add, buttonText, pi));
             }
         }
 
-        String onDeleteActionExtra = intent.getStringExtra("on_delete_action");
+        String onDeleteActionExtra = opts.optString("on_delete_action");
         if (onDeleteActionExtra != null) {
             PendingIntent pi = createAction(context, onDeleteActionExtra);
             notification.setDeleteIntent(pi);
         }
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
+        ResultReturner.returnData(context, new ResultReturner.WithStringInput() {
             @Override
             public void writeResult(PrintWriter out) {
                 NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -205,9 +215,9 @@ public class NotificationAPI {
         });
     }
 
-    static void onReceiveRemoveNotification(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.noteDone(apiReceiver, intent);
-        String notificationId = intent.getStringExtra("id");
+    static void onReceiveRemoveNotification(final Context context, JSONObject opts) {
+        ResultReturner.noteDone(context);
+        String notificationId = opts.optString("id");
         if (notificationId != null) {
             NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             manager.cancel(notificationId, 0);

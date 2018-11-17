@@ -22,6 +22,8 @@ import android.view.WindowManager;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
@@ -35,13 +37,13 @@ import java.util.Objects;
 
 public class PhotoAPI {
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
-        final String filePath = intent.getStringExtra("file");
+    static void onReceive(final Context context, JSONObject opts) {
+        final String filePath = opts.optString("file");
         final File outputFile = new File(filePath);
         final File outputDir = outputFile.getParentFile();
-        final String cameraId = Objects.toString(intent.getStringExtra("camera"), "0");
+        final String cameraId = Objects.toString(opts.optString("camera"), "0");
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
+        ResultReturner.returnData(context, new ResultReturner.ResultWriter() {
             @Override
             public void writeResult(PrintWriter stdout) {
                 if (!(outputDir.isDirectory() || outputDir.mkdirs())) {

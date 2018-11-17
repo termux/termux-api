@@ -7,12 +7,14 @@ import android.os.Vibrator;
 
 import com.termux.api.util.ResultReturner;
 
+import org.json.JSONObject;
+
 public class VibrateAPI {
 
-    static void onReceive(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
+    static void onReceive(Context context, JSONObject opts) {
         Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-        int milliseconds = intent.getIntExtra("duration_ms", 1000);
-        boolean force = intent.getBooleanExtra("force", false);
+        int milliseconds = opts.optInt("duration_ms", 1000);
+        boolean force = opts.optBoolean("force", false);
 
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (am.getRingerMode() == AudioManager.RINGER_MODE_SILENT && !force) {
@@ -21,7 +23,7 @@ public class VibrateAPI {
             vibrator.vibrate(milliseconds);
         }
 
-        ResultReturner.noteDone(apiReceiver, intent);
+        ResultReturner.noteDone(context);
     }
 
 }

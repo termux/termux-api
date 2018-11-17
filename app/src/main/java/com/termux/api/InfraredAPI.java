@@ -7,13 +7,16 @@ import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * Exposing {@link ConsumerIrManager}.
  */
 public class InfraredAPI {
 
-    static void onReceiveCarrierFrequency(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+    static void onReceiveCarrierFrequency(final Context context) {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 ConsumerIrManager irManager = (ConsumerIrManager) context.getSystemService(Context.CONSUMER_IR_SERVICE);
@@ -40,14 +43,20 @@ public class InfraredAPI {
     }
 
 
-    static void onReceiveTransmit(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+    static void onReceiveTransmit(final Context context, final JSONObject opts) {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 ConsumerIrManager irManager = (ConsumerIrManager) context.getSystemService(Context.CONSUMER_IR_SERVICE);
 
-                int carrierFrequency = intent.getIntExtra("frequency", -1);
-                int[] pattern = intent.getIntArrayExtra("pattern");
+                int carrierFrequency = opts.optInt("frequency", -1);
+                JSONArray jsonArray = opts.getJSONArray("pattern");
+
+                int[] pattern = new int[jsonArray.length()];
+
+                for(int i = 0; i < jsonArray.length(); i++){
+                    pattern[i] = jsonArray.optInt(i);
+                }
 
                 String error = null;
                 if (!irManager.hasIrEmitter()) {

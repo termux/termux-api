@@ -8,6 +8,8 @@ import android.util.SparseArray;
 
 import com.termux.api.util.ResultReturner;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -26,31 +28,32 @@ public class VolumeAPI {
     }
 
 
-    static void onReceive(final TermuxApiReceiver receiver, final Context context, final Intent intent) {
+    static void onReceive(final Context context, final JSONObject opts) {
         final AudioManager audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
-        String action = intent.getAction();
+        String action = opts.optString("action");
 
         if ("set-volume".equals(action)) {
-            final String streamName = intent.getStringExtra("stream");
+            final String streamName = opts.optString("stream");
             final int stream = getAudioStream(streamName);
 
             if (stream == STREAM_UNKNOWN) {
                 String error = "ERROR: Unknown stream: " + streamName;
-                printError(context, intent, error);
+                printError(context, error);
             } else {
-                setStreamVolume(intent, audioManager, stream);
-                ResultReturner.noteDone(receiver, intent);
+                int volume = opts.optInt("volume", -1);
+                setStreamVolume(audioManager, stream, volume);
+                ResultReturner.noteDone(context);
             }
         } else {
-            printAllStreamInfo(context, intent, audioManager);
+            printAllStreamInfo(context, audioManager);
         }
     }
 
     /**
      * Prints error to console
      */
-    private static void printError(Context context, Intent intent, final String error) {
-        ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
+    private static void printError(Context context, final String error) {
+        ResultReturner.returnData(context, new ResultReturner.ResultWriter() {
             @Override
             public void writeResult(PrintWriter out) {
                 out.append(error + "\n");
@@ -63,10 +66,11 @@ public class VolumeAPI {
     /**
      * Set volume for the specified audio stream
      */
-    private static void setStreamVolume(Intent intent, AudioManager audioManager, int stream) {
-        int volume = intent.getIntExtra("volume", audioManager.getStreamVolume(stream));
+    private static void setStreamVolume(AudioManager audioManager, int stream, int volume ) {
         int maxVolume = audioManager.getStreamMaxVolume(stream);
-
+        if (volume == -1 ){
+            volume = audioManager.getStreamVolume(stream);
+        }
         if (volume <= 0) {
             volume = 0;
         } else if (volume >= maxVolume) {
@@ -78,8 +82,8 @@ public class VolumeAPI {
     /**
      * Print information about all available audio streams
      */
-    private static void printAllStreamInfo(Context context, Intent intent, final AudioManager audioManager) {
-        ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
+    private static void printAllStreamInfo(Context context, final AudioManager audioManager) {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 getStreamsInfo(audioManager, out);

@@ -18,6 +18,8 @@ import android.widget.Toast;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONObject;
+
 import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +69,7 @@ public class FingerprintAPI {
     /**
      * Handles setup of fingerprint sensor and writes Fingerprint result to console
      */
-    static void onReceive(final Context context, final Intent intent) {
+    static void onReceive(final Context context, JSONObject opts) {
         resetFingerprintResult();
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
@@ -76,23 +78,23 @@ public class FingerprintAPI {
             // make sure we have a valid fingerprint sensor before attempting to launch Fingerprint activity
             if (validateFingerprintSensor(context, fingerprintManager)) {
                 Intent fingerprintIntent = new Intent(context, FingerprintActivity.class);
-                fingerprintIntent.putExtras(intent.getExtras());
+                fingerprintIntent.putExtra("opts", opts.optString("opts"));
                 context.startActivity(fingerprintIntent);
             } else {
-                postFingerprintResult(context, intent, fingerprintResult);
+                postFingerprintResult(context, fingerprintResult);
             }
         } else {
             // pre-marshmallow is unsupported
             appendFingerprintError(ERROR_UNSUPPORTED_OS_VERSION);
-            postFingerprintResult(context, intent, fingerprintResult);
+            postFingerprintResult(context, fingerprintResult);
         }
     }
 
     /**
      * Writes the result of our fingerprint result to the console
      */
-    protected static void postFingerprintResult(Context context, Intent intent, final FingerprintResult result) {
-        ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
+    protected static void postFingerprintResult(Context context, final FingerprintResult result) {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 out.beginObject();
@@ -193,14 +195,14 @@ public class FingerprintAPI {
                         }
                     }
                     setAuthResult(AUTH_RESULT_FAILURE);
-                    postFingerprintResult(context, intent, fingerprintResult);
+                    postFingerprintResult(context, fingerprintResult);
                     TermuxApiLogger.error(errString.toString());
                 }
 
                 @Override
                 public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
                     setAuthResult(AUTH_RESULT_SUCCESS);
-                    postFingerprintResult(context, intent, fingerprintResult);
+                    postFingerprintResult(context, fingerprintResult);
                 }
 
                 @Override
@@ -235,7 +237,7 @@ public class FingerprintAPI {
                     if (!postedResult) {
                         appendFingerprintError(ERROR_TIMEOUT);
                         cancellationSignal.cancel();
-                        postFingerprintResult(context, intent, fingerprintResult);
+                        postFingerprintResult(context, fingerprintResult);
                     }
                 }
             }, SENSOR_TIMEOUT);

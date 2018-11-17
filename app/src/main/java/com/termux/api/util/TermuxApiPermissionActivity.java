@@ -23,7 +23,7 @@ public class TermuxApiPermissionActivity extends Activity {
      *
      * @return if all permissions were already granted
      */
-    public static boolean checkAndRequestPermissions(Context context, Intent intent, String... permissions) {
+    public static boolean checkAndRequestPermissions(Context context, String... permissions) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             final ArrayList<String> permissionsToRequest = new ArrayList<>();
             for (String permission : permissions) {
@@ -35,7 +35,7 @@ public class TermuxApiPermissionActivity extends Activity {
             if (permissionsToRequest.isEmpty()) {
                 return true;
             } else {
-                ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
+                ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
                     @Override
                     public void writeJson(JsonWriter out) throws Exception {
                         String errorMessage = "Please grant the following permission"
@@ -49,7 +49,7 @@ public class TermuxApiPermissionActivity extends Activity {
                 Intent startIntent = new Intent(context, TermuxApiPermissionActivity.class)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         .putStringArrayListExtra(TermuxApiPermissionActivity.PERMISSIONS_EXTRA, permissionsToRequest);
-                ResultReturner.copyIntentExtras(intent, startIntent);
+                //ResultReturner.copyIntentExtras(intent, startIntent);
                 context.startActivity(startIntent);
                 return false;
             }

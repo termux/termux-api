@@ -12,6 +12,8 @@ import android.os.IBinder;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -26,9 +28,9 @@ import java.util.concurrent.TimeoutException;
 
 public class WallpaperAPI {
 
-    static void onReceive(final Context context, final Intent intent) {
+    static void onReceive(final Context context, JSONObject opts) {
         Intent wallpaperService = new Intent(context, WallpaperService.class);
-        wallpaperService.putExtras(intent.getExtras());
+        wallpaperService.putExtra("opts", opts.toString());
         context.startService(wallpaperService);
     }
 
@@ -49,7 +51,7 @@ public class WallpaperAPI {
             } else {
                 WallpaperResult result = new WallpaperResult();
                 result.error = "No args supplied for WallpaperAPI!";
-                postWallpaperResult(getApplicationContext(), intent, result);
+                postWallpaperResult(getApplicationContext(), result);
             }
 
             return Service.START_NOT_STICKY;
@@ -133,11 +135,11 @@ public class WallpaperAPI {
                     result.error = "Error setting wallpaper: " + e.getMessage();
                 }
             }
-            postWallpaperResult(context, intent, result);
+            postWallpaperResult(context, result);
         }
 
-        protected void postWallpaperResult(final Context context, final Intent intent, final WallpaperResult result) {
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
+        protected void postWallpaperResult(final Context context, final WallpaperResult result) {
+            ResultReturner.returnData(context, new ResultReturner.ResultWriter() {
                 @Override
                 public void writeResult(PrintWriter out) {
                     out.append(result.message + "\n");

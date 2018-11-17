@@ -7,12 +7,14 @@ import android.provider.Settings;
 
 import com.termux.api.util.ResultReturner;
 
+import org.json.JSONObject;
+
 public class BrightnessAPI {
 
-    public static void onReceive(final TermuxApiReceiver receiver, final Context context, final Intent intent) {
+    public static void onReceive(final Context context, JSONObject opts) {
         final ContentResolver contentResolver = context.getContentResolver();
 
-        int brightness = intent.getIntExtra("brightness", 0);
+        int brightness = opts.optInt("brightness", 0);
 
         if (brightness <= 0) {
             brightness = 0;
@@ -21,6 +23,6 @@ public class BrightnessAPI {
         }
 
         Settings.System.putInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS, brightness);
-        ResultReturner.noteDone(receiver, intent);
+        ResultReturner.noteDone(context);
     }
 }

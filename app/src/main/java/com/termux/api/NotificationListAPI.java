@@ -12,9 +12,9 @@ import com.termux.api.util.ResultReturner.ResultJsonWriter;
 
 public class NotificationListAPI {
 
-    public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
+    public static void onReceive(final Context context) {
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
+        ResultReturner.returnData(context, new ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 listNotifications(context, out);

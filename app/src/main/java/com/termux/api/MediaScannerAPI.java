@@ -8,22 +8,27 @@ import android.net.Uri;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.Stack;
 
 public class MediaScannerAPI {
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
-        final String[] filePaths = intent.getStringArrayExtra("paths");
-        final Boolean recursive = intent.getBooleanExtra("recursive", false);
+    static void onReceive(final Context context, JSONObject opts) {
+        final JSONArray filePathsJson = opts.optJSONArray("paths");
+        final String[] filePaths = new String[filePathsJson.length()];
+
+        final Boolean recursive = opts.optBoolean("recursive", false);
         final Integer[] totalScanned = {0};
-        final Boolean verbose = intent.getBooleanExtra("verbose", false);
+        final Boolean verbose = opts.optBoolean("verbose", false);
         for (int i = 0; i < filePaths.length; i++) {
             filePaths[i] = filePaths[i].replace("\\,", ",");
         }
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
+        ResultReturner.returnData(context, new ResultReturner.ResultWriter() {
             @Override
             public void writeResult(PrintWriter out) {
                 scanFiles(out, context, filePaths, totalScanned, verbose);

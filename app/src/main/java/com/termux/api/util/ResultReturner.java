@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.IntentService;
 import android.content.BroadcastReceiver;
 import android.content.BroadcastReceiver.PendingResult;
+import android.content.Context;
 import android.content.Intent;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
@@ -17,16 +18,15 @@ import java.nio.charset.StandardCharsets;
 public abstract class ResultReturner {
 
     /**
-     * An extra intent parameter which specifies a linux abstract namespace socket address where output from the API
+     * String which specifies a linux abstract namespace socket address where output from the API
      * call should be written.
      */
-    private static final String SOCKET_OUTPUT_EXTRA = "socket_output";
-
+    private static final String SOCKET_OUTPUT_ADDRESS = "termux-output";
     /**
-     * An extra intent parameter which specifies a linux abstract namespace socket address where input to the API call
+     * String which specifies a linux abstract namespace socket address where input to the API call
      * can be read from.
      */
-    private static final String SOCKET_INPUT_EXTRA = "socket_input";
+    private static final String SOCKET_INPUT_ADDRESS = "termux-input";
 
     public interface ResultWriter {
         void writeResult(PrintWriter out) throws Exception;
@@ -81,21 +81,14 @@ public abstract class ResultReturner {
     /**
      * Just tell termux-api.c that we are done.
      */
-    public static void noteDone(BroadcastReceiver receiver, final Intent intent) {
-        returnData(receiver, intent, null);
-    }
-
-    public static void copyIntentExtras(Intent origIntent, Intent newIntent) {
-        newIntent.putExtra("api_method", origIntent.getStringExtra("api_method"));
-        newIntent.putExtra(SOCKET_OUTPUT_EXTRA, origIntent.getStringExtra(SOCKET_OUTPUT_EXTRA));
-        newIntent.putExtra(SOCKET_INPUT_EXTRA, origIntent.getStringExtra(SOCKET_INPUT_EXTRA));
-
+    public static void noteDone(Context context) {
+        returnData(context,null);
     }
 
     /**
      * Run in a separate thread, unless the context is an IntentService.
      */
-    public static void returnData(Object context, final Intent intent, final ResultWriter resultWriter) {
+    public static void returnData(Object context, final ResultWriter resultWriter) {
         final PendingResult asyncResult = (context instanceof BroadcastReceiver) ? ((BroadcastReceiver) context)
                 .goAsync() : null;
         final Activity activity = (Activity) ((context instanceof Activity) ? context : null);
@@ -105,13 +98,13 @@ public abstract class ResultReturner {
             public void run() {
                 try {
                     try (LocalSocket outputSocket = new LocalSocket()) {
-                        String outputSocketAdress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
+                        String outputSocketAdress = SOCKET_OUTPUT_ADDRESS;
                         outputSocket.connect(new LocalSocketAddress(outputSocketAdress));
                         try (PrintWriter writer = new PrintWriter(outputSocket.getOutputStream())) {
                             if (resultWriter != null) {
                                 if (resultWriter instanceof WithInput) {
                                     try (LocalSocket inputSocket = new LocalSocket()) {
-                                        String inputSocketAdress = intent.getStringExtra(SOCKET_INPUT_EXTRA);
+                                        String inputSocketAdress = SOCKET_INPUT_ADDRESS;
                                         inputSocket.connect(new LocalSocketAddress(inputSocketAdress));
                                         ((WithInput) resultWriter).setInput(inputSocket.getInputStream());
                                         resultWriter.writeResult(writer);

@@ -14,12 +14,14 @@ import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
 
+import org.json.JSONObject;
+
 import java.util.List;
 
 public class WifiAPI {
 
-    static void onReceiveWifiConnectionInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+    static void onReceiveWifiConnectionInfo(final Context context) {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             @SuppressLint("HardwareIds")
             @Override
             public void writeJson(JsonWriter out) throws Exception {
@@ -51,8 +53,8 @@ public class WifiAPI {
         return lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
     }
 
-    static void onReceiveWifiScanInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+    static void onReceiveWifiScanInfo(final Context context) {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 WifiManager manager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -114,12 +116,12 @@ public class WifiAPI {
         });
     }
 
-    static void onReceiveWifiEnable(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+    static void onReceiveWifiEnable(final Context context, final JSONObject opts) {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) {
                 WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                boolean state = intent.getBooleanExtra("enabled", false);
+                boolean state = opts.optBoolean("enabled", false);
                 manager.setWifiEnabled(state);
             }
         });

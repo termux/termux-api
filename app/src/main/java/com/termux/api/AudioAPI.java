@@ -12,7 +12,7 @@ import com.termux.api.util.ResultReturner;
 
 public class AudioAPI {
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
+    static void onReceive(final Context context) {
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         final String SampleRate = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
         final String framesPerBuffer = am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
@@ -65,7 +65,7 @@ public class AudioAPI {
             nosr = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC);
         }
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             public void writeJson(JsonWriter out) throws Exception {
                 out.beginObject();
                 out.name("PROPERTY_OUTPUT_SAMPLE_RATE").value(SampleRate);

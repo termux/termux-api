@@ -13,13 +13,15 @@ import android.widget.Toast;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONObject;
+
 public class TorchAPI {
     private static Camera legacyCamera;
 
 
     @TargetApi(Build.VERSION_CODES.M)
-    public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        boolean enabled = intent.getBooleanExtra("enabled", false);
+    public static void onReceive(final Context context, final JSONObject opts) {
+        boolean enabled = opts.optBoolean("enabled", false);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             toggleTorch(context, enabled);
@@ -27,7 +29,7 @@ public class TorchAPI {
             // use legacy api for pre-marshmallow
             legacyToggleTorch(enabled);
         }
-        ResultReturner.noteDone(apiReceiver, intent);
+        ResultReturner.noteDone(context);
     }
 
     @TargetApi(Build.VERSION_CODES.M)

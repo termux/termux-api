@@ -15,6 +15,8 @@ import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 
 public class LocationAPI {
@@ -23,13 +25,13 @@ public class LocationAPI {
     private static final String REQUEST_ONCE = "once";
     private static final String REQUEST_UPDATES = "updates";
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
+    static void onReceive(final Context context, final JSONObject opts) {
+        ResultReturner.returnData(context, new ResultJsonWriter() {
             @Override
             public void writeJson(final JsonWriter out) throws Exception {
                 LocationManager manager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
 
-                String provider = intent.getStringExtra("provider");
+                String provider = opts.optString("provider");
                 if (provider == null)
                     provider = LocationManager.GPS_PROVIDER;
                 if (!(provider.equals(LocationManager.GPS_PROVIDER) || provider.equals(LocationManager.NETWORK_PROVIDER) || provider
@@ -41,7 +43,7 @@ public class LocationAPI {
                     return;
                 }
 
-                String request = intent.getStringExtra("request");
+                String request = opts.optString("request");
                 if (request == null)
                     request = REQUEST_ONCE;
                 switch (request) {

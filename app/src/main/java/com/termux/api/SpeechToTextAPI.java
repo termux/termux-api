@@ -17,6 +17,8 @@ import android.speech.SpeechRecognizer;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONObject;
+
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -156,7 +158,7 @@ public class SpeechToTextAPI {
         @Override
         protected void onHandleIntent(final Intent intent) {
             TermuxApiLogger.error("onHandleIntent");
-            ResultReturner.returnData(this, intent, new ResultReturner.WithInput() {
+            ResultReturner.returnData(this, new ResultReturner.WithInput() {
                 @Override
                 public void writeResult(PrintWriter out) throws Exception {
                     while (true) {
@@ -173,8 +175,8 @@ public class SpeechToTextAPI {
         }
     }
 
-    public static void onReceive(final Context context, Intent intent) {
-        context.startService(new Intent(context, SpeechToTextService.class).putExtras(intent.getExtras()));
+    public static void onReceive(final Context context, JSONObject opts) {
+        context.startService(new Intent(context, SpeechToTextService.class).putExtra("opts", opts.toString()));
     }
 
     public static void runFromActivity(final Activity context) {

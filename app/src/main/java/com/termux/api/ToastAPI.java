@@ -13,19 +13,21 @@ import android.widget.Toast;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONObject;
+
 import java.io.PrintWriter;
 
 public class ToastAPI {
 
-    public static void onReceive(final Context context, Intent intent) {
-        final int durationExtra = intent.getBooleanExtra("short", false) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
-        final int backgroundColor = getColorExtra(intent, "background", Color.GRAY);
-        final int textColor = getColorExtra(intent, "text_color", Color.WHITE);
-        final int gravity = getGravityExtra(intent);
+    public static void onReceive(final Context context, JSONObject opts) {
+        final int durationExtra = opts.optBoolean("short", false) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
+        final int backgroundColor = getColor(opts, "background", Color.GRAY);
+        final int textColor = getColor(opts, "text_color", Color.WHITE);
+        final int gravity = getGravity(opts);
 
         final Handler handler = new Handler();
 
-        ResultReturner.returnData(context, intent, new ResultReturner.WithStringInput() {
+        ResultReturner.returnData(context, new ResultReturner.WithStringInput() {
             @Override
             public void writeResult(PrintWriter out) {
                 handler.post(new Runnable() {
@@ -48,11 +50,11 @@ public class ToastAPI {
         });
     }
 
-    protected static int getColorExtra(Intent intent, String extra, int defaultColor) {
+    protected static int getColor(JSONObject opts, String extra, int defaultColor) {
         int color = defaultColor;
 
-        if (intent.hasExtra(extra)) {
-            String colorExtra = intent.getStringExtra(extra);
+        if (!opts.isNull(extra)) {
+            String colorExtra = opts.optString(extra);
 
             try {
                 color = Color.parseColor(colorExtra);
@@ -63,8 +65,8 @@ public class ToastAPI {
         return color;
     }
 
-    protected static int getGravityExtra(Intent intent) {
-        String extraGravity = intent.getStringExtra("gravity");
+    protected static int getGravity(JSONObject opts) {
+        String extraGravity = opts.optString("gravity");
 
         switch (extraGravity == null ? "" : extraGravity) {
             case "top": return Gravity.TOP;
@@ -73,5 +75,6 @@ public class ToastAPI {
             default: return Gravity.CENTER;
         }
     }
+
 
 }

@@ -14,6 +14,8 @@ import android.util.JsonWriter;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -24,12 +26,12 @@ public class SmsInboxAPI {
 
     private static final String[] DISPLAY_NAME_PROJECTION = {PhoneLookup.DISPLAY_NAME};
 
-    static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
-        final int offset = intent.getIntExtra("offset", 0);
-        final int limit = intent.getIntExtra("limit", 50);
-        final Uri contentURI = typeToContentURI(intent.getIntExtra("type", TextBasedSmsColumns.MESSAGE_TYPE_INBOX));
+    static void onReceive(final Context context, JSONObject opts) {
+        final int offset = opts.optInt("offset", 0);
+        final int limit = opts.optInt("limit", 50);
+        final Uri contentURI = typeToContentURI(opts.optInt("type", TextBasedSmsColumns.MESSAGE_TYPE_INBOX));
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
+        ResultReturner.returnData(context, new ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 getAllSms(context, out, offset, limit, contentURI);

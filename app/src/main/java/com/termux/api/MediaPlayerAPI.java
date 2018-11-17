@@ -10,6 +10,8 @@ import android.os.PowerManager;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -23,12 +25,12 @@ public class MediaPlayerAPI {
     /**
      * Starts our PlayerService
      */
-    static void onReceive(final Context context, final Intent intent) {
+    static void onReceive(final Context context, JSONObject opts) {
         // Create intent for starting our player service and make sure
         // we retain all relevant info from this intent
         Intent playerService = new Intent(context, PlayerService.class);
-        playerService.setAction(intent.getAction());
-        playerService.putExtras(intent.getExtras());
+        playerService.setAction(opts.optString("action"));
+        playerService.putExtra("opts", opts.toString());
 
         context.startService(playerService);
     }
@@ -82,7 +84,7 @@ public class MediaPlayerAPI {
         }
 
         /**
-         * What we received from TermuxApiReceiver but now within this service
+         * What we received from TermuxApiService but now within this service
          */
         public int onStartCommand(Intent intent, int flags, int startId) {
             String command = intent.getAction();
@@ -161,7 +163,7 @@ public class MediaPlayerAPI {
         protected static void postMediaCommandResult(final Context context, final Intent intent,
                                                      final MediaCommandResult result) {
 
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
+            ResultReturner.returnData(context, new ResultReturner.ResultWriter() {
                 @Override
                 public void writeResult(PrintWriter out) {
                     out.append(result.message + "\n");

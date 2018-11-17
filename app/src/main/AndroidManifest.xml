@@ -43,6 +43,7 @@
     <permission android:name="com.termux.sharedfiles.READ" android:protectionLevel="signature" />
 
     <application
+        android:largeHeap="true"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -50,6 +51,7 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light"
         tools:ignore="GoogleAppIndexingWarning">
+        <service android:name="com.termux.api.TermuxApiService"/>
         <receiver android:name="com.termux.api.TermuxApiReceiver"/>
         <activity android:name="com.termux.api.DialogActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
         <activity android:name=".FingerprintAPI$FingerprintActivity" android:theme="@android:style/Theme.NoDisplay"

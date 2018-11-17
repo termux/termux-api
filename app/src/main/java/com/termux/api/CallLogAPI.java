@@ -9,6 +9,8 @@ import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -20,11 +22,11 @@ import java.util.Locale;
  */
 public class CallLogAPI {
 
-    static void onReceive(final Context context, final Intent intent) {
-        final int offset = intent.getIntExtra("offset", 0);
-        final int limit = intent.getIntExtra("limit", 50);
+    static void onReceive(final Context context, final JSONObject opts) {
+        final int offset = opts.optInt("offset");
+        final int limit = opts.optInt("limit", 50);
 
-        ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
+        ResultReturner.returnData(context, new ResultReturner.ResultJsonWriter() {
             public void writeJson(JsonWriter out) throws Exception {
                 getCallLogs(context, out, offset, limit);
             }

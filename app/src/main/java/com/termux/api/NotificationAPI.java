@@ -62,7 +62,7 @@ public class NotificationAPI {
 
         String title = opts.optString("title");
 
-        String lightsArgbExtra = opts.optString("led-color");
+        String lightsArgbExtra = opts.optString("led-color", null);
 
         int ledColor = 0;
 
@@ -79,10 +79,13 @@ public class NotificationAPI {
 
 
         JSONArray vibratePatternJson = opts.optJSONArray("vibrate");
-        long[] vibratePattern = new long[vibratePatternJson.length()];
+        long[] vibratePattern = null;
+        if(vibratePatternJson != null) {
+            vibratePattern = new long[vibratePatternJson.length()];
 
-        for(int i = 0; i < vibratePatternJson.length(); i++){
-            vibratePattern[i] = vibratePatternJson.optLong(i);
+            for (int i = 0; i < vibratePatternJson.length(); i++) {
+                vibratePattern[i] = vibratePatternJson.optLong(i);
+            }
         }
 
         boolean useSound = opts.optBoolean("sound", false);
@@ -91,7 +94,7 @@ public class NotificationAPI {
 
         String actionExtra = opts.optString("action");
 
-        String id = opts.optString("id");
+        String id = opts.optString("id", null);
         if (id == null) id = UUID.randomUUID().toString();
         final String notificationId = id;
 

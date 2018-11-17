@@ -24,8 +24,10 @@ import com.termux.api.util.TermuxApiPermissionActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class TermuxApiService extends Service {
     private static final String CHANNEL_ID = "termux-notification";
@@ -43,26 +45,20 @@ public class TermuxApiService extends Service {
         final Runnable runnable = new Runnable() {
             @Override
             public void run() {
+                String recievedData;
                 while (true) {
                     try (LocalServerSocket inputSocket = new LocalServerSocket(SOCKET_INPUT_ADDRESS)) {
                         LocalSocket receiver = inputSocket.accept();
                         if (receiver != null) {
                             InputStream input = receiver.getInputStream();
-                            int readed = input.read();
-                            int size = 0;
-                            int capacity = 0;
-                            byte[] bytes = new byte[capacity];
 
-                            while (readed != -1) {
-                                capacity = (capacity * 3) / 2 + 1;
-                                byte[] copy = new byte[capacity];
-                                System.arraycopy(bytes, 0, copy, 0, bytes.length);
-                                bytes = copy;
-                                bytes[size++] = (byte) readed;
-                                readed = input.read();
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            byte[] buffer = new byte[1024];
+                            int l;
+                            while ((l = input.read(buffer)) > 0) {
+                                baos.write(buffer, 0, l);
                             }
-
-                            String recievedData = new String(bytes, 0, size);
+                            recievedData = new String(baos.toByteArray(), StandardCharsets.UTF_8);
                             receiver.close();
                             Log.d("DERP", "onStartCommand: " + recievedData);
                             JSONObject data = new JSONObject(recievedData);

@@ -60,7 +60,6 @@ public class TermuxApiService extends Service {
                             }
                             recievedData = new String(baos.toByteArray(), StandardCharsets.UTF_8);
                             receiver.close();
-                            Log.d("DERP", "onStartCommand: " + recievedData);
                             JSONObject data = new JSONObject(recievedData);
                             runApiMethod(getApplicationContext(), data);
                         }

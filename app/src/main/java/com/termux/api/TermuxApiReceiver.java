@@ -83,6 +83,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     InfraredAPI.onReceiveTransmit(this, context, intent);
                 }
                 break;
+            case "JobScheduler":
+                JobSchedulerAPI.onReceive(this, context, intent);
+                break;
             case "Keystore":
                 KeystoreAPI.onReceive(this, intent);
                 break;

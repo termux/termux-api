@@ -27,25 +27,37 @@ public class ToastAPI extends AppCompatActivity {
         final int gravity = getGravity(opts);
         final String text = opts.optString("text");
 
+        makeToast(context, durationExtra, backgroundColor, textColor, gravity, text);
+        ResultReturner.noteDone(context);
+    }
+
+    static void makeText(final Context context, final String text, final int durationExtra) {
+        final int backgroundColor = Color.GRAY;
+        final int textColor = Color.WHITE;
+        final int gravity = Gravity.BOTTOM;
+        makeToast(context, durationExtra, backgroundColor, textColor, gravity, text);
+    }
+
+        static void makeToast(final Context context, final int durationExtra, final int backgroundColor, final int textColor, final int gravity, final String text) {
         final Handler handler = new Handler(Looper.getMainLooper());
 
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast toast = Toast.makeText(context, text, durationExtra);
-                        View toastView = toast.getView();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                Toast toast = Toast.makeText(context, text, durationExtra);
+                View toastView = toast.getView();
 
-                        Drawable background = toastView.getBackground();
-                        background.setTint(backgroundColor);
+                Drawable background = toastView.getBackground();
+                background.setTint(backgroundColor);
 
-                        TextView textView = toastView.findViewById(android.R.id.message);
-                        textView.setTextColor(textColor);
+                TextView textView = toastView.findViewById(android.R.id.message);
+                textView.setTextColor(textColor);
 
-                        toast.setGravity(gravity, 0, 0);
-                        toast.show();
-                        ResultReturner.noteDone(context);
-                    }
-                });
+                toast.setGravity(gravity, 0, 0);
+                toast.show();
+            }
+        });
+
     }
 
     protected static int getColor(JSONObject opts, String extra, int defaultColor) {

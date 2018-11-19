@@ -61,6 +61,7 @@ public class NotificationAPI {
         }
 
         String title = opts.optString("title");
+        String content = opts.optString("content");
 
         String lightsArgbExtra = opts.optString("led-color", null);
 
@@ -111,7 +112,7 @@ public class NotificationAPI {
 
 
 
-        String ImagePath = opts.optString("image-path");
+        String ImagePath = opts.optString("image-path", null);
 
         if(ImagePath != null){
             File imgFile = new  File(ImagePath);
@@ -191,31 +192,28 @@ public class NotificationAPI {
             notification.setDeleteIntent(pi);
         }
 
-        ResultReturner.returnData(context, new ResultReturner.WithStringInput() {
-            @Override
-            public void writeResult(PrintWriter out) {
-                NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-                if (!TextUtils.isEmpty(inputString)) {
-                    if (inputString.contains("\n")) {
-                        Notification.BigTextStyle style = new Notification.BigTextStyle();
-                        style.bigText(inputString);
-                        notification.setStyle(style);
-                    } else {
-                        notification.setContentText(inputString);
-                    }
-                }
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
-                            CHANNEL_TITLE, NotificationManager.IMPORTANCE_DEFAULT);
-                    manager.createNotificationChannel(channel);
-                    notification.setChannelId(CHANNEL_ID);
-                }
-
-                manager.notify(notificationId, 0, notification.build());
+        if (!TextUtils.isEmpty(content)) {
+            if (content.contains("\n")) {
+                Notification.BigTextStyle style = new Notification.BigTextStyle();
+                style.bigText(content);
+                notification.setStyle(style);
+            } else {
+                notification.setContentText(content);
             }
-        });
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
+                    CHANNEL_TITLE, NotificationManager.IMPORTANCE_DEFAULT);
+            manager.createNotificationChannel(channel);
+            notification.setChannelId(CHANNEL_ID);
+        }
+
+        manager.notify(notificationId, 0, notification.build());
+        ResultReturner.noteDone(context);
+
     }
 
     static void onReceiveRemoveNotification(final Context context, JSONObject opts) {

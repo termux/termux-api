@@ -18,6 +18,7 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.util.TermuxApiPermissionActivity;
 
@@ -92,7 +93,7 @@ public class TermuxApiService extends Service {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     if (!Settings.System.canWrite(context)) {
                         TermuxApiPermissionActivity.checkAndRequestPermissions(context, android.Manifest.permission.WRITE_SETTINGS);
-                        Toast.makeText(context, "Please enable permission for Termux:API", Toast.LENGTH_LONG).show();
+                        ToastAPI.makeText(context, "Please enable permission for Termux:API", Toast.LENGTH_LONG);
 
                         //user must enable WRITE_SETTINGS permission this special way
                         Intent settingsIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
@@ -166,8 +167,9 @@ public class TermuxApiService extends Service {
                 String flat = Settings.Secure.getString(context.getContentResolver(), "enabled_notification_listeners");
                 final boolean NotificationServiceEnabled = flat != null && flat.contains(cn.flattenToString());
                 if (!NotificationServiceEnabled) {
-                    Toast.makeText(context, "Please give Termux:API Notification Access", Toast.LENGTH_LONG).show();
+                    ToastAPI.makeText(context, "Please give Termux:API Notification Access", Toast.LENGTH_LONG);
                     context.startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+                    ResultReturner.noteDone(context);
                 } else {
                     NotificationListAPI.onReceive(context);
                 }

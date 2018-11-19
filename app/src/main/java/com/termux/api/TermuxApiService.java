@@ -30,9 +30,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 public class TermuxApiService extends Service {
-    private static final String CHANNEL_ID = "termux-notification";
-    private static final String CHANNEL_TITLE = "Termux API notification channel";
-
     public IBinder onBind(Intent intent) {
         return null;
     }
@@ -45,7 +42,7 @@ public class TermuxApiService extends Service {
         final Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                String recievedData;
+                String receivedData;
                 while (true) {
                     try (LocalServerSocket inputSocket = new LocalServerSocket(SOCKET_INPUT_ADDRESS)) {
                         LocalSocket receiver = inputSocket.accept();
@@ -58,9 +55,9 @@ public class TermuxApiService extends Service {
                             while ((l = input.read(buffer)) > 0) {
                                 baos.write(buffer, 0, l);
                             }
-                            recievedData = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                            receivedData = new String(baos.toByteArray(), StandardCharsets.UTF_8);
                             receiver.close();
-                            JSONObject data = new JSONObject(recievedData);
+                            JSONObject data = new JSONObject(receivedData);
                             runApiMethod(getApplicationContext(), data);
                         }
                     } catch(IOException e){
@@ -277,7 +274,7 @@ public class TermuxApiService extends Service {
         } else {
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                     .setContentTitle(getString(R.string.app_name))
-                    .setContentText("TERNYX")
+                    .setContentText("Termux")
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .setAutoCancel(true);
             Notification notification = builder.build();

@@ -208,7 +208,9 @@ public class MicRecorderAPI {
                 String filename = intent.hasExtra("file") ? intent.getStringExtra("file") : getDefaultRecordingFilename();
 
                 int duration = intent.getIntExtra("limit", DEFAULT_RECORDING_LIMIT);
-                duration = duration < MIN_RECORDING_LIMIT ? MIN_RECORDING_LIMIT : duration;
+                // allow the duration limit to be disabled with zero or negative
+                if (duration > 0 && duration < MIN_RECORDING_LIMIT)
+                    duration = MIN_RECORDING_LIMIT;
 
                 file = new File(filename);
 

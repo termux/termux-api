@@ -113,7 +113,6 @@ public class MicRecorderAPI {
         protected static void getMediaRecorder(MicRecorderService service) {
             if (mediaRecorder == null) {
                 mediaRecorder = new MediaRecorder();
-                mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
                 mediaRecorder.setOnErrorListener(service);
                 mediaRecorder.setOnInfoListener(service);
             }
@@ -243,6 +242,8 @@ public class MicRecorderAPI {
                     format = format_map.get(encoder, MediaRecorder.OutputFormat.DEFAULT);
                 }
 
+                int source = intent.getIntExtra("source", MediaRecorder.AudioSource.MIC);
+
                 file = new File(filename);
 
                 TermuxApiLogger.info("MediaRecording file is: " + file.getAbsoluteFile());
@@ -254,6 +255,7 @@ public class MicRecorderAPI {
                         result.error = "Recording already in progress!";
                     } else {
                         try {
+                            mediaRecorder.setAudioSource(source);
                             mediaRecorder.setOutputFormat(format);
                             mediaRecorder.setAudioEncoder(encoder);
                             mediaRecorder.setOutputFile(filename);

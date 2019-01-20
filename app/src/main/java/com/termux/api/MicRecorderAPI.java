@@ -57,13 +57,13 @@ public class MicRecorderAPI {
 
 
         public int onStartCommand(Intent intent, int flags, int startId) {
-            String command = intent.getAction();
-            MediaRecorder recorder = getMediaRecorder();
-            Context context = getApplicationContext();
+            getMediaRecorder(this);
 
             // get command handler and display result
+            String command = intent.getAction();
+            Context context = getApplicationContext();
             RecorderCommandHandler handler = getRecorderCommandHandler(command);
-            RecorderCommandResult result = handler.handle(recorder, context, intent);
+            RecorderCommandResult result = handler.handle(context, intent);
             postRecordCommandResult(context, intent, result);
 
             return Service.START_NOT_STICKY;
@@ -80,7 +80,7 @@ public class MicRecorderAPI {
                 default:
                     return new RecorderCommandHandler() {
                         @Override
-                        public RecorderCommandResult handle(MediaRecorder recorder, Context context, Intent intent) {
+                        public RecorderCommandResult handle(Context context, Intent intent) {
                             RecorderCommandResult result = new RecorderCommandResult();
                             result.error = "Unknown command: " + command;
                             return result;
@@ -108,16 +108,15 @@ public class MicRecorderAPI {
         /**
          * Returns our MediaPlayer instance and ensures it has all the necessary callbacks
          */
-        protected MediaRecorder getMediaRecorder() {
+        protected static void getMediaRecorder(MicRecorderService service) {
             if (mediaRecorder == null) {
                 mediaRecorder = new MediaRecorder();
                 mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
                 mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
                 mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-                mediaRecorder.setOnErrorListener(this);
-                mediaRecorder.setOnInfoListener(this);
+                mediaRecorder.setOnErrorListener(service);
+                mediaRecorder.setOnInfoListener(service);
             }
-            return mediaRecorder;
         }
 
         public void onDestroy() {
@@ -143,12 +142,12 @@ public class MicRecorderAPI {
         }
 
         @Override
-        public void onError(MediaRecorder mediaRecorder, int what, int extra) {
+        public void onError(MediaRecorder mr, int what, int extra) {
             TermuxApiLogger.error("MicRecorderService onError() " + what);
         }
 
         @Override
-        public void onInfo(MediaRecorder mediaRecorder, int what, int extra) {
+        public void onInfo(MediaRecorder mr, int what, int extra) {
             switch (what) {
                 case MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED: // intentional fallthrough
                 case MEDIA_RECORDER_INFO_MAX_DURATION_REACHED:
@@ -193,7 +192,7 @@ public class MicRecorderAPI {
 
         static RecorderCommandHandler infoHandler = new RecorderCommandHandler() {
             @Override
-            public RecorderCommandResult handle(MediaRecorder recorder, Context context, Intent intent) {
+            public RecorderCommandResult handle(Context context, Intent intent) {
                 RecorderCommandResult result = new RecorderCommandResult();
                 result.message = getRecordingInfoJSONString();
                 return result;
@@ -202,7 +201,7 @@ public class MicRecorderAPI {
 
         static RecorderCommandHandler recordHandler = new RecorderCommandHandler() {
             @Override
-            public RecorderCommandResult handle(MediaRecorder recorder, Context context, Intent intent) {
+            public RecorderCommandResult handle(Context context, Intent intent) {
                 RecorderCommandResult result = new RecorderCommandResult();
 
                 String filename = intent.hasExtra("file") ? intent.getStringExtra("file") : getDefaultRecordingFilename();
@@ -223,8 +222,8 @@ public class MicRecorderAPI {
                         result.error = "Recording already in progress!";
                     } else {
                         try {
-                            recorder.setOutputFile(filename);
-                            recorder.setMaxDuration(duration);
+                            mediaRecorder.setOutputFile(filename);
+                            mediaRecorder.setMaxDuration(duration);
                             mediaRecorder.prepare();
                             mediaRecorder.start();
                             isRecording = true;
@@ -243,7 +242,7 @@ public class MicRecorderAPI {
 
         static RecorderCommandHandler quitHandler = new RecorderCommandHandler() {
             @Override
-            public RecorderCommandResult handle(MediaRecorder recorder, Context context, Intent intent) {
+            public RecorderCommandResult handle(Context context, Intent intent) {
                 RecorderCommandResult result = new RecorderCommandResult();
 
                 if (isRecording) {
@@ -261,7 +260,7 @@ public class MicRecorderAPI {
      * Interface for handling recorder commands
      */
     interface RecorderCommandHandler {
-        RecorderCommandResult handle(MediaRecorder recorder, final Context context, final Intent intent);
+        RecorderCommandResult handle(final Context context, final Intent intent);
     }
 
     /**

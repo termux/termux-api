@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.media.MediaRecorder;
 import android.os.Environment;
 import android.os.IBinder;
+import android.util.ArrayMap;
+import android.util.SparseIntArray;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
@@ -112,8 +114,6 @@ public class MicRecorderAPI {
             if (mediaRecorder == null) {
                 mediaRecorder = new MediaRecorder();
                 mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-                mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-                mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
                 mediaRecorder.setOnErrorListener(service);
                 mediaRecorder.setOnInfoListener(service);
             }
@@ -211,6 +211,38 @@ public class MicRecorderAPI {
                 if (duration > 0 && duration < MIN_RECORDING_LIMIT)
                     duration = MIN_RECORDING_LIMIT;
 
+                String sencoder = intent.getStringExtra("encoder").toLowerCase();
+                ArrayMap<String, Integer> encoder_map = new ArrayMap<>(6);
+                encoder_map.put("aac", MediaRecorder.AudioEncoder.AAC);
+                encoder_map.put("aac_eld", MediaRecorder.AudioEncoder.AAC_ELD);
+                encoder_map.put("amr_nb", MediaRecorder.AudioEncoder.AMR_NB);
+                encoder_map.put("amr_wb", MediaRecorder.AudioEncoder.AMR_WB);
+                encoder_map.put("he_aac", MediaRecorder.AudioEncoder.HE_AAC);
+                encoder_map.put("vorbis", MediaRecorder.AudioEncoder.VORBIS);
+
+                Integer encoder = encoder_map.get(sencoder);
+                if (encoder == null)
+                    encoder = MediaRecorder.AudioEncoder.DEFAULT;
+
+                int format = intent.getIntExtra("format", MediaRecorder.OutputFormat.DEFAULT);
+                if (format == MediaRecorder.OutputFormat.DEFAULT &&
+                    encoder != MediaRecorder.AudioEncoder.DEFAULT) {
+                    SparseIntArray format_map = new SparseIntArray(6);
+                    format_map.put(MediaRecorder.AudioEncoder.AAC,
+                                   MediaRecorder.OutputFormat.MPEG_4);
+                    format_map.put(MediaRecorder.AudioEncoder.AAC_ELD,
+                                   MediaRecorder.OutputFormat.MPEG_4);
+                    format_map.put(MediaRecorder.AudioEncoder.AMR_NB,
+                                   MediaRecorder.OutputFormat.THREE_GPP);
+                    format_map.put(MediaRecorder.AudioEncoder.AMR_WB,
+                                   MediaRecorder.OutputFormat.THREE_GPP);
+                    format_map.put(MediaRecorder.AudioEncoder.HE_AAC,
+                                   MediaRecorder.OutputFormat.MPEG_4);
+                    format_map.put(MediaRecorder.AudioEncoder.VORBIS,
+                                   MediaRecorder.OutputFormat.WEBM);
+                    format = format_map.get(encoder, MediaRecorder.OutputFormat.DEFAULT);
+                }
+
                 file = new File(filename);
 
                 TermuxApiLogger.info("MediaRecording file is: " + file.getAbsoluteFile());
@@ -222,6 +254,8 @@ public class MicRecorderAPI {
                         result.error = "Recording already in progress!";
                     } else {
                         try {
+                            mediaRecorder.setOutputFormat(format);
+                            mediaRecorder.setAudioEncoder(encoder);
                             mediaRecorder.setOutputFile(filename);
                             mediaRecorder.setMaxDuration(duration);
                             mediaRecorder.prepare();

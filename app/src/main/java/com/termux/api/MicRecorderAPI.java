@@ -7,6 +7,7 @@ import android.media.MediaRecorder;
 import android.os.Environment;
 import android.os.IBinder;
 import android.util.ArrayMap;
+import android.util.SparseArray;
 import android.util.SparseIntArray;
 
 import com.termux.api.util.ResultReturner;
@@ -161,9 +162,9 @@ public class MicRecorderAPI {
         }
 
         protected static String getDefaultRecordingFilename() {
-            DateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy_HH-mm-ss");
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
             Date date = new Date();
-            return Environment.getExternalStorageDirectory().getAbsolutePath() + "/TermuxAudioRecording_" + dateFormat.format(date) + ".3gp";
+            return Environment.getExternalStorageDirectory().getAbsolutePath() + "/TermuxAudioRecording_" + dateFormat.format(date);
         }
 
         protected static String getRecordingInfoJSONString() {
@@ -203,14 +204,12 @@ public class MicRecorderAPI {
             public RecorderCommandResult handle(Context context, Intent intent) {
                 RecorderCommandResult result = new RecorderCommandResult();
 
-                String filename = intent.hasExtra("file") ? intent.getStringExtra("file") : getDefaultRecordingFilename();
-
                 int duration = intent.getIntExtra("limit", DEFAULT_RECORDING_LIMIT);
                 // allow the duration limit to be disabled with zero or negative
                 if (duration > 0 && duration < MIN_RECORDING_LIMIT)
                     duration = MIN_RECORDING_LIMIT;
 
-                String sencoder = intent.getStringExtra("encoder").toLowerCase();
+                String sencoder = intent.hasExtra("encoder") ? intent.getStringExtra("encoder") : "";
                 ArrayMap<String, Integer> encoder_map = new ArrayMap<>(6);
                 encoder_map.put("aac", MediaRecorder.AudioEncoder.AAC);
                 encoder_map.put("aac_eld", MediaRecorder.AudioEncoder.AAC_ELD);
@@ -219,13 +218,12 @@ public class MicRecorderAPI {
                 encoder_map.put("he_aac", MediaRecorder.AudioEncoder.HE_AAC);
                 encoder_map.put("vorbis", MediaRecorder.AudioEncoder.VORBIS);
 
-                Integer encoder = encoder_map.get(sencoder);
+                Integer encoder = encoder_map.get(sencoder.toLowerCase());
                 if (encoder == null)
-                    encoder = MediaRecorder.AudioEncoder.DEFAULT;
+                    encoder = MediaRecorder.AudioEncoder.AAC;
 
                 int format = intent.getIntExtra("format", MediaRecorder.OutputFormat.DEFAULT);
-                if (format == MediaRecorder.OutputFormat.DEFAULT &&
-                    encoder != MediaRecorder.AudioEncoder.DEFAULT) {
+                if (format == MediaRecorder.OutputFormat.DEFAULT) {
                     SparseIntArray format_map = new SparseIntArray(6);
                     format_map.put(MediaRecorder.AudioEncoder.AAC,
                                    MediaRecorder.OutputFormat.MPEG_4);
@@ -241,6 +239,14 @@ public class MicRecorderAPI {
                                    MediaRecorder.OutputFormat.WEBM);
                     format = format_map.get(encoder, MediaRecorder.OutputFormat.DEFAULT);
                 }
+
+                SparseArray<String> extension_map = new SparseArray<>(3);
+                extension_map.put(MediaRecorder.OutputFormat.MPEG_4, ".m4a");
+                extension_map.put(MediaRecorder.OutputFormat.THREE_GPP, ".3gp");
+                extension_map.put(MediaRecorder.OutputFormat.WEBM, ".webm");
+                String extension = extension_map.get(format);
+
+                String filename = intent.hasExtra("file") ? intent.getStringExtra("file") : getDefaultRecordingFilename() + (extension != null ? extension : "");
 
                 int source = intent.getIntExtra("source", MediaRecorder.AudioSource.MIC);
 

@@ -209,13 +209,10 @@ public class MicRecorderAPI {
                     duration = MIN_RECORDING_LIMIT;
 
                 String sencoder = intent.hasExtra("encoder") ? intent.getStringExtra("encoder") : "";
-                ArrayMap<String, Integer> encoder_map = new ArrayMap<>(6);
+                ArrayMap<String, Integer> encoder_map = new ArrayMap<>(3);
                 encoder_map.put("aac", MediaRecorder.AudioEncoder.AAC);
-                encoder_map.put("aac_eld", MediaRecorder.AudioEncoder.AAC_ELD);
                 encoder_map.put("amr_nb", MediaRecorder.AudioEncoder.AMR_NB);
                 encoder_map.put("amr_wb", MediaRecorder.AudioEncoder.AMR_WB);
-                encoder_map.put("he_aac", MediaRecorder.AudioEncoder.HE_AAC);
-                encoder_map.put("vorbis", MediaRecorder.AudioEncoder.VORBIS);
 
                 Integer encoder = encoder_map.get(sencoder.toLowerCase());
                 if (encoder == null)
@@ -223,26 +220,19 @@ public class MicRecorderAPI {
 
                 int format = intent.getIntExtra("format", MediaRecorder.OutputFormat.DEFAULT);
                 if (format == MediaRecorder.OutputFormat.DEFAULT) {
-                    SparseIntArray format_map = new SparseIntArray(6);
+                    SparseIntArray format_map = new SparseIntArray(3);
                     format_map.put(MediaRecorder.AudioEncoder.AAC,
-                                   MediaRecorder.OutputFormat.MPEG_4);
-                    format_map.put(MediaRecorder.AudioEncoder.AAC_ELD,
                                    MediaRecorder.OutputFormat.MPEG_4);
                     format_map.put(MediaRecorder.AudioEncoder.AMR_NB,
                                    MediaRecorder.OutputFormat.THREE_GPP);
                     format_map.put(MediaRecorder.AudioEncoder.AMR_WB,
                                    MediaRecorder.OutputFormat.THREE_GPP);
-                    format_map.put(MediaRecorder.AudioEncoder.HE_AAC,
-                                   MediaRecorder.OutputFormat.MPEG_4);
-                    format_map.put(MediaRecorder.AudioEncoder.VORBIS,
-                                   MediaRecorder.OutputFormat.WEBM);
                     format = format_map.get(encoder, MediaRecorder.OutputFormat.DEFAULT);
                 }
 
-                SparseArray<String> extension_map = new SparseArray<>(3);
+                SparseArray<String> extension_map = new SparseArray<>(2);
                 extension_map.put(MediaRecorder.OutputFormat.MPEG_4, ".m4a");
                 extension_map.put(MediaRecorder.OutputFormat.THREE_GPP, ".3gp");
-                extension_map.put(MediaRecorder.OutputFormat.WEBM, ".webm");
                 String extension = extension_map.get(format);
 
                 String filename = intent.hasExtra("file") ? intent.getStringExtra("file") : getDefaultRecordingFilename() + (extension != null ? extension : "");

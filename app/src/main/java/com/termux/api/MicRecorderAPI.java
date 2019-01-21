@@ -59,9 +59,11 @@ public class MicRecorderAPI {
         protected static File file;
 
 
-        public int onStartCommand(Intent intent, int flags, int startId) {
+        public void onCreate() {
             getMediaRecorder(this);
+        }
 
+        public int onStartCommand(Intent intent, int flags, int startId) {
             // get command handler and display result
             String command = intent.getAction();
             Context context = getApplicationContext();
@@ -86,6 +88,8 @@ public class MicRecorderAPI {
                         public RecorderCommandResult handle(Context context, Intent intent) {
                             RecorderCommandResult result = new RecorderCommandResult();
                             result.error = "Unknown command: " + command;
+                            if (!isRecording)
+                                context.stopService(intent);
                             return result;
                         }
                     };
@@ -112,15 +116,12 @@ public class MicRecorderAPI {
          * Returns our MediaPlayer instance and ensures it has all the necessary callbacks
          */
         protected static void getMediaRecorder(MicRecorderService service) {
-            if (mediaRecorder == null) {
-                mediaRecorder = new MediaRecorder();
-                mediaRecorder.setOnErrorListener(service);
-                mediaRecorder.setOnInfoListener(service);
-            }
+            mediaRecorder = new MediaRecorder();
+            mediaRecorder.setOnErrorListener(service);
+            mediaRecorder.setOnInfoListener(service);
         }
 
         public void onDestroy() {
-            super.onDestroy();
             cleanupMediaRecorder();
             TermuxApiLogger.info("MicRecorderAPI MicRecorderService onDestroy()");
         }
@@ -129,11 +130,12 @@ public class MicRecorderAPI {
          * Releases MediaRecorder resources
          */
         protected static void cleanupMediaRecorder() {
-            if (mediaRecorder != null) {
+            if (isRecording) {
                 mediaRecorder.stop();
-                mediaRecorder.release();
-                mediaRecorder = null;
+                isRecording = false;
             }
+            mediaRecorder.reset();
+            mediaRecorder.release();
         }
 
         @Override
@@ -143,6 +145,8 @@ public class MicRecorderAPI {
 
         @Override
         public void onError(MediaRecorder mr, int what, int extra) {
+            isRecording = false;
+            this.stopSelf();
             TermuxApiLogger.error("MicRecorderService onError() " + what);
         }
 
@@ -151,14 +155,9 @@ public class MicRecorderAPI {
             switch (what) {
                 case MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED: // intentional fallthrough
                 case MEDIA_RECORDER_INFO_MAX_DURATION_REACHED:
-                    finishRecording();
+                    this.stopSelf();
             }
             TermuxApiLogger.info("MicRecorderService onInfo() " + what);
-        }
-
-        protected static void finishRecording() {
-            isRecording = false;
-            cleanupMediaRecorder();
         }
 
         protected static String getDefaultRecordingFilename() {
@@ -172,10 +171,8 @@ public class MicRecorderAPI {
             JSONObject info = new JSONObject();
             try {
                 info.put("isRecording", isRecording);
-
-                if (isRecording) {
+                if (isRecording)
                     info.put("outputFile", file.getAbsolutePath());
-                }
                 result = info.toString(2);
             } catch (JSONException e) {
                 TermuxApiLogger.error("infoHandler json error", e);
@@ -195,6 +192,8 @@ public class MicRecorderAPI {
             public RecorderCommandResult handle(Context context, Intent intent) {
                 RecorderCommandResult result = new RecorderCommandResult();
                 result.message = getRecordingInfoJSONString();
+                if (!isRecording)
+                    context.stopService(intent);
                 return result;
             }
         };
@@ -292,6 +291,8 @@ public class MicRecorderAPI {
                         }
                     }
                 }
+                if (!isRecording)
+                    context.stopService(intent);
                 return result;
             }
         };
@@ -302,11 +303,11 @@ public class MicRecorderAPI {
                 RecorderCommandResult result = new RecorderCommandResult();
 
                 if (isRecording) {
-                    finishRecording();
                     result.message = "Recording finished: " + file.getAbsolutePath();
                 } else {
                     result.message = "No recording to stop";
                 }
+                context.stopService(intent);
                 return result;
             }
         };

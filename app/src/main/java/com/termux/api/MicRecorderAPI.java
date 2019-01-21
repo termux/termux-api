@@ -244,6 +244,10 @@ public class MicRecorderAPI {
 
                 int source = intent.getIntExtra("source", MediaRecorder.AudioSource.MIC);
 
+                int bitrate = intent.getIntExtra("bitrate", 0);
+                int srate = intent.getIntExtra("srate", 0);
+                int channels = intent.getIntExtra("channels", 0);
+
                 file = new File(filename);
 
                 TermuxApiLogger.info("MediaRecording file is: " + file.getAbsoluteFile());
@@ -260,6 +264,12 @@ public class MicRecorderAPI {
                             mediaRecorder.setAudioEncoder(encoder);
                             mediaRecorder.setOutputFile(filename);
                             mediaRecorder.setMaxDuration(duration);
+                            if (bitrate > 0)
+                                mediaRecorder.setAudioEncodingBitRate(bitrate);
+                            if (srate > 0)
+                                mediaRecorder.setAudioSamplingRate(srate);
+                            if (channels > 0)
+                                mediaRecorder.setAudioChannels(channels);
                             mediaRecorder.prepare();
                             mediaRecorder.start();
                             isRecording = true;

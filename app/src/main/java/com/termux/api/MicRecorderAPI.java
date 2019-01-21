@@ -174,7 +174,7 @@ public class MicRecorderAPI {
                 info.put("isRecording", isRecording);
 
                 if (isRecording) {
-                    info.put("outputFile", file.getAbsoluteFile());
+                    info.put("outputFile", file.getAbsolutePath());
                 }
                 result = info.toString(2);
             } catch (JSONException e) {
@@ -256,7 +256,7 @@ public class MicRecorderAPI {
 
                 file = new File(filename);
 
-                TermuxApiLogger.info("MediaRecording file is: " + file.getAbsoluteFile());
+                TermuxApiLogger.info("MediaRecording file is: " + file.getAbsolutePath());
 
                 if (file.exists()) {
                     result.error = String.format("File: %s already exists! Please specify a different filename", file.getName());
@@ -280,7 +280,7 @@ public class MicRecorderAPI {
                             mediaRecorder.start();
                             isRecording = true;
                             result.message = String.format("Recording started: %s \nMax Duration: %s",
-                                    file.getAbsoluteFile(), MediaPlayerAPI.getTimeString(duration / 1000));
+                                    file.getAbsolutePath(), MediaPlayerAPI.getTimeString(duration / 1000));
 
                         } catch (IllegalStateException | IOException e) {
                             TermuxApiLogger.error("MediaRecorder error", e);
@@ -299,7 +299,7 @@ public class MicRecorderAPI {
 
                 if (isRecording) {
                     finishRecording();
-                    result.message = "Recording finished: " + file.getAbsoluteFile();
+                    result.message = "Recording finished: " + file.getAbsolutePath();
                 } else {
                     result.message = "No recording to stop";
                 }

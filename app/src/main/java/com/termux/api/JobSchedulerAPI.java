@@ -5,9 +5,7 @@ import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.media.AudioManager;
 import android.os.PersistableBundle;
-import android.os.Vibrator;
 import android.util.Log;
 
 import com.termux.api.util.ResultReturner;

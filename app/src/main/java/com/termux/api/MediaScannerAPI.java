@@ -54,7 +54,7 @@ public class MediaScannerAPI {
 
     private static void scanFilesRecursively(PrintWriter out, Context context, String[] filePaths, Integer[] totalScanned, Boolean verbose) {
         for (String filePath : filePaths) {
-            Stack subDirs = new Stack();
+            Stack<File> subDirs = new Stack<>();
             File currentPath = new File(filePath);
             while (currentPath != null && currentPath.isDirectory() && currentPath.canRead()) {
                 File[] fileList = null;

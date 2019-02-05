@@ -200,7 +200,7 @@ public class MediaPlayerAPI {
             public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
                 MediaCommandResult result = new MediaCommandResult();
 
-                File mediaFile = null;
+                File mediaFile;
                 try {
                     mediaFile = new File(intent.getStringExtra("file"));
                 } catch (NullPointerException e) {

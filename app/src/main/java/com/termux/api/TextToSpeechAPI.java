@@ -192,7 +192,7 @@ public class TextToSpeechAPI {
     }
 
     private static Locale getLocale(String language, String region, String variant) {
-        Locale result = null;
+        Locale result;
         if (region != null) {
             if (variant != null) {
                 result = new Locale(language, region, variant);

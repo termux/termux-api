@@ -12,6 +12,7 @@ import com.termux.api.util.ResultReturner;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.util.Locale;
 
 public class JobSchedulerAPI {
 
@@ -93,15 +94,13 @@ public class JobSchedulerAPI {
             ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
                 @Override
                 public void writeResult(PrintWriter out) {
-                    out.println(String.format("Pending job %d %s", j.getId(), j.toString()));
+                    out.println(String.format(Locale.ENGLISH, "Pending job %d %s", j.getId(), j.toString()));
                 }
             });
         }
 
         ComponentName serviceComponent = new ComponentName(context, SchedulerJobService.class);
-        JobInfo.Builder builder = null;
-        ;
-        builder = new JobInfo.Builder(jobId, serviceComponent)
+        JobInfo.Builder builder = new JobInfo.Builder(jobId, serviceComponent)
                 .setExtras(extras)
                 .setRequiredNetworkType(networkTypeCode)
                 .setRequiresCharging(charging)
@@ -125,7 +124,7 @@ public class JobSchedulerAPI {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
             @Override
             public void writeResult(PrintWriter out) {
-                out.println(String.format("Scheduled job %d to call %s every %d ms - response %d",
+                out.println(String.format(Locale.ENGLISH,"Scheduled job %d to call %s every %d ms - response %d",
                         jobId, scriptPath, periodicMillis, scheduleResponse));
             }
         });

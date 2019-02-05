@@ -90,7 +90,7 @@ public class ShareAPI {
                     if (contentTypeExtra == null) {
                         String fileName = fileToShare.getName();
                         int lastDotIndex = fileName.lastIndexOf('.');
-                        String fileExtension = fileName.substring(lastDotIndex + 1, fileName.length());
+                        String fileExtension = fileName.substring(lastDotIndex + 1);
                         MimeTypeMap mimeTypes = MimeTypeMap.getSingleton();
                         // Lower casing makes it work with e.g. "JPG":
                         contentTypeToUse = mimeTypes.getMimeTypeFromExtension(fileExtension.toLowerCase());

@@ -16,6 +16,16 @@ public class TermuxApiReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        try {
+            doWork(context, intent);
+        } catch (Exception e) {
+            // Make sure never to throw exception from BroadCastReceiver to avoid "process is bad"
+            // behaviour from the Android system.
+            TermuxApiLogger.error("Error in TermuxApiReceiver", e);
+        }
+    }
+
+    private void doWork(Context context, Intent intent) {
         String apiMethod = intent.getStringExtra("api_method");
         if (apiMethod == null) {
             TermuxApiLogger.error("Missing 'api_method' extra");

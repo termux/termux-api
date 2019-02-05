@@ -12,7 +12,6 @@ import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
-import com.termux.api.util.ResultReturner.ResultWriter;
 import com.termux.api.util.ResultReturner.WithInput;
 
 import java.io.ByteArrayOutputStream;
@@ -155,14 +154,11 @@ class KeystoreAPI {
      * </ul>
      */
     private static void deleteKey(TermuxApiReceiver apiReceiver, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter out) throws IOException, GeneralSecurityException {
-                String alias = intent.getStringExtra("alias");
-                // unfortunately this statement does not return anything
-                // nor does it throw an exception if the alias does not exist
-                getKeyStore().deleteEntry(alias);
-            }
+        ResultReturner.returnData(apiReceiver, intent, out -> {
+            String alias = intent.getStringExtra("alias");
+            // unfortunately this statement does not return anything
+            // nor does it throw an exception if the alias does not exist
+            getKeyStore().deleteEntry(alias);
         });
     }
 
@@ -198,41 +194,38 @@ class KeystoreAPI {
     @RequiresApi(api = Build.VERSION_CODES.M)
     @SuppressLint("WrongConstant")
     private static void generateKey(TermuxApiReceiver apiReceiver, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter out) throws GeneralSecurityException {
-                String alias = intent.getStringExtra("alias");
-                String algorithm = intent.getStringExtra("algorithm");
-                int purposes = intent.getIntExtra("purposes", 0);
-                String[] digests = intent.getStringArrayExtra("digests");
-                int size = intent.getIntExtra("size", 2048);
-                String curve = intent.getStringExtra("curve");
-                int userValidity = intent.getIntExtra("validity", 0);
+        ResultReturner.returnData(apiReceiver, intent, out -> {
+            String alias = intent.getStringExtra("alias");
+            String algorithm = intent.getStringExtra("algorithm");
+            int purposes = intent.getIntExtra("purposes", 0);
+            String[] digests = intent.getStringArrayExtra("digests");
+            int size = intent.getIntExtra("size", 2048);
+            String curve = intent.getStringExtra("curve");
+            int userValidity = intent.getIntExtra("validity", 0);
 
-                KeyGenParameterSpec.Builder builder =
-                        new KeyGenParameterSpec.Builder(alias, purposes);
+            KeyGenParameterSpec.Builder builder =
+                    new KeyGenParameterSpec.Builder(alias, purposes);
 
-                builder.setDigests(digests);
-                if (algorithm.equals(KeyProperties.KEY_ALGORITHM_RSA)) {
-                    // only the exponent 65537 is supported for now
-                    builder.setAlgorithmParameterSpec(
-                            new RSAKeyGenParameterSpec(size, RSAKeyGenParameterSpec.F4));
-                    builder.setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1);
-                }
-
-                if (algorithm.equals(KeyProperties.KEY_ALGORITHM_EC)) {
-                    builder.setAlgorithmParameterSpec(new ECGenParameterSpec(curve));
-                }
-
-                if (userValidity > 0) {
-                    builder.setUserAuthenticationRequired(true);
-                    builder.setUserAuthenticationValidityDurationSeconds(userValidity);
-                }
-
-                KeyPairGenerator generator = KeyPairGenerator.getInstance(algorithm, PROVIDER);
-                generator.initialize(builder.build());
-                generator.generateKeyPair();
+            builder.setDigests(digests);
+            if (algorithm.equals(KeyProperties.KEY_ALGORITHM_RSA)) {
+                // only the exponent 65537 is supported for now
+                builder.setAlgorithmParameterSpec(
+                        new RSAKeyGenParameterSpec(size, RSAKeyGenParameterSpec.F4));
+                builder.setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1);
             }
+
+            if (algorithm.equals(KeyProperties.KEY_ALGORITHM_EC)) {
+                builder.setAlgorithmParameterSpec(new ECGenParameterSpec(curve));
+            }
+
+            if (userValidity > 0) {
+                builder.setUserAuthenticationRequired(true);
+                builder.setUserAuthenticationValidityDurationSeconds(userValidity);
+            }
+
+            KeyPairGenerator generator = KeyPairGenerator.getInstance(algorithm, PROVIDER);
+            generator.initialize(builder.build());
+            generator.generateKeyPair();
         });
     }
 
@@ -333,11 +326,6 @@ class KeystoreAPI {
     }
 
     private static void printErrorMessage(TermuxApiReceiver apiReceiver, Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter out) {
-                out.println("termux-keystore requires at least Android 6.0 (Marshmallow).");
-            }
-        });
+        ResultReturner.returnData(apiReceiver, intent, out -> out.println("termux-keystore requires at least Android 6.0 (Marshmallow)."));
     }
 }

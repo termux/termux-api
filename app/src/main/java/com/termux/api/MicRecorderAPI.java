@@ -18,7 +18,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -83,15 +82,12 @@ public class MicRecorderAPI {
                 case "quit":
                     return quitHandler;
                 default:
-                    return new RecorderCommandHandler() {
-                        @Override
-                        public RecorderCommandResult handle(Context context, Intent intent) {
-                            RecorderCommandResult result = new RecorderCommandResult();
-                            result.error = "Unknown command: " + command;
-                            if (!isRecording)
-                                context.stopService(intent);
-                            return result;
-                        }
+                    return (context, intent) -> {
+                        RecorderCommandResult result = new RecorderCommandResult();
+                        result.error = "Unknown command: " + command;
+                        if (!isRecording)
+                            context.stopService(intent);
+                        return result;
                     };
             }
         }
@@ -99,16 +95,13 @@ public class MicRecorderAPI {
         protected static void postRecordCommandResult(final Context context, final Intent intent,
                                                       final RecorderCommandResult result) {
 
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.append(result.message + "\n");
-                    if (result.error != null) {
-                        out.append(result.error + "\n");
-                    }
-                    out.flush();
-                    out.close();
+            ResultReturner.returnData(context, intent, out -> {
+                out.append(result.message).append("\n");
+                if (result.error != null) {
+                    out.append(result.error).append("\n");
                 }
+                out.flush();
+                out.close();
             });
         }
 

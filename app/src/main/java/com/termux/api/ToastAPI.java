@@ -28,21 +28,18 @@ public class ToastAPI {
         ResultReturner.returnData(context, intent, new ResultReturner.WithStringInput() {
             @Override
             public void writeResult(PrintWriter out) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast toast = Toast.makeText(context, inputString, durationExtra);
-                        View toastView = toast.getView();
+                handler.post(() -> {
+                    Toast toast = Toast.makeText(context, inputString, durationExtra);
+                    View toastView = toast.getView();
 
-                        Drawable background = toastView.getBackground();
-                        background.setTint(backgroundColor);
+                    Drawable background = toastView.getBackground();
+                    background.setTint(backgroundColor);
 
-                        TextView textView = toastView.findViewById(android.R.id.message);
-                        textView.setTextColor(textColor);
+                    TextView textView = toastView.findViewById(android.R.id.message);
+                    textView.setTextColor(textColor);
 
-                        toast.setGravity(gravity, 0, 0);
-                        toast.show();
-                    }
+                    toast.setGravity(gravity, 0, 0);
+                    toast.show();
                 });
             }
         });

@@ -9,7 +9,6 @@ import android.util.SparseArray;
 import com.termux.api.util.ResultReturner;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 
 public class VolumeAPI {
     private static final int STREAM_UNKNOWN = -1;
@@ -50,13 +49,10 @@ public class VolumeAPI {
      * Prints error to console
      */
     private static void printError(Context context, Intent intent, final String error) {
-        ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter out) {
-                out.append(error + "\n");
-                out.flush();
-                out.close();
-            }
+        ResultReturner.returnData(context, intent, out -> {
+            out.append(error).append("\n");
+            out.flush();
+            out.close();
         });
     }
 

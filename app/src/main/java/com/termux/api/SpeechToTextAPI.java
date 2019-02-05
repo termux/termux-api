@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.IntentService;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -121,19 +120,17 @@ public class SpeechToTextAPI {
             boolean speechRecognitionInstalled = !installedList.isEmpty();
 
             if (!speechRecognitionInstalled) {
+                // confirm
+// button
+// Install Button click handler
                 new AlertDialog.Builder(context).setMessage("For recognition it’s necessary to install \"Google Voice Search\"")
-                        .setTitle("Install Voice Search from Google Play?").setPositiveButton("Install", new DialogInterface.OnClickListener() { // confirm
-                    // button
-                    // Install Button click handler
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent installIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.voicesearch"));
-                        // setting flags to avoid going in application history (Activity call
-                        // stack)
-                        installIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
-                        context.startActivity(installIntent);
-                    }
-                }).setNegativeButton("Cancel", null) // cancel button
+                        .setTitle("Install Voice Search from Google Play?").setPositiveButton("Install", (dialog, which) -> {
+                            Intent installIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.voicesearch"));
+                            // setting flags to avoid going in application history (Activity call
+                            // stack)
+                            installIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+                            context.startActivity(installIntent);
+                        }).setNegativeButton("Cancel", null) // cancel button
                         .create().show();
             }
 
@@ -189,18 +186,16 @@ public class SpeechToTextAPI {
             intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1); // quantity of results we want to receive
             // context.startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
         } else {
+            // confirm
+// button
+// Install Button click handler
             new AlertDialog.Builder(context).setMessage("For recognition it’s necessary to install \"Google Voice Search\"")
-                    .setTitle("Install Voice Search from Google Play?").setPositiveButton("Install", new DialogInterface.OnClickListener() { // confirm
-                // button
-                // Install Button click handler
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.voicesearch"));
-                    // setting flags to avoid going in application history (Activity call stack)
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
-                    context.startActivity(intent);
-                }
-            }).setNegativeButton("Cancel", null) // cancel button
+                    .setTitle("Install Voice Search from Google Play?").setPositiveButton("Install", (dialog, which) -> {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.voicesearch"));
+                        // setting flags to avoid going in application history (Activity call stack)
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+                        context.startActivity(intent);
+                    }).setNegativeButton("Cancel", null) // cancel button
                     .create().show();
         }
     }

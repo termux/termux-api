@@ -14,10 +14,8 @@ import com.termux.api.util.TermuxApiLogger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -85,33 +83,30 @@ public class WallpaperAPI {
         }
 
         protected Future<WallpaperResult> getWallpaperDownloader(final String url) {
-            return Executors.newSingleThreadExecutor().submit(new Callable<WallpaperResult>() {
-                @Override
-                public WallpaperResult call() throws IOException {
-                    WallpaperResult wallpaperResult = new WallpaperResult();
-                    String contentUrl = url;
+            return Executors.newSingleThreadExecutor().submit(() -> {
+                WallpaperResult wallpaperResult = new WallpaperResult();
+                String contentUrl = url;
 
-                    if (!contentUrl.startsWith("http://") && !contentUrl.startsWith("https://")) {
-                        contentUrl = "http://" + url;
-                    }
-                    HttpURLConnection connection = (HttpURLConnection) new URL(contentUrl).openConnection();
-                    connection.connect();
-
-                    String contentType = "" + connection.getHeaderField("Content-Type");
-
-                    // prevent downloading invalid resource
-                    if (!contentType.startsWith("image/")) {
-                        wallpaperResult.error = "Invalid mime type! Must be an image resource!";
-                    } else {
-                        InputStream inputStream = connection.getInputStream();
-                        wallpaperResult.wallpaper = BitmapFactory.decodeStream(inputStream);
-
-                        if (inputStream != null) {
-                            inputStream.close();
-                        }
-                    }
-                    return wallpaperResult;
+                if (!contentUrl.startsWith("http://") && !contentUrl.startsWith("https://")) {
+                    contentUrl = "http://" + url;
                 }
+                HttpURLConnection connection = (HttpURLConnection) new URL(contentUrl).openConnection();
+                connection.connect();
+
+                String contentType = "" + connection.getHeaderField("Content-Type");
+
+                // prevent downloading invalid resource
+                if (!contentType.startsWith("image/")) {
+                    wallpaperResult.error = "Invalid mime type! Must be an image resource!";
+                } else {
+                    InputStream inputStream = connection.getInputStream();
+                    wallpaperResult.wallpaper = BitmapFactory.decodeStream(inputStream);
+
+                    if (inputStream != null) {
+                        inputStream.close();
+                    }
+                }
+                return wallpaperResult;
             });
         }
 
@@ -137,16 +132,13 @@ public class WallpaperAPI {
         }
 
         protected void postWallpaperResult(final Context context, final Intent intent, final WallpaperResult result) {
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.append(result.message + "\n");
-                    if (result.error != null) {
-                        out.append(result.error + "\n");
-                    }
-                    out.flush();
-                    out.close();
+            ResultReturner.returnData(context, intent, out -> {
+                out.append(result.message).append("\n");
+                if (result.error != null) {
+                    out.append(result.error).append("\n");
                 }
+                out.flush();
+                out.close();
             });
         }
 

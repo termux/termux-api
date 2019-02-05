@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.Engine;
 import android.speech.tts.TextToSpeech.EngineInfo;
-import android.speech.tts.TextToSpeech.OnInitListener;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.JsonWriter;
 
@@ -80,15 +79,12 @@ public class TextToSpeechAPI {
             }
             final int streamToUse = streamToUseInt;
 
-            mTts = new TextToSpeech(this, new OnInitListener() {
-                @Override
-                public void onInit(int status) {
-                    if (status == TextToSpeech.SUCCESS) {
-                        mTtsLatch.countDown();
-                    } else {
-                        TermuxApiLogger.error("Failed tts initialization: status=" + status);
-                        stopSelf();
-                    }
+            mTts = new TextToSpeech(this, status -> {
+                if (status == TextToSpeech.SUCCESS) {
+                    mTtsLatch.countDown();
+                } else {
+                    TermuxApiLogger.error("Failed tts initialization: status=" + status);
+                    stopSelf();
                 }
             }, speechEngine);
 

@@ -11,7 +11,6 @@ import android.util.Log;
 import com.termux.api.util.ResultReturner;
 
 import java.io.File;
-import java.io.PrintWriter;
 import java.util.Locale;
 
 public class JobSchedulerAPI {
@@ -53,12 +52,7 @@ public class JobSchedulerAPI {
             }
         }
         if (scriptPath == null) {
-            ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.println("No script path given");
-                }
-            });
+            ResultReturner.returnData(apiReceiver, intent, out -> out.println("No script path given"));
             return;
         }
         final File file = new File(scriptPath);
@@ -74,12 +68,7 @@ public class JobSchedulerAPI {
         }
 
         if (!fileCheckMsg.isEmpty()) {
-            ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.println(String.format(fileCheckMsg, scriptPath));
-                }
-            });
+            ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(fileCheckMsg, scriptPath)));
             return;
         }
 
@@ -91,12 +80,7 @@ public class JobSchedulerAPI {
         // Display pending jobs
         for (JobInfo job : jobScheduler.getAllPendingJobs()) {
             final JobInfo j = job;
-            ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.println(String.format(Locale.ENGLISH, "Pending job %d %s", j.getId(), j.toString()));
-                }
-            });
+            ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH, "Pending job %d %s", j.getId(), j.toString())));
         }
 
         ComponentName serviceComponent = new ComponentName(context, SchedulerJobService.class);
@@ -121,13 +105,8 @@ public class JobSchedulerAPI {
 
         Log.i(LOG_TAG, String.format("Scheduled job %d to call %s every %d ms - response %d",
                 jobId, scriptPath, periodicMillis, scheduleResponse));
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter out) {
-                out.println(String.format(Locale.ENGLISH,"Scheduled job %d to call %s every %d ms - response %d",
-                        jobId, scriptPath, periodicMillis, scheduleResponse));
-            }
-        });
+        ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH,"Scheduled job %d to call %s every %d ms - response %d",
+                jobId, scriptPath, periodicMillis, scheduleResponse)));
 
     }
 

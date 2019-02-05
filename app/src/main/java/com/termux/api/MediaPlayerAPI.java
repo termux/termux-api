@@ -12,7 +12,6 @@ import com.termux.api.util.TermuxApiLogger;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 /**
  * API that enables playback of standard audio formats such as:
@@ -144,13 +143,10 @@ public class MediaPlayerAPI {
                 case "stop":
                     return stopHandler;
                 default:
-                    return new MediaCommandHandler() {
-                        @Override
-                        public MediaCommandResult handle(MediaPlayer player, Context context, Intent intent) {
-                            MediaCommandResult result = new MediaCommandResult();
-                            result.error = "Unknown command: " + command;
-                            return result;
-                        };
+                    return (player, context, intent) -> {
+                        MediaCommandResult result = new MediaCommandResult();
+                        result.error = "Unknown command: " + command;
+                        return result;
                     };
             }
         }
@@ -161,16 +157,13 @@ public class MediaPlayerAPI {
         protected static void postMediaCommandResult(final Context context, final Intent intent,
                                                      final MediaCommandResult result) {
 
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.append(result.message + "\n");
-                    if (result.error != null) {
-                        out.append(result.error + "\n");
-                    }
-                    out.flush();
-                    out.close();
+            ResultReturner.returnData(context, intent, out -> {
+                out.append(result.message).append("\n");
+                if (result.error != null) {
+                    out.append(result.error).append("\n");
                 }
+                out.flush();
+                out.close();
             });
         }
 

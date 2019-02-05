@@ -229,14 +229,11 @@ public class FingerprintAPI {
          */
         protected static void addSensorTimeout(final Context context, final Intent intent, final CancellationSignal cancellationSignal) {
             final Handler timeoutHandler = new Handler(Looper.getMainLooper());
-            timeoutHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if (!postedResult) {
-                        appendFingerprintError(ERROR_TIMEOUT);
-                        cancellationSignal.cancel();
-                        postFingerprintResult(context, intent, fingerprintResult);
-                    }
+            timeoutHandler.postDelayed(() -> {
+                if (!postedResult) {
+                    appendFingerprintError(ERROR_TIMEOUT);
+                    cancellationSignal.cancel();
+                    postFingerprintResult(context, intent, fingerprintResult);
                 }
             }, SENSOR_TIMEOUT);
         }

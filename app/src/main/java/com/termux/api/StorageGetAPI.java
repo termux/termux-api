@@ -13,26 +13,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 
 public class StorageGetAPI {
 
     private static final String FILE_EXTRA = "com.termux.api.storage.file";
 
     static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter out) {
-                final String fileExtra = intent.getStringExtra("file");
-                if (fileExtra == null || !new File(fileExtra).getParentFile().canWrite()) {
-                    out.println("ERROR: Not a writable folder: " + fileExtra);
-                    return;
-                }
-
-                Intent intent = new Intent(context, StorageActivity.class);
-                intent.putExtra(FILE_EXTRA, fileExtra);
-                context.startActivity(intent);
+        ResultReturner.returnData(apiReceiver, intent, out -> {
+            final String fileExtra = intent.getStringExtra("file");
+            if (fileExtra == null || !new File(fileExtra).getParentFile().canWrite()) {
+                out.println("ERROR: Not a writable folder: " + fileExtra);
+                return;
             }
+
+            Intent intent1 = new Intent(context, StorageActivity.class);
+            intent1.putExtra(FILE_EXTRA, fileExtra);
+            context.startActivity(intent1);
         });
     }
 

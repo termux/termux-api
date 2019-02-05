@@ -147,13 +147,10 @@ public class SensorAPI {
                 case "sensors":
                     return sensorHandler;
                 default:
-                    return new SensorCommandHandler() {
-                        @Override
-                        public SensorCommandResult handle(SensorManager sensorManager, Context context, Intent intent) {
-                            SensorCommandResult result = new SensorCommandResult();
-                            result.message = "Unknown command: " + command;
-                            return result;
-                        }
+                    return (sensorManager, context, intent) -> {
+                        SensorCommandResult result = new SensorCommandResult();
+                        result.message = "Unknown command: " + command;
+                        return result;
                     };
             }
         }
@@ -161,16 +158,13 @@ public class SensorAPI {
         private void postSensorCommandResult(final Context context, final Intent intent,
                                              final SensorCommandResult result) {
 
-            ResultReturner.returnData(context, intent, new ResultReturner.ResultWriter() {
-                @Override
-                public void writeResult(PrintWriter out) {
-                    out.append(result.message + "\n");
-                    if (result.error != null) {
-                        out.append(result.error + "\n");
-                    }
-                    out.flush();
-                    out.close();
+            ResultReturner.returnData(context, intent, out -> {
+                out.append(result.message).append("\n");
+                if (result.error != null) {
+                    out.append(result.error).append("\n");
                 }
+                out.flush();
+                out.close();
             });
         }
 
@@ -185,26 +179,23 @@ public class SensorAPI {
         /**
          * Handler for returning a list of all available sensors
          */
-        static SensorCommandHandler listHandler = new SensorCommandHandler() {
-            @Override
-            public SensorCommandResult handle(SensorManager sensorManager, Context context, Intent intent) {
-                SensorCommandResult result = new SensorCommandResult();
-                JSONArray sensorArray = new JSONArray();
-                List<Sensor> sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL);
+        static SensorCommandHandler listHandler = (sensorManager, context, intent) -> {
+            SensorCommandResult result = new SensorCommandResult();
+            JSONArray sensorArray = new JSONArray();
+            List<Sensor> sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL);
 
-                try {
-                    for (int j = 0; j < sensorList.size(); ++j) {
-                        Sensor sensor = sensorList.get(j);
-                        sensorArray.put(sensor.getName());
-                    }
-                    JSONObject output = new JSONObject();
-                    output.put("sensors", sensorArray);
-                    result.message = output.toString(INDENTATION);
-                } catch (JSONException e) {
-                    TermuxApiLogger.error("listHandler JSON error", e);
+            try {
+                for (int j = 0; j < sensorList.size(); ++j) {
+                    Sensor sensor = sensorList.get(j);
+                    sensorArray.put(sensor.getName());
                 }
-                return result;
+                JSONObject output = new JSONObject();
+                output.put("sensors", sensorArray);
+                result.message = output.toString(INDENTATION);
+            } catch (JSONException e) {
+                TermuxApiLogger.error("listHandler JSON error", e);
             }
+            return result;
         };
 
         /**
@@ -318,12 +309,9 @@ public class SensorAPI {
             String socketAddress = intent.getStringExtra("socket_output");
 
             outputWriter = new SensorOutputWriter(socketAddress);
-            outputWriter.setOnErrorListener(new SocketWriterErrorListener() {
-                @Override
-                public void onError(Exception e) {
-                    outputWriter = null;
-                    TermuxApiLogger.error("SensorOutputWriter error", e);
-                }
+            outputWriter.setOnErrorListener(e -> {
+                outputWriter = null;
+                TermuxApiLogger.error("SensorOutputWriter error", e);
             });
 
             int delay = intent.getIntExtra("delay", SensorOutputWriter.DEFAULT_DELAY);

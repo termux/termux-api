@@ -41,14 +41,11 @@ public class PhotoAPI {
         final File outputDir = outputFile.getParentFile();
         final String cameraId = Objects.toString(intent.getStringExtra("camera"), "0");
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultWriter() {
-            @Override
-            public void writeResult(PrintWriter stdout) {
-                if (!(outputDir.isDirectory() || outputDir.mkdirs())) {
-                    stdout.println("Not a folder (and unable to create it): " + outputDir.getAbsolutePath());
-                } else {
-                    takePicture(stdout, context, outputFile, cameraId);
-                }
+        ResultReturner.returnData(apiReceiver, intent, stdout -> {
+            if (!(outputDir.isDirectory() || outputDir.mkdirs())) {
+                stdout.println("Not a folder (and unable to create it): " + outputDir.getAbsolutePath());
+            } else {
+                takePicture(stdout, context, outputFile, cameraId);
             }
         });
     }
@@ -108,40 +105,32 @@ public class PhotoAPI {
 
         // Use largest available size:
         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        Comparator<Size> bySize = new Comparator<Size>() {
-            @Override
-            public int compare(Size lhs, Size rhs) {
-                // Cast to ensure multiplications won't overflow:
-                return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
-            }
+        Comparator<Size> bySize = (lhs, rhs) -> {
+            // Cast to ensure multiplications won't overflow:
+            return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
         };
         List<Size> sizes = Arrays.asList(map.getOutputSizes(ImageFormat.JPEG));
         Size largest = Collections.max(sizes, bySize);
 
         final ImageReader mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, 2);
-        mImageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+        mImageReader.setOnImageAvailableListener(reader -> new Thread() {
             @Override
-            public void onImageAvailable(final ImageReader reader) {
-                new Thread() {
-                    @Override
-                    public void run() {
-                        try (final Image mImage = reader.acquireNextImage()) {
-                            ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-                            byte[] bytes = new byte[buffer.remaining()];
-                            buffer.get(bytes);
-                            try (FileOutputStream output = new FileOutputStream(outputFile)) {
-                                output.write(bytes);
-                            } catch (Exception e) {
-                                stdout.println("Error writing image: " + e.getMessage());
-                                TermuxApiLogger.error("Error writing image", e);
-                            } finally {
-                                closeCamera(camera, looper);
-                            }
-                        }
+            public void run() {
+                try (final Image mImage = reader.acquireNextImage()) {
+                    ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
+                    byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    try (FileOutputStream output = new FileOutputStream(outputFile)) {
+                        output.write(bytes);
+                    } catch (Exception e) {
+                        stdout.println("Error writing image: " + e.getMessage());
+                        TermuxApiLogger.error("Error writing image", e);
+                    } finally {
+                        closeCamera(camera, looper);
                     }
-                }.start();
+                }
             }
-        }, null);
+        }.start(), null);
         final Surface imageReaderSurface = mImageReader.getSurface();
         outputSurfaces.add(imageReaderSurface);
 

@@ -68,12 +68,9 @@ public class DialogActivity extends AppCompatActivity {
         String methodType = intent.hasExtra("input_method") ? intent.getStringExtra("input_method") : "";
 
         InputMethod method = InputMethodFactory.get(methodType, this);
-        method.create(this, new InputResultListener() {
-            @Override
-            public void onResult(final InputResult result) {
-                postResult(context, result);
-                finish();
-            }
+        method.create(this, result -> {
+            postResult(context, result);
+            finish();
         });
     }
 
@@ -178,13 +175,10 @@ public class DialogActivity extends AppCompatActivity {
                 case "time":
                     return new TimeInputMethod(activity);
                 default:
-                    return new InputMethod() {
-                        @Override
-                        public void create(AppCompatActivity activity, InputResultListener resultListener) {
-                            InputResult result = new InputResult();
-                            result.error = "Unknown Input Method: " + type;
-                            resultListener.onResult(result);
-                        }
+                    return (activity1, resultListener) -> {
+                        InputResult result = new InputResult();
+                        result.error = "Unknown Input Method: " + type;
+                        resultListener.onResult(result);
                     };
             }
         }
@@ -355,20 +349,10 @@ public class DialogActivity extends AppCompatActivity {
             counterLabel = layout.findViewById(R.id.counterTextView);
 
             final Button incrementButton = layout.findViewById(R.id.incrementButton);
-            incrementButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    increment();
-                }
-            });
+            incrementButton.setOnClickListener(view -> increment());
 
             final Button decrementButton = layout.findViewById(R.id.decrementButton);
-            decrementButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    decrement();
-                }
-            });
+            decrementButton.setOnClickListener(view -> decrement());
             updateCounterRange();
 
             return layout;
@@ -648,16 +632,12 @@ public class DialogActivity extends AppCompatActivity {
                 textView.setText(values[j]);
                 textView.setTextSize(20);
                 textView.setPadding(56, 56, 56, 56);
-                textView.setOnClickListener(new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View view) {
-                        InputResult result = new InputResult();
-                        result.text = values[j];
-                        result.index = j;
-                        dialog.dismiss();
-                        resultListener.onResult(result);
-                    }
+                textView.setOnClickListener(view -> {
+                    InputResult result = new InputResult();
+                    result.text = values[j];
+                    result.index = j;
+                    dialog.dismiss();
+                    resultListener.onResult(result);
                 });
 
                 layout.addView(textView);
@@ -782,12 +762,9 @@ public class DialogActivity extends AppCompatActivity {
 
             // create intermediate InputResultListener so that we can stop our speech listening
             // if user hits the cancel button
-            DialogInterface.OnClickListener clickListener = getClickListener(new InputResultListener() {
-                @Override
-                public void onResult(InputResult result) {
-                    recognizer.stopListening();
-                    resultListener.onResult(result);
-                }
+            DialogInterface.OnClickListener clickListener = getClickListener(result -> {
+                recognizer.stopListening();
+                resultListener.onResult(result);
             });
 
             Dialog dialog = getDialogBuilder(activity, clickListener)
@@ -967,23 +944,17 @@ public class DialogActivity extends AppCompatActivity {
         }
 
         DialogInterface.OnClickListener getClickListener(final InputResultListener listener) {
-            return new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int button) {
-                            InputResult result = onDialogClick(button);
-                            listener.onResult(result);
-                        }
-                    };
+            return (dialogInterface, button) -> {
+                InputResult result = onDialogClick(button);
+                listener.onResult(result);
+            };
         }
 
         DialogInterface.OnDismissListener getDismissListener() {
-            return new DialogInterface.OnDismissListener() {
-                @Override
-                public void onDismiss(DialogInterface dialogInterface) {
-                    // force dismiss behavior on single tap outside of dialog
-                    activity.onBackPressed();
-                    onDismissed();
-                }
+            return dialogInterface -> {
+                // force dismiss behavior on single tap outside of dialog
+                activity.onBackPressed();
+                onDismissed();
             };
         }
 

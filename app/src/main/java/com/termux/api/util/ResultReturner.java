@@ -100,47 +100,44 @@ public abstract class ResultReturner {
                 .goAsync() : null;
         final Activity activity = (Activity) ((context instanceof Activity) ? context : null);
 
-        final Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    try (LocalSocket outputSocket = new LocalSocket()) {
-                        String outputSocketAdress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
-                        outputSocket.connect(new LocalSocketAddress(outputSocketAdress));
-                        try (PrintWriter writer = new PrintWriter(outputSocket.getOutputStream())) {
-                            if (resultWriter != null) {
-                                if (resultWriter instanceof WithInput) {
-                                    try (LocalSocket inputSocket = new LocalSocket()) {
-                                        String inputSocketAdress = intent.getStringExtra(SOCKET_INPUT_EXTRA);
-                                        inputSocket.connect(new LocalSocketAddress(inputSocketAdress));
-                                        ((WithInput) resultWriter).setInput(inputSocket.getInputStream());
-                                        resultWriter.writeResult(writer);
-                                    }
-                                } else {
+        final Runnable runnable = () -> {
+            try {
+                try (LocalSocket outputSocket = new LocalSocket()) {
+                    String outputSocketAdress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
+                    outputSocket.connect(new LocalSocketAddress(outputSocketAdress));
+                    try (PrintWriter writer = new PrintWriter(outputSocket.getOutputStream())) {
+                        if (resultWriter != null) {
+                            if (resultWriter instanceof WithInput) {
+                                try (LocalSocket inputSocket = new LocalSocket()) {
+                                    String inputSocketAdress = intent.getStringExtra(SOCKET_INPUT_EXTRA);
+                                    inputSocket.connect(new LocalSocketAddress(inputSocketAdress));
+                                    ((WithInput) resultWriter).setInput(inputSocket.getInputStream());
                                     resultWriter.writeResult(writer);
                                 }
+                            } else {
+                                resultWriter.writeResult(writer);
                             }
                         }
                     }
+                }
 
-                    if (asyncResult != null) {
-                        asyncResult.setResultCode(0);
-                    } else if (activity != null) {
-                        activity.setResult(0);
-                    }
-                } catch (Exception e) {
-                    TermuxApiLogger.error("Error in ResultReturner", e);
-                    if (asyncResult != null) {
-                        asyncResult.setResultCode(1);
-                    } else if (activity != null) {
-                        activity.setResult(1);
-                    }
-                } finally {
-                    if (asyncResult != null) {
-                        asyncResult.finish();
-                    } else if (activity != null) {
-                        activity.finish();
-                    }
+                if (asyncResult != null) {
+                    asyncResult.setResultCode(0);
+                } else if (activity != null) {
+                    activity.setResult(0);
+                }
+            } catch (Exception e) {
+                TermuxApiLogger.error("Error in ResultReturner", e);
+                if (asyncResult != null) {
+                    asyncResult.setResultCode(1);
+                } else if (activity != null) {
+                    activity.setResult(1);
+                }
+            } finally {
+                if (asyncResult != null) {
+                    asyncResult.finish();
+                } else if (activity != null) {
+                    activity.finish();
                 }
             }
         };

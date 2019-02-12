@@ -81,7 +81,7 @@ public class ShareAPI {
 
                 Intent sendIntent = new Intent();
                 sendIntent.setAction(finalIntentAction);
-                Uri uriToShare = Uri.withAppendedPath(Uri.parse("content://com.termux.sharedfiles/"), fileExtra);
+                Uri uriToShare = Uri.parse("content://com.termux.sharedfiles" + fileToShare.getAbsolutePath());
                 sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
                 String contentTypeToUse;

@@ -3,6 +3,7 @@ package com.termux.api;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.ImageFormat;
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -134,10 +135,21 @@ public class PhotoAPI {
         final Surface imageReaderSurface = mImageReader.getSurface();
         outputSurfaces.add(imageReaderSurface);
 
+        final SurfaceTexture mDummyPreview = new SurfaceTexture(1);
+        final Surface mDummySurface = new Surface(mDummyPreview);
+        outputSurfaces.add(mDummySurface);
+
         camera.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
             @Override
             public void onConfigured(final CameraCaptureSession session) {
                 try {
+                    final CaptureRequest.Builder prevReq = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                    prevReq.addTarget(mDummySurface);
+                    session.capture(prevReq.build(), null, null);
+                    session.capture(prevReq.build(), null, null);
+                    session.capture(prevReq.build(), null, null);
+                    session.capture(prevReq.build(), null, null);
+
                     final CaptureRequest.Builder jpegRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                     // Render to our image reader:
                     jpegRequest.addTarget(imageReaderSurface);

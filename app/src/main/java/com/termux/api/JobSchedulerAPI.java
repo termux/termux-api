@@ -5,18 +5,53 @@ import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.PersistableBundle;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.termux.api.util.ResultReturner;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class JobSchedulerAPI {
 
     private static final String LOG_TAG = "JobSchedulerAPI";
 
+
+    private static String formatJobInfo(JobInfo jobInfo) {
+        final String path = jobInfo.getExtras().getString(SchedulerJobService.SCRIPT_FILE_PATH);
+        List<String> description = new ArrayList<String>();
+        if (jobInfo.isPeriodic()) {
+            description.add(String.format(Locale.ENGLISH, "(periodic: %dms)", jobInfo.getIntervalMillis()));
+        }
+        if (jobInfo.isRequireCharging()) {
+            description.add("(while charging)");
+        }
+        if (jobInfo.isRequireDeviceIdle()) {
+            description.add("(while idle)");
+        }
+        if (jobInfo.isPersisted()) {
+            description.add("(persisted)");
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (jobInfo.isRequireBatteryNotLow()) {
+                description.add("(battery not low)");
+            }
+            if (jobInfo.isRequireStorageNotLow()) {
+                description.add("(storage not low)");
+            }
+        }
+        if (Build.VERSION.SDK_INT >= 28) {
+            description.add(String.format(Locale.ENGLISH, "(network: %s)", jobInfo.getRequiredNetwork().toString()));
+        }
+
+        return String.format(Locale.ENGLISH, "Job %d: %s\t%s", jobInfo.getId(), path,
+                TextUtils.join(" ", description));
+    }
 
     static void onReceive(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
 
@@ -80,7 +115,7 @@ public class JobSchedulerAPI {
         // Display pending jobs
         for (JobInfo job : jobScheduler.getAllPendingJobs()) {
             final JobInfo j = job;
-            ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH, "Pending job %d %s", j.getId(), j.toString())));
+            ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH, "Pending %s", formatJobInfo(j))));
         }
 
         ComponentName serviceComponent = new ComponentName(context, SchedulerJobService.class);
@@ -103,10 +138,9 @@ public class JobSchedulerAPI {
 
         final int scheduleResponse = jobScheduler.schedule(job);
 
-        Log.i(LOG_TAG, String.format("Scheduled job %d to call %s every %d ms - response %d",
-                jobId, scriptPath, periodicMillis, scheduleResponse));
-        ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH,"Scheduled job %d to call %s every %d ms - response %d",
-                jobId, scriptPath, periodicMillis, scheduleResponse)));
+        final String message = String.format(Locale.ENGLISH, "Scheduling %s - response %d", formatJobInfo(job), scheduleResponse);
+        Log.i(LOG_TAG, message);
+        ResultReturner.returnData(apiReceiver, intent, out -> out.println(message));
 
     }
 

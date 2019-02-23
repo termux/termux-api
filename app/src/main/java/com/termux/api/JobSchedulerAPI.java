@@ -140,9 +140,6 @@ public class JobSchedulerAPI {
         PersistableBundle extras = new PersistableBundle();
         extras.putString(SchedulerJobService.SCRIPT_FILE_PATH, file.getAbsolutePath());
 
-
-        displayPendingJobs(apiReceiver, intent, jobScheduler);
-
         ComponentName serviceComponent = new ComponentName(context, SchedulerJobService.class);
         JobInfo.Builder builder = new JobInfo.Builder(jobId, serviceComponent)
                 .setExtras(extras)
@@ -167,13 +164,20 @@ public class JobSchedulerAPI {
         Log.i(LOG_TAG, message);
         ResultReturner.returnData(apiReceiver, intent, out -> out.println(message));
 
+
+        displayPendingJobs(apiReceiver, intent, jobScheduler);
+
     }
 
     private static void displayPendingJobs(TermuxApiReceiver apiReceiver, Intent intent, JobScheduler jobScheduler) {
         // Display pending jobs
-        for (JobInfo job : jobScheduler.getAllPendingJobs()) {
-            final JobInfo j = job;
-            ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH, "Pending %s", formatJobInfo(j))));
+        final List<JobInfo> jobs = jobScheduler.getAllPendingJobs();
+        if (jobs.isEmpty()) {
+            ResultReturner.returnData(apiReceiver, intent, out -> out.println("No pending jobs"));
+            return;
+        }
+        for (JobInfo job : jobs) {
+            ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH, "Pending %s", formatJobInfo(job))));
         }
     }
 

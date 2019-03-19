@@ -62,9 +62,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 }
                 break;
             case "CallLog":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_CALL_LOG)) {
-                    CallLogAPI.onReceive(context, intent);
-                }
+                CallLogAPI.onReceive(context, intent);
                 break;
             case "Clipboard":
                 ClipboardAPI.onReceive(this, context, intent);
@@ -139,14 +137,10 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 ShareAPI.onReceive(this, context, intent);
                 break;
             case "SmsInbox":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_SMS, Manifest.permission.READ_CONTACTS)) {
-                    SmsInboxAPI.onReceive(this, context, intent);
-                }
+                SmsInboxAPI.onReceive(this, context, intent);
                 break;
             case "SmsSend":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.SEND_SMS)) {
-                    SmsSendAPI.onReceive(this, intent);
-                }
+                SmsSendAPI.onReceive(this, intent);
                 break;
             case "StorageGet":
                 StorageGetAPI.onReceive(this, context, intent);

@@ -27,3 +27,9 @@ android {
 dependencies {
     implementation 'com.android.support:design:28.0.0'
 }
+
+task versionName {
+  doLast {
+    print android.defaultConfig.versionName
+  }
+}

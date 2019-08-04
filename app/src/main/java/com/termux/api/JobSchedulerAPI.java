@@ -92,6 +92,8 @@ public class JobSchedulerAPI {
                     networkTypeCode = JobInfo.NETWORK_TYPE_NONE;
                     break;
             }
+        } else { // networkType == null
+            networkTypeCode = JobInfo.NETWORK_TYPE_ANY;
         }
 
 

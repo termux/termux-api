@@ -95,6 +95,7 @@ public class NotificationAPI {
         notification.setOngoing(ongoing);
         notification.setOnlyAlertOnce(alertOnce);
         notification.setWhen(System.currentTimeMillis());
+	notification.setShowWhen(true);
 
 
 

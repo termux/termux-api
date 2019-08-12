@@ -144,6 +144,7 @@ public class LocationAPI {
         out.name("longitude").value(lastKnownLocation.getLongitude());
         out.name("altitude").value(lastKnownLocation.getAltitude());
         out.name("accuracy").value(lastKnownLocation.getAccuracy());
+        out.name("vertical accuracy").value(lastKnownLocation.getVerticalAccuracyMeters());
         out.name("bearing").value(lastKnownLocation.getBearing());
         out.name("speed").value(lastKnownLocation.getSpeed());
         long elapsedMs = (SystemClock.elapsedRealtimeNanos() - lastKnownLocation.getElapsedRealtimeNanos()) / 1000000;

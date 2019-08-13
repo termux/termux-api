@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -144,7 +145,9 @@ public class LocationAPI {
         out.name("longitude").value(lastKnownLocation.getLongitude());
         out.name("altitude").value(lastKnownLocation.getAltitude());
         out.name("accuracy").value(lastKnownLocation.getAccuracy());
-        out.name("vertical accuracy").value(lastKnownLocation.getVerticalAccuracyMeters());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            out.name("vertical_accuracy").value(lastKnownLocation.getVerticalAccuracyMeters());
+        }
         out.name("bearing").value(lastKnownLocation.getBearing());
         out.name("speed").value(lastKnownLocation.getSpeed());
         long elapsedMs = (SystemClock.elapsedRealtimeNanos() - lastKnownLocation.getElapsedRealtimeNanos()) / 1000000;

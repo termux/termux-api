@@ -72,7 +72,7 @@ public class JobSchedulerAPI {
         final boolean idle = intent.getBooleanExtra("idle", false);
         final boolean storageNotLow = intent.getBooleanExtra("storage_not_low", false);
 
-        int networkTypeCode = JobInfo.NETWORK_TYPE_NONE;
+        int networkTypeCode;
         if (networkType != null) {
             switch (networkType) {
                 case "any":

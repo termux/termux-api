@@ -119,7 +119,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 final boolean NotificationServiceEnabled = flat != null && flat.contains(cn.flattenToString());
                 if (!NotificationServiceEnabled) {
                     Toast.makeText(context,"Please give Termux:API Notification Access", Toast.LENGTH_LONG).show();
-                    context.startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+                    context.startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 } else {
                     NotificationListAPI.onReceive(this, context, intent);
                 }

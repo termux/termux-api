@@ -77,6 +77,7 @@ public class FingerprintAPI {
             if (validateFingerprintSensor(context, fingerprintManager)) {
                 Intent fingerprintIntent = new Intent(context, FingerprintActivity.class);
                 fingerprintIntent.putExtras(intent.getExtras());
+                fingerprintIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(fingerprintIntent);
             } else {
                 postFingerprintResult(context, intent, fingerprintResult);

@@ -28,6 +28,7 @@ public class StorageGetAPI {
 
             Intent intent1 = new Intent(context, StorageActivity.class);
             intent1.putExtra(FILE_EXTRA, fileExtra);
+            intent1.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent1);
         });
     }

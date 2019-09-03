@@ -77,7 +77,7 @@ public class NotificationAPI {
         long[] vibratePattern = intent.getLongArrayExtra("vibrate");
         boolean useSound = intent.getBooleanExtra("sound", false);
         boolean ongoing = intent.getBooleanExtra("ongoing", false);
-        boolean alertOnce = intent.getBooleanExtra("alert-once", true);
+        boolean alertOnce = intent.getBooleanExtra("alert-once", false);
 
         String actionExtra = intent.getStringExtra("action");
 

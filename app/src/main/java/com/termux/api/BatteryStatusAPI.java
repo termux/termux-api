@@ -97,7 +97,7 @@ public class BatteryStatusAPI {
                         batteryStatusString = "UNKNOWN";
                 }
 
-                double batteryCurrent = batteryStatus.getIntExtra(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW, -1);
+                int batteryCurrent = batteryStatus.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
 
                 out.beginObject();
                 out.name("health").value(batteryHealth);

@@ -97,12 +97,15 @@ public class BatteryStatusAPI {
                         batteryStatusString = "UNKNOWN";
                 }
 
+                long batteryCurrent = batteryStatus.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+
                 out.beginObject();
                 out.name("health").value(batteryHealth);
                 out.name("percentage").value(batteryPercentage);
                 out.name("plugged").value(batteryPlugged);
                 out.name("status").value(batteryStatusString);
                 out.name("temperature").value(batteryTemperature);
+                out.name("current").value(batteryCurrent);
                 out.endObject();
             }
         });

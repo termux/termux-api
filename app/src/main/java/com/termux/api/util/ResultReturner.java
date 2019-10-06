@@ -7,9 +7,11 @@ import android.content.BroadcastReceiver.PendingResult;
 import android.content.Intent;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
+import android.os.ParcelFileDescriptor;
 import android.util.JsonWriter;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileDescriptor;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -66,6 +68,18 @@ public abstract class ResultReturner {
         }
     }
 
+    public static abstract class WithAncillaryFd implements ResultWriter {
+        private int fd = -1;
+
+        public final void setFd(int newFd) {
+            fd = newFd;
+        }
+
+        public final int getFd() {
+            return fd;
+        }
+    }
+
     public static abstract class ResultJsonWriter implements ResultWriter {
         @Override
         public final void writeResult(PrintWriter out) throws Exception {
@@ -102,6 +116,7 @@ public abstract class ResultReturner {
 
         final Runnable runnable = () -> {
             try {
+                final ParcelFileDescriptor[] pfds = { null };
                 try (LocalSocket outputSocket = new LocalSocket()) {
                     String outputSocketAdress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
                     outputSocket.connect(new LocalSocketAddress(outputSocketAdress));
@@ -117,8 +132,19 @@ public abstract class ResultReturner {
                             } else {
                                 resultWriter.writeResult(writer);
                             }
+                            if(resultWriter instanceof WithAncillaryFd) {
+                                int fd = ((WithAncillaryFd) resultWriter).getFd();
+                                if (fd >= 0) {
+                                    pfds[0] = ParcelFileDescriptor.adoptFd(fd);
+                                    FileDescriptor[] fds = { pfds[0].getFileDescriptor() };
+                                    outputSocket.setFileDescriptorsForSend(fds);
+                                }
+                            }
                         }
                     }
+                }
+                if(pfds[0] != null) {
+                    pfds[0].close();
                 }
 
                 if (asyncResult != null) {

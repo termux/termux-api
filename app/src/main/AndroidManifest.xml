@@ -34,6 +34,7 @@
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 
     <!-- This permission is not used, but a permission is needed on the sharedfiles contentprovider,
          which will always use FLAG_GRANT_READ_URI_PERMISSION. -->

@@ -277,12 +277,24 @@ public class SensorAPI {
                 for (String sensorName : requestedSensors) {
                     // ignore case
                     sensorName = sensorName.toUpperCase();
-
+                    boolean sensorMatch = false;
+                    
                     for (Sensor sensor : availableSensors) {
-                        if (sensor.getName().toUpperCase().contains(sensorName)) {
+                        if (sensor.getName().toUpperCase().equals(sensorName)) {
                             sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
                             sensorsToListenTo.add(sensor);
+                            sensorMatch = true;
                             break;
+                        }
+                    }
+                    
+                    if (sensorMatch = false) { 
+                        for (Sensor sensor : availableSensors) {
+                            if (sensor.getName().toUpperCase().contains(sensorName)) {
+                                sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
+                                sensorsToListenTo.add(sensor);
+                                break;
+                            }
                         }
                     }
                 }

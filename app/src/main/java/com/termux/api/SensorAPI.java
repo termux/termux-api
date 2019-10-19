@@ -261,6 +261,7 @@ public class SensorAPI {
          */
         protected static List<Sensor> getSensorsToListenTo(SensorManager sensorManager, String[] requestedSensors, Intent intent) {
             List<Sensor> availableSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
+            availableSensors.sort(Comparator.comparing(Sensor::getName));
             List<Sensor> sensorsToListenTo = new ArrayList<>();
 
             boolean listenToAll = intent.getBooleanExtra("all", false);
@@ -277,24 +278,12 @@ public class SensorAPI {
                 for (String sensorName : requestedSensors) {
                     // ignore case
                     sensorName = sensorName.toUpperCase();
-                    boolean sensorMatch = false;
-                    
+
                     for (Sensor sensor : availableSensors) {
-                        if (sensor.getName().toUpperCase().equals(sensorName)) {
+                        if (sensor.getName().toUpperCase().contains(sensorName)) {
                             sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
                             sensorsToListenTo.add(sensor);
-                            sensorMatch = true;
                             break;
-                        }
-                    }
-                    
-                    if (sensorMatch = false) { 
-                        for (Sensor sensor : availableSensors) {
-                            if (sensor.getName().toUpperCase().contains(sensorName)) {
-                                sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
-                                sensorsToListenTo.add(sensor);
-                                break;
-                            }
                         }
                     }
                 }

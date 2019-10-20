@@ -261,7 +261,8 @@ public class SensorAPI {
          */
         protected static List<Sensor> getSensorsToListenTo(SensorManager sensorManager, String[] requestedSensors, Intent intent) {
             List<Sensor> availableSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
-            availableSensors.sort(Comparator.comparing(Sensor::getName));
+            Comparator<Sensor> sensorComparator = Comparator.comparing(Sensor::getName);
+            Collections.sort(availableSensors, sensorComparator);
             List<Sensor> sensorsToListenTo = new ArrayList<>();
 
             boolean listenToAll = intent.getBooleanExtra("all", false);

@@ -21,6 +21,7 @@ import org.json.JSONObject;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
 import java.util.concurrent.Semaphore;
 
 
@@ -260,7 +261,8 @@ public class SensorAPI {
          * Gets a list of all sensors to listen to, that were requested and are available
          */
         protected static List<Sensor> getSensorsToListenTo(SensorManager sensorManager, String[] requestedSensors, Intent intent) {
-            List<Sensor> availableSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
+            List<Sensor> availableSensors = new ArrayList<>(sensorManager.getSensorList(Sensor.TYPE_ALL));
+            Collections.sort(availableSensors, (s1, s2) -> s1.getName().compareTo(s2.getName()));
             List<Sensor> sensorsToListenTo = new ArrayList<>();
 
             boolean listenToAll = intent.getBooleanExtra("all", false);

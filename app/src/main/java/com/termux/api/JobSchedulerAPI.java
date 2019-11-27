@@ -77,8 +77,8 @@ public class JobSchedulerAPI {
         final boolean idle = intent.getBooleanExtra("idle", false);
         final boolean storageNotLow = intent.getBooleanExtra("storage_not_low", false);
         final boolean prefetch = intent.getBooleanExtra("prefetch", false);
-		final long downloadBytes = intent.getLongExtra("download_bytes", 0);
-		final long uploadBytes = intent.getLongExtra("upload_bytes", 0);        
+	final long downloadBytes = intent.getLongExtra("download_bytes", 0);
+	final long uploadBytes = intent.getLongExtra("upload_bytes", 0);        
 
         int networkTypeCode;
         if (networkType != null) {
@@ -165,9 +165,9 @@ public class JobSchedulerAPI {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             builder = builder.setPrefetch(prefetch);
 			
-			if (downloadBytes > 0 || uploadBytes > 0) {
-				builder = builder.setEstimatedNetworkBytes(downloadBytes, uploadBytes);
-			}
+	    if (downloadBytes > 0 || uploadBytes > 0) {
+		builder = builder.setEstimatedNetworkBytes(downloadBytes, uploadBytes);
+	    }
         }	        
 
         if (periodicMillis > 0) {

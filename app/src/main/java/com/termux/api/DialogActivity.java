@@ -96,13 +96,13 @@ public class DialogActivity extends AppCompatActivity {
         String[] items = new String[] { };
 
         if (intent != null && intent.hasExtra("input_values")) {
-            String[] temp = intent.getStringExtra("input_values").split(",");
+            String[] temp = intent.getStringExtra("input_values").split("(?<!\\\\),");
             items = new String[temp.length];
 
             // remove possible whitespace from strings in temp array
             for (int j = 0; j < temp.length; ++j) {
                 String s = temp[j];
-                items[j] = s.trim();
+                items[j] = s.trim().replace("\\,", ",");
             }
         }
         return items;

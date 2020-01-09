@@ -13,6 +13,9 @@ import android.os.Build;
 import android.provider.Settings;
 import android.text.TextUtils;
 
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
@@ -81,13 +84,12 @@ public class NotificationAPI {
 
         String actionExtra = intent.getStringExtra("action");
 
-        String id = intent.getStringExtra("id");
-        if (id == null) id = UUID.randomUUID().toString();
-        final String notificationId = id;
+        final String notificationId = getNotificationId(intent);
 
         String groupKey = intent.getStringExtra("group");
 
-        final Notification.Builder notification = new Notification.Builder(context);
+        final NotificationCompat.Builder notification = new NotificationCompat.Builder(context,
+                CHANNEL_ID);
         notification.setSmallIcon(R.drawable.ic_event_note_black_24dp);
         notification.setColor(0xFF000000);
         notification.setContentTitle(title);
@@ -99,19 +101,19 @@ public class NotificationAPI {
 
         String ImagePath = intent.getStringExtra("image-path");
 
-        if(ImagePath != null){
-            File imgFile = new  File(ImagePath);
-            if(imgFile.exists()) {
+        if (ImagePath != null) {
+            File imgFile = new File(ImagePath);
+            if (imgFile.exists()) {
                 Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
 
                 notification.setLargeIcon(myBitmap)
-                    .setStyle(new Notification.BigPictureStyle()
-                    .bigPicture(myBitmap));
+                        .setStyle(new NotificationCompat.BigPictureStyle()
+                                .bigPicture(myBitmap));
             }
         }
 
         String styleType = intent.getStringExtra("type");
-        if(Objects.equals(styleType, "media")) {
+        if (Objects.equals(styleType, "media")) {
             String mediaPrevious = intent.getStringExtra("media-previous");
             String mediaPause = intent.getStringExtra("media-pause");
             String mediaPlay = intent.getStringExtra("media-play");
@@ -125,13 +127,13 @@ public class NotificationAPI {
                 PendingIntent playIntent = createAction(context, mediaPlay);
                 PendingIntent nextIntent = createAction(context, mediaNext);
 
-                notification.addAction(new Notification.Action(android.R.drawable.ic_media_previous, "previous", previousIntent));
-                notification.addAction(new Notification.Action(android.R.drawable.ic_media_pause, "pause", pauseIntent));
-                notification.addAction(new Notification.Action(android.R.drawable.ic_media_play, "play", playIntent));
-                notification.addAction(new Notification.Action(android.R.drawable.ic_media_next, "next", nextIntent));
+                notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_previous, "previous", previousIntent));
+                notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_pause, "pause", pauseIntent));
+                notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_play, "play", playIntent));
+                notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_media_next, "next", nextIntent));
 
-                notification.setStyle(new Notification.MediaStyle()
-                    .setShowActionsInCompactView(0, 1, 3));
+                notification.setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
+                        .setShowActionsInCompactView(0, 1, 3));
             }
         }
 
@@ -167,7 +169,7 @@ public class NotificationAPI {
             String buttonAction = intent.getStringExtra("button_action_" + button);
             if (buttonText != null && buttonAction != null) {
                 PendingIntent pi = createAction(context, buttonAction);
-                notification.addAction(new Notification.Action(android.R.drawable.ic_input_add, buttonText, pi));
+                notification.addAction(new NotificationCompat.Action(android.R.drawable.ic_input_add, buttonText, pi));
             }
         }
 
@@ -184,7 +186,7 @@ public class NotificationAPI {
 
                 if (!TextUtils.isEmpty(inputString)) {
                     if (inputString.contains("\n")) {
-                        Notification.BigTextStyle style = new Notification.BigTextStyle();
+                        NotificationCompat.BigTextStyle style = new NotificationCompat.BigTextStyle();
                         style.bigText(inputString);
                         notification.setStyle(style);
                     } else {
@@ -202,6 +204,12 @@ public class NotificationAPI {
                 manager.notify(notificationId, 0, notification.build());
             }
         });
+    }
+
+    private static String getNotificationId(Intent intent) {
+        String id = intent.getStringExtra("id");
+        if (id == null) id = UUID.randomUUID().toString();
+        return id;
     }
 
     static void onReceiveRemoveNotification(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {

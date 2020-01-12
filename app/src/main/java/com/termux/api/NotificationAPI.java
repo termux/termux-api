@@ -308,19 +308,15 @@ public class NotificationAPI {
         String notificationId = intent.getStringExtra("id");
         boolean ongoing = intent.getBooleanExtra("ongoing", false);
         Notification repliedNotification;
-        if (ongoing) {
-            repliedNotification = buildNotification(context, intent).first.build();
-        } else {
-            // Build a new notification, which informs the user that the system
-            // handled their interaction with the previous notification.
-            repliedNotification = new NotificationCompat.Builder(context, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.ic_event_note_black_24dp)
-                    .setContentText(replyKey + ": " + reply)
-                    .build();
-        }
-        // Issue the new notification.
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        notificationManager.notify(notificationId, 0, repliedNotification);
+        if (ongoing) {
+            // Re-issue the new notification to clear the spinner
+            repliedNotification = buildNotification(context, intent).first.build();
+            notificationManager.notify(notificationId, 0, repliedNotification);
+        } else {
+            // Cancel the notification
+            notificationManager.cancel(notificationId, 0);
+        }
     }
 
     static Intent createExecuteIntent(String action){

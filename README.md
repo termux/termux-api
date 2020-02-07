@@ -1,6 +1,6 @@
 # Termux API
 
-[![Build status](https://api.cirrus-ci.com/github/termux/termux-api.svg?branch=master)](https://cirrus-ci.com/termux/termux-api)
+[![Build status](https://github.com/termux/termux-api/workflows/Build/badge.svg)](https://github.com/termux/termux-api/actions)
 [![Join the chat at https://gitter.im/termux/termux](https://badges.gitter.im/termux/termux.svg)](https://gitter.im/termux/termux)
 
 This is an app exposing Android API to command line usage and scripts or programs.

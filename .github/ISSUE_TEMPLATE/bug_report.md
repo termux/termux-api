@@ -1,20 +1,35 @@
 ---
 name: Bug report
-about: Create a report to help us improve termux-api
+about: Create a report to help us improve Termux:API application
 
 ---
 
-<!-- Important note: Refusing to provide needed information may result in issue closing. -->
+<!--
+IMPORTANT:
+
+1. Support of Android 5.x - 6.x is finished.
+2. Fill the template AFTER comments.
+-->
 
 **Problem description**
-A clear and concise description of what the problem with termux-api is. You may post screenshots or paste error messages in addition to description.
+<!--
+A clear and concise description of what the problem is.
+You may post screenshots in addition to description.
+-->
 
 **Steps to reproduce**
-Please post all steps that are needed to reproduce the issue.
+<!--
+Steps to reproduce the behavior. Please post all necessary
+commands that are needed to reproduce the issue.
+-->
 
 **Expected behavior**
+<!--
 A clear and concise description of what you expected to happen.
+-->
 
 **Additional information**
-Post output of command `termux-info`.
-If you are rooted or have access to adb then capture a logcat with `logcat -d "*:W"`, from a adb or root shell.
+
+* Termux application version:
+* Android OS version:
+* Device model:

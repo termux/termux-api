@@ -7,8 +7,8 @@ android {
         applicationId "com.termux.api"
         minSdkVersion 24
         targetSdkVersion 28
-        versionCode 38
-        versionName "0.38"
+        versionCode 41
+        versionName "0.41"
     }
 
     signingConfigs {

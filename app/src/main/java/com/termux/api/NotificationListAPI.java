@@ -36,6 +36,7 @@ public class NotificationListAPI {
             String packageName = "";
             String tag = "";
             String group = "";
+            long when = n.getNotification().when;
 
             if (n.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE) != null) {
                 title = n.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
@@ -62,7 +63,8 @@ public class NotificationListAPI {
                     .name("group").value(group)
                     .name("packageName").value(packageName)
                     .name("title").value(title)
-                    .name("content").value(text).endObject();
+                    .name("content").value(text)
+                    .name("when").value(when).endObject();
         }
         out.endArray();
         }

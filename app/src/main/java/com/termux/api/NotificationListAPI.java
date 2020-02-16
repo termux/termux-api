@@ -33,6 +33,7 @@ public class NotificationListAPI {
             String key = "";
             String title = "";
             String text = "";
+            CharSequence[] lines = null;
             String packageName = "";
             String tag = "";
             String group = "";
@@ -41,8 +42,13 @@ public class NotificationListAPI {
             if (n.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE) != null) {
                 title = n.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
             }
-            if (n.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT) != null) {
+            if (n.getNotification().extras.getCharSequence(Notification.EXTRA_BIG_TEXT) != null) {
+                text = n.getNotification().extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString();
+            } else if (n.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT) != null) {
                 text = n.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
+            }
+            if (n.getNotification().extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES) != null) {
+                lines = n.getNotification().extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES);
             }
             if (n.getTag() != null) {
                 tag = n.getTag();
@@ -64,7 +70,15 @@ public class NotificationListAPI {
                     .name("packageName").value(packageName)
                     .name("title").value(title)
                     .name("content").value(text)
-                    .name("when").value(when).endObject();
+                    .name("when").value(when);
+            if (lines != null) {
+                out.name("lines").beginArray();
+                for (CharSequence line : lines) {
+                    out.value(line.toString());
+                }
+                out.endArray();
+            }
+            out.endObject();
         }
         out.endArray();
         }

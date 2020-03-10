@@ -62,8 +62,25 @@ public class NotificationAPI {
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    String priorityExtra = intent.getStringExtra("priority");
+                    if (priorityExtra == null) priorityExtra = "default";
+                    int importance;
+                    switch (priorityExtra) {
+                        case "high":
+                        case "max":
+                            importance = NotificationManager.IMPORTANCE_HIGH;
+                            break;
+                        case "low":
+                            importance = NotificationManager.IMPORTANCE_LOW;
+                            break;
+                        case "min":
+                            importance = NotificationManager.IMPORTANCE_MIN;
+                            break;
+                        default:
+                            importance = NotificationManager.IMPORTANCE_DEFAULT;
+                    }
                     NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
-                            CHANNEL_TITLE, NotificationManager.IMPORTANCE_DEFAULT);
+                            CHANNEL_TITLE, importance);
                     manager.createNotificationChannel(channel);
                     notification.setChannelId(CHANNEL_ID);
                 }
@@ -93,7 +110,6 @@ public class NotificationAPI {
                 break;
             default:
                 priority = Notification.PRIORITY_DEFAULT;
-                break;
         }
 
         String title = intent.getStringExtra("title");

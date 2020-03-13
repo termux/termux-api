@@ -2,7 +2,7 @@
 
 # Built application files
 build/
-
+.project
 # Crashlytics configuations
 com_crashlytics_export_strings.xml
 

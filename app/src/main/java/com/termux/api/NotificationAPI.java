@@ -49,7 +49,7 @@ public class NotificationAPI {
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
             @Override
             public void writeResult(PrintWriter out) {
-                NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                NotificationManagerCompat manager = NotificationManagerCompat.from(context);
 
                 if (!TextUtils.isEmpty(inputString)) {
                     if (inputString.contains("\n")) {

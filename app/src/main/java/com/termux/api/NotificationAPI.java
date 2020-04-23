@@ -24,6 +24,7 @@ import com.termux.api.util.TermuxApiLogger;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
@@ -151,6 +152,23 @@ public class NotificationAPI {
         notification.setWhen(System.currentTimeMillis());
         notification.setShowWhen(true);
 
+        String SmallIcon = intent.getStringExtra("icon");
+
+        if (SmallIcon != null) {
+            final Class<?> clz = R.drawable.class;
+            final Field[] fields = clz.getDeclaredFields();
+            for (Field field : fields) {
+                String name = field.getName();
+                if (name.equals("ic_" + SmallIcon + "_black_24dp")) {
+                    try {
+                        notification.setSmallIcon(field.getInt(clz));
+                    } catch (Exception e) {
+                        break;
+                    }
+                }
+            }
+        }
+
         String ImagePath = intent.getStringExtra("image-path");
 
         if (ImagePath != null) {
@@ -172,7 +190,9 @@ public class NotificationAPI {
             String mediaNext = intent.getStringExtra("media-next");
 
             if (mediaPrevious != null && mediaPause != null && mediaPlay != null && mediaNext != null) {
-                notification.setSmallIcon(android.R.drawable.ic_media_play);
+                if (SmallIcon == null) {
+                    notification.setSmallIcon(android.R.drawable.ic_media_play);
+                }
 
                 PendingIntent previousIntent = createAction(context, mediaPrevious);
                 PendingIntent pauseIntent = createAction(context, mediaPause);

@@ -8,6 +8,8 @@ import android.net.Uri;
 
 import com.termux.api.util.ResultReturner;
 
+import java.io.File;
+
 public class DownloadAPI {
 
     static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
@@ -20,6 +22,7 @@ public class DownloadAPI {
 
             String title = intent.getStringExtra("title");
             String description = intent.getStringExtra("description");
+            String path = intent.getStringExtra("path");
 
             DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
             Request req = new Request(downloadUri);
@@ -31,6 +34,9 @@ public class DownloadAPI {
 
             if (description != null)
                 req.setDescription(description);
+
+            if (path != null)
+                req.setDestinationUri(Uri.fromFile(new File(path)));
 
             manager.enqueue(req);
         });

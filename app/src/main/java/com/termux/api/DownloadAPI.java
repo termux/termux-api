@@ -20,7 +20,7 @@ public class DownloadAPI {
 
             String title = intent.getStringExtra("title");
             String description = intent.getStringExtra("description");
-            String path = intent.getStringExtra("path")
+            String path = intent.getStringExtra("path");
 
             DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
             Request req = new Request(downloadUri);
@@ -34,7 +34,7 @@ public class DownloadAPI {
                 req.setDescription(description);
 
             if (path != null)
-                req.setDestinationUri(Uri.fromFile(new File(path)))
+                req.setDestinationUri(Uri.fromFile(new File(path)));
 
             manager.enqueue(req);
         });

@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.util.Log;
 import androidx.annotation.NonNull;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
@@ -44,12 +45,17 @@ import android.widget.Toast;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiPermissionActivity;
 
+import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Properties;
 
 /**
  * API that allows receiving user input interactively in a variety of different ways
@@ -57,6 +63,31 @@ import java.util.Objects;
 public class DialogActivity extends AppCompatActivity {
 
     private boolean resultReturned = false;
+
+    protected boolean getBlackUI() {
+        File propsFile = new File("/data/data/com.termux/files/home/.termux/termux.properties");
+
+        if (!propsFile.exists())
+            propsFile = new File("/data/data/com.termux/files/home/.config/termux.properties");
+
+        boolean mUseBlackUi = false;
+
+        if (propsFile.exists()) {
+            Properties props = new Properties();
+            try {
+                if (propsFile.isFile() && propsFile.canRead()) {
+                    try (FileInputStream in = new FileInputStream(propsFile)) {
+                        props.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+                    }
+                }
+                mUseBlackUi = props.getProperty("use-black-ui").equals("true");
+            } catch (Exception e) {
+                Log.e("termux-api", "Error loading props", e);
+            }
+        }
+
+        return mUseBlackUi;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +97,9 @@ public class DialogActivity extends AppCompatActivity {
 
 
         String methodType = intent.hasExtra("input_method") ? intent.getStringExtra("input_method") : "";
+
+        if (getBlackUI())
+            this.setTheme(R.style.DialogTheme_Dark);
 
         InputMethod method = InputMethodFactory.get(methodType, this);
         method.create(this, result -> {

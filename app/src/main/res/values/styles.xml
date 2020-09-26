@@ -17,9 +17,11 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="DialogTheme.Dark" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="windowNoTitle">true</item>
+    </style>
 
     <style name="TransparentTheme" parent="@style/Theme.AppCompat.Light">
-
         <item name="android:background">@android:color/transparent</item>
         <item name="background">@android:color/transparent</item>
 

@@ -489,7 +489,7 @@ public class DialogActivity extends AppCompatActivity {
 
             if (numeric) {
                 flags &= ~InputType.TYPE_CLASS_TEXT; // clear to allow only numbers
-                flags |= InputType.TYPE_CLASS_NUMBER;
+                flags |= InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED | InputType.TYPE_NUMBER_FLAG_DECIMAL;
             }
 
             editText.setInputType(flags);

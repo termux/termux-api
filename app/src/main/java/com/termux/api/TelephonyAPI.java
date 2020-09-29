@@ -167,13 +167,15 @@ public class TelephonyAPI {
                     }
                     out.name("data_state").value(dataStateString);
 
-                    out.name("device_id").value(manager.getDeviceId());
+                    int phoneType = manager.getPhoneType();
+
+                    String device_id = phoneType == TelephonyManager.PHONE_TYPE_GSM ? manager.getImei() : manager.getMeid();
+                    out.name("device_id").value(device_id);
                     out.name("device_software_version").value(manager.getDeviceSoftwareVersion());
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         out.name("phone_count").value(manager.getPhoneCount());
                     }
-                    int phoneType = manager.getPhoneType();
                     String phoneTypeString;
                     switch (phoneType) {
                         case TelephonyManager.PHONE_TYPE_CDMA:

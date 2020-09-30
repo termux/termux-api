@@ -169,7 +169,15 @@ public class TelephonyAPI {
 
                     int phoneType = manager.getPhoneType();
 
-                    String device_id = phoneType == TelephonyManager.PHONE_TYPE_GSM ? manager.getImei() : manager.getMeid();
+                    String device_id = null;
+
+                    try {
+                        device_id = phoneType == TelephonyManager.PHONE_TYPE_GSM ? manager.getImei() : manager.getMeid();
+                    } catch (SecurityException e) {
+                        // Failed to obtain device id.
+                        // Android 10+.
+                    }
+
                     out.name("device_id").value(device_id);
                     out.name("device_software_version").value(manager.getDeviceSoftwareVersion());
 
@@ -256,12 +264,22 @@ public class TelephonyAPI {
                     }
                     out.name("network_type").value(networkTypeName);
                     out.name("network_roaming").value(manager.isNetworkRoaming());
-
                     out.name("sim_country_iso").value(manager.getSimCountryIso());
                     out.name("sim_operator").value(manager.getSimOperator());
                     out.name("sim_operator_name").value(manager.getSimOperatorName());
-                    out.name("sim_serial_number").value(manager.getSimSerialNumber());
-                    out.name("sim_subscriber_id").value(manager.getSubscriberId());
+
+                    String sim_serial = null;
+                    String subscriber_id = null;
+                    try {
+                        sim_serial = manager.getSimSerialNumber();
+                        subscriber_id = manager.getSubscriberId();
+                    } catch (SecurityException e) {
+                        // Failed to obtain device id.
+                        // Android 10+.
+                    }
+                    out.name("sim_serial_number").value(sim_serial);
+                    out.name("sim_subscriber_id").value(subscriber_id);
+
                     int simState = manager.getSimState();
                     String simStateString;
                     switch (simState) {
@@ -288,8 +306,6 @@ public class TelephonyAPI {
                             break;
                     }
                     out.name("sim_state").value(simStateString);
-
-
                 }
 
                 out.endObject();

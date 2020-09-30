@@ -18,6 +18,8 @@ import com.termux.api.util.ResultReturner;
 
 import java.io.IOException;
 
+import java.util.List;
+
 /**
  * Exposing {@link android.telephony.TelephonyManager}.
  */
@@ -34,73 +36,84 @@ public class TelephonyAPI {
                 TelephonyManager manager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
                 out.beginArray();
 
-                for (CellInfo cellInfo : manager.getAllCellInfo()) {
-                    out.beginObject();
-                    if (cellInfo instanceof CellInfoGsm) {
-                        CellInfoGsm gsmInfo = (CellInfoGsm) cellInfo;
-                        out.name("type").value("gsm");
-                        out.name("registered").value(cellInfo.isRegistered());
+                List<CellInfo> cellInfoData = null;
 
-                        out.name("asu").value(gsmInfo.getCellSignalStrength().getAsuLevel());
-                        writeIfKnown(out, "dbm", gsmInfo.getCellSignalStrength().getDbm());
-                        out.name("level").value(gsmInfo.getCellSignalStrength().getLevel());
+                try {
+                    cellInfoData = manager.getAllCellInfo();
+                } catch (SecurityException e) {
+                    // Direct call of getAllCellInfo() doesn't work on Android 10 (Q).
+                    // https://developer.android.com/reference/android/telephony/TelephonyManager#getAllCellInfo().
+                }
 
-                        writeIfKnown(out, "cid", gsmInfo.getCellIdentity().getCid());
-                        writeIfKnown(out, "lac", gsmInfo.getCellIdentity().getLac());
-                        writeIfKnown(out, "mcc", gsmInfo.getCellIdentity().getMcc());
-                        writeIfKnown(out, "mnc", gsmInfo.getCellIdentity().getMnc());
-                    } else if (cellInfo instanceof CellInfoLte) {
-                        CellInfoLte lteInfo = (CellInfoLte) cellInfo;
-                        out.name("type").value("lte");
-                        out.name("registered").value(cellInfo.isRegistered());
+                if (cellInfoData != null) {
+                    for (CellInfo cellInfo : cellInfoData) {
+                        out.beginObject();
+                        if (cellInfo instanceof CellInfoGsm) {
+                            CellInfoGsm gsmInfo = (CellInfoGsm) cellInfo;
+                            out.name("type").value("gsm");
+                            out.name("registered").value(cellInfo.isRegistered());
 
-                        out.name("asu").value(lteInfo.getCellSignalStrength().getAsuLevel());
-                        out.name("dbm").value(lteInfo.getCellSignalStrength().getDbm());
-                        writeIfKnown(out, "level", lteInfo.getCellSignalStrength().getLevel());
-                        writeIfKnown(out, "timing_advance", lteInfo.getCellSignalStrength().getTimingAdvance());
+                            out.name("asu").value(gsmInfo.getCellSignalStrength().getAsuLevel());
+                            writeIfKnown(out, "dbm", gsmInfo.getCellSignalStrength().getDbm());
+                            out.name("level").value(gsmInfo.getCellSignalStrength().getLevel());
 
-                        writeIfKnown(out, "ci", lteInfo.getCellIdentity().getCi());
-                        writeIfKnown(out, "pci", lteInfo.getCellIdentity().getPci());
-                        writeIfKnown(out, "tac", lteInfo.getCellIdentity().getTac());
-                        writeIfKnown(out, "mcc", lteInfo.getCellIdentity().getMcc());
-                        writeIfKnown(out, "mnc", lteInfo.getCellIdentity().getMnc());
-                    } else if (cellInfo instanceof CellInfoCdma) {
-                        CellInfoCdma cdmaInfo = (CellInfoCdma) cellInfo;
-                        out.name("type").value("cdma");
-                        out.name("registered").value(cellInfo.isRegistered());
+                            writeIfKnown(out, "cid", gsmInfo.getCellIdentity().getCid());
+                            writeIfKnown(out, "lac", gsmInfo.getCellIdentity().getLac());
+                            writeIfKnown(out, "mcc", gsmInfo.getCellIdentity().getMcc());
+                            writeIfKnown(out, "mnc", gsmInfo.getCellIdentity().getMnc());
+                        } else if (cellInfo instanceof CellInfoLte) {
+                            CellInfoLte lteInfo = (CellInfoLte) cellInfo;
+                            out.name("type").value("lte");
+                            out.name("registered").value(cellInfo.isRegistered());
 
-                        out.name("asu").value(cdmaInfo.getCellSignalStrength().getAsuLevel());
-                        out.name("dbm").value(cdmaInfo.getCellSignalStrength().getDbm());
-                        out.name("level").value(cdmaInfo.getCellSignalStrength().getLevel());
-                        out.name("cdma_dbm").value(cdmaInfo.getCellSignalStrength().getCdmaDbm());
-                        out.name("cdma_ecio").value(cdmaInfo.getCellSignalStrength().getCdmaEcio());
-                        out.name("cdma_level").value(cdmaInfo.getCellSignalStrength().getCdmaLevel());
-                        out.name("evdo_dbm").value(cdmaInfo.getCellSignalStrength().getEvdoDbm());
-                        out.name("evdo_ecio").value(cdmaInfo.getCellSignalStrength().getEvdoEcio());
-                        out.name("evdo_level").value(cdmaInfo.getCellSignalStrength().getEvdoLevel());
-                        out.name("evdo_snr").value(cdmaInfo.getCellSignalStrength().getEvdoSnr());
+                            out.name("asu").value(lteInfo.getCellSignalStrength().getAsuLevel());
+                            out.name("dbm").value(lteInfo.getCellSignalStrength().getDbm());
+                            writeIfKnown(out, "level", lteInfo.getCellSignalStrength().getLevel());
+                            writeIfKnown(out, "timing_advance", lteInfo.getCellSignalStrength().getTimingAdvance());
 
-                        out.name("basestation").value(cdmaInfo.getCellIdentity().getBasestationId());
-                        out.name("latitude").value(cdmaInfo.getCellIdentity().getLatitude());
-                        out.name("longitude").value(cdmaInfo.getCellIdentity().getLongitude());
-                        out.name("network").value(cdmaInfo.getCellIdentity().getNetworkId());
-                        out.name("system").value(cdmaInfo.getCellIdentity().getSystemId());
-                    } else if (cellInfo instanceof CellInfoWcdma) {
-                        CellInfoWcdma wcdmaInfo = (CellInfoWcdma) cellInfo;
-                        out.name("type").value("wcdma");
-                        out.name("registered").value(cellInfo.isRegistered());
+                            writeIfKnown(out, "ci", lteInfo.getCellIdentity().getCi());
+                            writeIfKnown(out, "pci", lteInfo.getCellIdentity().getPci());
+                            writeIfKnown(out, "tac", lteInfo.getCellIdentity().getTac());
+                            writeIfKnown(out, "mcc", lteInfo.getCellIdentity().getMcc());
+                            writeIfKnown(out, "mnc", lteInfo.getCellIdentity().getMnc());
+                        } else if (cellInfo instanceof CellInfoCdma) {
+                            CellInfoCdma cdmaInfo = (CellInfoCdma) cellInfo;
+                            out.name("type").value("cdma");
+                            out.name("registered").value(cellInfo.isRegistered());
 
-                        out.name("asu").value(wcdmaInfo.getCellSignalStrength().getAsuLevel());
-                        writeIfKnown(out, "dbm", wcdmaInfo.getCellSignalStrength().getDbm());
-                        out.name("level").value(wcdmaInfo.getCellSignalStrength().getLevel());
+                            out.name("asu").value(cdmaInfo.getCellSignalStrength().getAsuLevel());
+                            out.name("dbm").value(cdmaInfo.getCellSignalStrength().getDbm());
+                            out.name("level").value(cdmaInfo.getCellSignalStrength().getLevel());
+                            out.name("cdma_dbm").value(cdmaInfo.getCellSignalStrength().getCdmaDbm());
+                            out.name("cdma_ecio").value(cdmaInfo.getCellSignalStrength().getCdmaEcio());
+                            out.name("cdma_level").value(cdmaInfo.getCellSignalStrength().getCdmaLevel());
+                            out.name("evdo_dbm").value(cdmaInfo.getCellSignalStrength().getEvdoDbm());
+                            out.name("evdo_ecio").value(cdmaInfo.getCellSignalStrength().getEvdoEcio());
+                            out.name("evdo_level").value(cdmaInfo.getCellSignalStrength().getEvdoLevel());
+                            out.name("evdo_snr").value(cdmaInfo.getCellSignalStrength().getEvdoSnr());
 
-                        writeIfKnown(out, "cid", wcdmaInfo.getCellIdentity().getCid());
-                        writeIfKnown(out, "lac", wcdmaInfo.getCellIdentity().getLac());
-                        writeIfKnown(out, "mcc", wcdmaInfo.getCellIdentity().getMcc());
-                        writeIfKnown(out, "mnc", wcdmaInfo.getCellIdentity().getMnc());
-                        writeIfKnown(out, "psc", wcdmaInfo.getCellIdentity().getPsc());
+                            out.name("basestation").value(cdmaInfo.getCellIdentity().getBasestationId());
+                            out.name("latitude").value(cdmaInfo.getCellIdentity().getLatitude());
+                            out.name("longitude").value(cdmaInfo.getCellIdentity().getLongitude());
+                            out.name("network").value(cdmaInfo.getCellIdentity().getNetworkId());
+                            out.name("system").value(cdmaInfo.getCellIdentity().getSystemId());
+                        } else if (cellInfo instanceof CellInfoWcdma) {
+                            CellInfoWcdma wcdmaInfo = (CellInfoWcdma) cellInfo;
+                            out.name("type").value("wcdma");
+                            out.name("registered").value(cellInfo.isRegistered());
+
+                            out.name("asu").value(wcdmaInfo.getCellSignalStrength().getAsuLevel());
+                            writeIfKnown(out, "dbm", wcdmaInfo.getCellSignalStrength().getDbm());
+                            out.name("level").value(wcdmaInfo.getCellSignalStrength().getLevel());
+
+                            writeIfKnown(out, "cid", wcdmaInfo.getCellIdentity().getCid());
+                            writeIfKnown(out, "lac", wcdmaInfo.getCellIdentity().getLac());
+                            writeIfKnown(out, "mcc", wcdmaInfo.getCellIdentity().getMcc());
+                            writeIfKnown(out, "mnc", wcdmaInfo.getCellIdentity().getMnc());
+                            writeIfKnown(out, "psc", wcdmaInfo.getCellIdentity().getPsc());
+                        }
+                        out.endObject();
                     }
-                    out.endObject();
                 }
 
                 out.endArray();

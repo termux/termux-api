@@ -1017,7 +1017,9 @@ public class DialogActivity extends AppCompatActivity {
         }
 
         void onDismissed() {
-            postCanceledResult();
+            InputResult result = new InputResult();
+            result.text = getResult();
+            result.code = Dialog.BUTTON_NEGATIVE;                           resultListener.onResult(result);
         }
 
         /**

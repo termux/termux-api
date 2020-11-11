@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.provider.Settings;
 import android.widget.Toast;
@@ -112,6 +113,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.RECORD_AUDIO)) {
                     MicRecorderAPI.onReceive(context, intent);
                 }
+                break;
+            case "Nfc":
+                context.startActivity(new Intent(context, NfcActivity.class).putExtras(intent.getExtras()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 break;
             case "NotificationList":
                 ComponentName cn = new ComponentName(context, NotificationService.class);

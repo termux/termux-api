@@ -6,6 +6,9 @@
 
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
     <!-- Resolve phone numbers to contact names: -->
     <uses-permission android:name="android.permission.CALL_PHONE"/>
     <uses-permission android:name="android.permission.READ_CONTACTS"/>

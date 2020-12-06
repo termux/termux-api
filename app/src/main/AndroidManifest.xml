@@ -27,6 +27,7 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.NFC"/>
 
     <!-- permissions to install/uninstall apps --> 
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" /> 
@@ -57,6 +58,15 @@
         tools:ignore="GoogleAppIndexingWarning">
         <receiver android:name="com.termux.api.TermuxApiReceiver"/>
         <activity android:name="com.termux.api.DialogActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
+        <activity android:name="com.termux.api.NfcActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.nfc.action.TAG_DISCOVERED"/>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED"/>
+                <action android:name="android.nfc.action.TECH_DISCOVERED"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
         <activity android:name=".FingerprintAPI$FingerprintActivity" android:theme="@style/TransparentTheme"
                   android:noHistory="true"
                   android:excludeFromRecents="true"

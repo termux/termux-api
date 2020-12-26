@@ -180,9 +180,12 @@ public class JobSchedulerAPI {
             ResultReturner.returnData(apiReceiver, intent, out -> out.println("No pending jobs"));
             return;
         }
+
+        StringBuilder stringBuilder = new StringBuilder();
         for (JobInfo job : jobs) {
-            ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH, "Pending %s", formatJobInfo(job))));
+            stringBuilder.append(String.format(Locale.ENGLISH, "Pending %s\n", formatJobInfo(job)));
         }
+        ResultReturner.returnData(apiReceiver, intent, out -> out.println(stringBuilder.toString()));
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)

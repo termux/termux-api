@@ -3,6 +3,7 @@ package com.termux.api;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.ImageFormat;
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -134,10 +135,30 @@ public class PhotoAPI {
         final Surface imageReaderSurface = mImageReader.getSurface();
         outputSurfaces.add(imageReaderSurface);
 
+        // create a dummy PreviewSurface
+        SurfaceTexture previewTexture = new SurfaceTexture(1);
+        Surface dummySurface = new Surface(previewTexture);
+        outputSurfaces.add(dummySurface);
+
         camera.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
             @Override
             public void onConfigured(final CameraCaptureSession session) {
                 try {
+                    // create preview Request
+                    CaptureRequest.Builder previewReq = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                    previewReq.addTarget(dummySurface);
+                    previewReq.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                    previewReq.set(CaptureRequest.CONTROL_AE_MODE, autoExposureModeFinal);
+
+                    // continous preview-capture for 1/2 second
+                    session.setRepeatingRequest(previewReq.build(), null, null);
+                    TermuxApiLogger.info("preview started");
+                    Thread.sleep(500);
+                    session.stopRepeating();
+                    TermuxApiLogger.info("preview stoppend");
+                    previewTexture.release();
+                    dummySurface.release();
+
                     final CaptureRequest.Builder jpegRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                     // Render to our image reader:
                     jpegRequest.addTarget(imageReaderSurface);

@@ -11,11 +11,7 @@ allowed to call the API methods in this app).
 
 ## Installation
 
-Termux:API application can be obtained from:
-
-- [Google Play](https://play.google.com/store/apps/details?id=com.termux.api)
-- [F-Droid](https://f-droid.org/en/packages/com.termux.api/)
-- [Kali Nethunter Store](https://store.nethunter.com/en/packages/com.termux.api/)
+Termux:API application can be obtained from [F-Droid](https://f-droid.org/en/packages/com.termux.api/).
 
 Additionally we provide per-commit debug builds for those who want to try
 out the latest features or test their pull request. This build can be obtained

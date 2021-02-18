@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
+import android.telephony.SubscriptionInfo;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
@@ -50,13 +51,13 @@ public class SmsSendAPI {
                 TermuxApiLogger.error("SubscriptionManager not supported");
                 return null;
             }
-            int[] subs = sm.getSubscriptionIds(slot);
-            if(subs != null && subs.length > 0) {
-                return SmsManager.getSmsManagerForSubscriptionId(subs[0]);
-            } else {
-                TermuxApiLogger.error("Invalid slot index "+slot);
-                return null;
+            for(SubscriptionInfo si: sm.getActiveSubscriptionInfoList()) {
+                if(si.getSimSlotIndex() == slot) {
+                    return SmsManager.getSmsManagerForSubscriptionId(si.getSubscriptionId());
+                }
             }
+            TermuxApiLogger.error("Sim slot "+slot+" not found");
+            return null;
         }
     }
 

@@ -57,7 +57,7 @@ public class SmsInboxAPI {
     @SuppressLint("SimpleDateFormat")
     public static void getConversations(Context context, JsonWriter out, int offset, int limit) throws IOException {
         ContentResolver cr = context.getContentResolver();
-        String sortOrder = "date ASC";
+        String sortOrder = "date DESC";
         try (Cursor c = cr.query(Conversations.CONTENT_URI, null, null, null , sortOrder)) {
             c.moveToFirst();
 

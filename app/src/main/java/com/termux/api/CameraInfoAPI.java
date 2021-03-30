@@ -73,6 +73,9 @@ public class CameraInfoAPI {
                             case CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH_REDEYE:
                                 out.value("CONTROL_AE_MODE_ON_AUTO_FLASH_REDEYE");
                                 break;
+                            case CameraMetadata.CONTROL_AE_MODE_ON_EXTERNAL_FLASH:
+                                out.value("CONTROL_AE_MODE_ON_EXTERNAL_FLASH");
+                                break;
                             default:
                                 out.value(flashMode);
                         }
@@ -86,17 +89,44 @@ public class CameraInfoAPI {
                     out.name("capabilities").beginArray();
                     for (int capability : camera.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)) {
                         switch (capability) {
-                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR:
-                                out.value("manual_sensor");
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE:
+                                out.value("backward_compatible");
+                                break;
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_BURST_CAPTURE:
+                                out.value("burst_capture");
+                                break;
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO:
+                                out.value("constrained_high_speed_video");
+                                break;
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_DEPTH_OUTPUT:
+                                out.value("depth_output");
+                                break;
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA:
+                                out.value("logical_multi_camera");
                                 break;
                             case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING:
                                 out.value("manual_post_processing");
                                 break;
-                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE:
-                                out.value("backward_compatible");
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR:
+                                out.value("manual_sensor");
+                                break;
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MONOCHROME:
+                                out.value("monochrome");
+                                break;
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MOTION_TRACKING:
+                                out.value("motion_tracking");
+                                break;
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING:
+                                out.value("private_reprocessing");
                                 break;
                             case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_RAW:
                                 out.value("raw");
+                                break;
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS:
+                                out.value("read_sensor_settings");
+                                break;
+                            case CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_YUV_REPROCESSING:
+                                out.value("yuv_reprocessing");
                                 break;
                             default:
                                 out.value(capability);

@@ -85,7 +85,7 @@ public class SmsInboxAPI {
 
     @SuppressLint("SimpleDateFormat")
     private static void writeElement(Cursor c, JsonWriter out, Map<String, String> nameCache ,Context context) throws IOException {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm");
 
         int threadID = c.getInt(c.getColumnIndexOrThrow(THREAD_ID));
         String smsAddress = c.getString(c.getColumnIndexOrThrow(ADDRESS));
@@ -93,6 +93,7 @@ public class SmsInboxAPI {
         boolean read = (c.getInt(c.getColumnIndex(READ)) != 0);
         long smsReceivedDate = c.getLong(c.getColumnIndexOrThrow(DATE));
         // long smsSentDate = c.getLong(c.getColumnIndexOrThrow(TextBasedSmsColumns.DATE_SENT));
+        int smsID = c.getInt(c.getColumnIndexOrThrow("_id"));
 
         String smsSenderName = getContactNameFromNumber(nameCache, context, smsAddress);
         String messageType = getMessageType(c.getInt(c.getColumnIndexOrThrow(TYPE)));
@@ -114,6 +115,7 @@ public class SmsInboxAPI {
         // out.write(")");
         // }
         out.name("body").value(smsBody);
+        out.name("_id").value(smsID);
 
         out.endObject();
     }
@@ -127,7 +129,7 @@ public class SmsInboxAPI {
                 ADDRESS + " LIKE '%" + number + "%'",null,  sortOrder)) {
             c.moveToFirst();
 
-            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            new SimpleDateFormat("yyyy-MM-dd kk:mm");
             Map<String, String> nameCache = new HashMap<>();
 
             out.beginArray();

@@ -85,7 +85,7 @@ public class SmsInboxAPI {
 
     @SuppressLint("SimpleDateFormat")
     private static void writeElement(Cursor c, JsonWriter out, Map<String, String> nameCache ,Context context) throws IOException {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         int threadID = c.getInt(c.getColumnIndexOrThrow(THREAD_ID));
         String smsAddress = c.getString(c.getColumnIndexOrThrow(ADDRESS));
@@ -127,7 +127,7 @@ public class SmsInboxAPI {
                 ADDRESS + " LIKE '%" + number + "%'",null,  sortOrder)) {
             c.moveToFirst();
 
-            new SimpleDateFormat("yyyy-MM-dd kk:mm");
+            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Map<String, String> nameCache = new HashMap<>();
 
             out.beginArray();

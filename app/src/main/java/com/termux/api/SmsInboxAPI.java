@@ -59,7 +59,7 @@ public class SmsInboxAPI {
         ContentResolver cr = context.getContentResolver();
         String sortOrder = "date DESC";
         try (Cursor c = cr.query(Conversations.CONTENT_URI, null, null, null , sortOrder)) {
-            c.moveToFirst();
+            c.moveToLast();
 
             Map<String, String> nameCache = new HashMap<>();
 
@@ -77,7 +77,7 @@ public class SmsInboxAPI {
                 cc.moveToFirst();
                 writeElement(cc, out, nameCache, context);
                 cc.close();
-                c.moveToNext();
+                c.moveToPrevious();
             }
             out.endArray();
         }
@@ -123,9 +123,9 @@ public class SmsInboxAPI {
     public static void getAllSms(Context context, JsonWriter out, int offset, int limit, String number, Uri contentURI) throws IOException {
         ContentResolver cr = context.getContentResolver();
         String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
-        try (Cursor c = cr.query(contentURI,  null,
-                ADDRESS + " LIKE '%" + number + "%'",null,  sortOrder)) {
-            c.moveToFirst();
+        try (Cursor c = cr.query(contentURI, null,
+                ADDRESS + " LIKE '%" + number + "%'", null, sortOrder)) {
+            c.moveToLast();
 
             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Map<String, String> nameCache = new HashMap<>();
@@ -133,7 +133,7 @@ public class SmsInboxAPI {
             out.beginArray();
             for (int i = 0, count = c.getCount(); i < count; i++) {
                 writeElement(c, out, nameCache, context);
-                c.moveToNext();
+                c.moveToPrevious();
             }
             out.endArray();
         }

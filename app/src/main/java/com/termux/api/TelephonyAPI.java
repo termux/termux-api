@@ -333,6 +333,9 @@ public class TelephonyAPI {
             ResultReturner.noteDone(apiReceiver, intent);
         }
 
+        if(numberExtra.contains("#"))
+            numberExtra = numberExtra.replace("#","%23");
+
         Uri data = Uri.parse("tel:" + numberExtra);
 
         Intent callIntent = new Intent(Intent.ACTION_CALL);

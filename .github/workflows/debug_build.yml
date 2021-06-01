@@ -1,5 +1,7 @@
 name: Build
 
+
+
 on: push
 
 jobs:
@@ -16,3 +18,4 @@ jobs:
       with:
         name: termux-api
         path: ./app/build/outputs/apk/debug/app-debug.apk
+

@@ -182,6 +182,7 @@ public class SmsInboxAPI {
             case TextBasedSmsColumns.MESSAGE_TYPE_OUTBOX:
                 return Sms.Outbox.CONTENT_URI;
             case TextBasedSmsColumns.MESSAGE_TYPE_INBOX:
+                return Sms.Inbox.CONTENT_URI;
             case TextBasedSmsColumns.MESSAGE_TYPE_ALL:
             default:
                 return Sms.CONTENT_URI;

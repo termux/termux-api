@@ -1,7 +1,11 @@
-# .gitignore from https://gist.github.com/iainconnor/8605514:
-
 # Built application files
 build/
+release/
+*.apk
+*.so
+.externalNativeBuild
+.cxx
+*.zip
 
 # Crashlytics configuations
 com_crashlytics_export_strings.xml

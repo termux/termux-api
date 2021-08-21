@@ -45,7 +45,7 @@ public class CallLogAPI {
             int durationIndex = cur.getColumnIndex(CallLog.Calls.DURATION);
             int callTypeIndex = cur.getColumnIndex(CallLog.Calls.TYPE);
 
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss", Locale.getDefault());
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             out.beginArray();
 
             for (int j = 0, count = cur.getCount(); j < count; ++j) {

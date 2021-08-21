@@ -6,6 +6,9 @@ import android.content.Intent;
 import android.service.notification.StatusBarNotification;
 import android.util.JsonWriter;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
 
@@ -37,7 +40,8 @@ public class NotificationListAPI {
             String packageName = "";
             String tag = "";
             String group = "";
-            long when = n.getNotification().when;
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String when = dateFormat.format(new Date(n.getNotification().when));
 
             if (n.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE) != null) {
                 title = n.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();

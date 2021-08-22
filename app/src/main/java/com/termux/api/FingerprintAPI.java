@@ -12,8 +12,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.biometric.BiometricConstants;
+import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
-import androidx.core.hardware.fingerprint.FingerprintManagerCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.termux.api.util.ResultReturner;
@@ -71,7 +71,7 @@ public class FingerprintAPI {
         resetFingerprintResult();
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            FingerprintManagerCompat fingerprintManagerCompat = FingerprintManagerCompat.from(context);
+            BiometricManager fingerprintManagerCompat = BiometricManager.from(context);
             // make sure we have a valid fingerprint sensor before attempting to launch Fingerprint activity
             if (validateFingerprintSensor(context, fingerprintManagerCompat)) {
                 Intent fingerprintIntent = new Intent(context, FingerprintActivity.class);
@@ -120,16 +120,21 @@ public class FingerprintAPI {
      * Ensure that we have a fingerprint sensor and that the user has already enrolled fingerprints
      */
     @TargetApi(Build.VERSION_CODES.M)
-    protected static boolean validateFingerprintSensor(Context context, FingerprintManagerCompat fingerprintManagerCompat) {
+    protected static boolean validateFingerprintSensor(Context context, BiometricManager biometricManager) {
         boolean result = true;
 
-        if (!fingerprintManagerCompat.isHardwareDetected()) {
+        if (biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE) {
             Toast.makeText(context, "No fingerprint scanner found!", Toast.LENGTH_SHORT).show();
             appendFingerprintError(ERROR_NO_HARDWARE);
             result = false;
         }
+        if (biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE) {
+            Toast.makeText(context, "No fingerprint scanner available!", Toast.LENGTH_SHORT).show();
+            appendFingerprintError(ERROR_NO_HARDWARE);
+            result = false;
+        }
 
-        if (!fingerprintManagerCompat.hasEnrolledFingerprints()) {
+        if (biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
             Toast.makeText(context, "No fingerprints enrolled", Toast.LENGTH_SHORT).show();
             appendFingerprintError(ERROR_NO_ENROLLED_FINGERPRINTS);
             result = false;

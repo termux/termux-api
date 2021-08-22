@@ -16,16 +16,24 @@ import com.termux.api.util.TermuxApiLogger;
 public class TorchAPI {
     private static Camera legacyCamera;
 
+    // this is needed to prevent some device camera implementations from inadvertently toggling
+    // the LED state if same request is sent subsequent times
+    private static boolean isEnabled = false;
+
 
     @TargetApi(Build.VERSION_CODES.M)
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         boolean enabled = intent.getBooleanExtra("enabled", false);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            toggleTorch(context, enabled);
-        } else {
-            // use legacy api for pre-marshmallow
-            legacyToggleTorch(enabled);
+        if (enabled != isEnabled) {
+            isEnabled = enabled;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                toggleTorch(context, enabled);
+            } else {
+                // use legacy api for pre-marshmallow
+                legacyToggleTorch(enabled);
+            }
         }
         ResultReturner.noteDone(apiReceiver, intent);
     }

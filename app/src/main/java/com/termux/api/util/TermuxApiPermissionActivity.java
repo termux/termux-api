@@ -24,37 +24,33 @@ public class TermuxApiPermissionActivity extends Activity {
      * @return if all permissions were already granted
      */
     public static boolean checkAndRequestPermissions(Context context, Intent intent, String... permissions) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            final ArrayList<String> permissionsToRequest = new ArrayList<>();
-            for (String permission : permissions) {
-                if (context.checkSelfPermission(permission) == PackageManager.PERMISSION_DENIED) {
-                    permissionsToRequest.add(permission);
-                }
+        final ArrayList<String> permissionsToRequest = new ArrayList<>();
+        for (String permission : permissions) {
+            if (context.checkSelfPermission(permission) == PackageManager.PERMISSION_DENIED) {
+                permissionsToRequest.add(permission);
             }
+        }
 
-            if (permissionsToRequest.isEmpty()) {
-                return true;
-            } else {
-                ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
-                    @Override
-                    public void writeJson(JsonWriter out) throws Exception {
-                        String errorMessage = "Please grant the following permission"
-                                + (permissionsToRequest.size() > 1 ? "s" : "")
-                                + " to use this command: "
-                                + TextUtils.join(" ,", permissionsToRequest);
-                        out.beginObject().name("error").value(errorMessage).endObject();
-                    }
-                });
-
-                Intent startIntent = new Intent(context, TermuxApiPermissionActivity.class)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        .putStringArrayListExtra(TermuxApiPermissionActivity.PERMISSIONS_EXTRA, permissionsToRequest);
-                ResultReturner.copyIntentExtras(intent, startIntent);
-                context.startActivity(startIntent);
-                return false;
-            }
-        } else {
+        if (permissionsToRequest.isEmpty()) {
             return true;
+        } else {
+            ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
+                @Override
+                public void writeJson(JsonWriter out) throws Exception {
+                    String errorMessage = "Please grant the following permission"
+                            + (permissionsToRequest.size() > 1 ? "s" : "")
+                            + " to use this command: "
+                            + TextUtils.join(" ,", permissionsToRequest);
+                    out.beginObject().name("error").value(errorMessage).endObject();
+                }
+            });
+
+            Intent startIntent = new Intent(context, TermuxApiPermissionActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putStringArrayListExtra(TermuxApiPermissionActivity.PERMISSIONS_EXTRA, permissionsToRequest);
+            ResultReturner.copyIntentExtras(intent, startIntent);
+            context.startActivity(startIntent);
+            return false;
         }
     }
 
@@ -64,7 +60,6 @@ public class TermuxApiPermissionActivity extends Activity {
         setIntent(intent);
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
     @Override
     protected void onResume() {
         super.onResume();

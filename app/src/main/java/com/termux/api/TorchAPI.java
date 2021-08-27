@@ -16,21 +16,13 @@ import com.termux.api.util.TermuxApiLogger;
 public class TorchAPI {
     private static Camera legacyCamera;
 
-
-    @TargetApi(Build.VERSION_CODES.M)
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         boolean enabled = intent.getBooleanExtra("enabled", false);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            toggleTorch(context, enabled);
-        } else {
-            // use legacy api for pre-marshmallow
-            legacyToggleTorch(enabled);
-        }
+        toggleTorch(context, enabled);
         ResultReturner.noteDone(apiReceiver, intent);
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
     private static void toggleTorch(Context context, boolean enabled) {
         try {
             final CameraManager cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);

@@ -41,12 +41,6 @@ class KeystoreAPI {
 
     @SuppressLint("NewApi")
     static void onReceive(TermuxApiReceiver apiReceiver, Intent intent) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            // most of the keystore features were added in Android 6
-            printErrorMessage(apiReceiver, intent);
-            return;
-        }
-
         switch (intent.getStringExtra("command")) {
             case "list":
                 listKeys(apiReceiver, intent);

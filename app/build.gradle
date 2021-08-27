@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 30
 
     defaultConfig {
         applicationId "com.termux.api"
@@ -38,9 +38,9 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.android.material:material:1.0.0'
-    implementation 'androidx.biometric:biometric:1.0.0-alpha04'
-    implementation "androidx.media:media:1.1.0"
+    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'androidx.biometric:biometric:1.2.0-alpha02'
+    implementation 'androidx.media:media:1.4.1'
 }
 
 task versionName {

@@ -11,7 +11,6 @@ import android.util.JsonWriter;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.biometric.BiometricConstants;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.hardware.fingerprint.FingerprintManagerCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -166,7 +165,7 @@ public class FingerprintAPI {
             BiometricPrompt biometricPrompt = new BiometricPrompt(context, executor, new BiometricPrompt.AuthenticationCallback() {
                 @Override
                 public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
-                    if (errorCode == BiometricConstants.ERROR_LOCKOUT) {
+                    if (errorCode == BiometricPrompt.ERROR_LOCKOUT) {
                         appendFingerprintError(ERROR_LOCKOUT);
 
                         // first time locked out, subsequent auth attempts will fail immediately for a bit

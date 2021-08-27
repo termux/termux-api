@@ -41,16 +41,14 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 BatteryStatusAPI.onReceive(this, context, intent);
                 break;
             case "Brightness":
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    if (!Settings.System.canWrite(context)) {
-                        TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.WRITE_SETTINGS);
-                        Toast.makeText(context, "Please enable permission for Termux:API", Toast.LENGTH_LONG).show();
+                if (!Settings.System.canWrite(context)) {
+                    TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.WRITE_SETTINGS);
+                    Toast.makeText(context, "Please enable permission for Termux:API", Toast.LENGTH_LONG).show();
 
-                        // user must enable WRITE_SETTINGS permission this special way
-                        Intent settingsIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                        context.startActivity(settingsIntent);
-                        return;
-                    }
+                    // user must enable WRITE_SETTINGS permission this special way
+                    Intent settingsIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                    context.startActivity(settingsIntent);
+                    return;
                 }
                 BrightnessAPI.onReceive(this, context, intent);
                 break;

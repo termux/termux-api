@@ -74,37 +74,35 @@ public class WifiAPI {
                         out.name("ssid").value(scan.SSID);
                         out.name("timestamp").value(scan.timestamp);
 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            int channelWidth = scan.channelWidth;
-                            String channelWidthMhz = "???";
-                            switch (channelWidth) {
-                                case ScanResult.CHANNEL_WIDTH_20MHZ:
-                                    channelWidthMhz = "20";
-                                    break;
-                                case ScanResult.CHANNEL_WIDTH_40MHZ:
-                                    channelWidthMhz = "40";
-                                    break;
-                                case ScanResult.CHANNEL_WIDTH_80MHZ:
-                                    channelWidthMhz = "80";
-                                    break;
-                                case ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ:
-                                    channelWidthMhz = "80+80";
-                                    break;
-                                case ScanResult.CHANNEL_WIDTH_160MHZ:
-                                    channelWidthMhz = "160";
-                                    break;
-                            }
-                            out.name("channel_bandwidth_mhz").value(channelWidthMhz);
-                            if (channelWidth != ScanResult.CHANNEL_WIDTH_20MHZ) {
-                                // centerFreq0 says "Not used if the AP bandwidth is 20 MHz".
-                                out.name("center_frequency_mhz").value(scan.centerFreq0);
-                            }
-                            if (!TextUtils.isEmpty(scan.operatorFriendlyName)) {
-                                out.name("operator_name").value(scan.operatorFriendlyName.toString());
-                            }
-                            if (!TextUtils.isEmpty(scan.venueName)) {
-                                out.name("venue_name").value(scan.venueName.toString());
-                            }
+                        int channelWidth = scan.channelWidth;
+                        String channelWidthMhz = "???";
+                        switch (channelWidth) {
+                            case ScanResult.CHANNEL_WIDTH_20MHZ:
+                                channelWidthMhz = "20";
+                                break;
+                            case ScanResult.CHANNEL_WIDTH_40MHZ:
+                                channelWidthMhz = "40";
+                                break;
+                            case ScanResult.CHANNEL_WIDTH_80MHZ:
+                                channelWidthMhz = "80";
+                                break;
+                            case ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ:
+                                channelWidthMhz = "80+80";
+                                break;
+                            case ScanResult.CHANNEL_WIDTH_160MHZ:
+                                channelWidthMhz = "160";
+                                break;
+                        }
+                        out.name("channel_bandwidth_mhz").value(channelWidthMhz);
+                        if (channelWidth != ScanResult.CHANNEL_WIDTH_20MHZ) {
+                            // centerFreq0 says "Not used if the AP bandwidth is 20 MHz".
+                            out.name("center_frequency_mhz").value(scan.centerFreq0);
+                        }
+                        if (!TextUtils.isEmpty(scan.operatorFriendlyName)) {
+                            out.name("operator_name").value(scan.operatorFriendlyName.toString());
+                        }
+                        if (!TextUtils.isEmpty(scan.venueName)) {
+                            out.name("venue_name").value(scan.venueName.toString());
                         }
                         out.endObject();
                     }

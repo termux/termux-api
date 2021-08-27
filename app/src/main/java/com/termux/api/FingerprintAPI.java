@@ -69,20 +69,14 @@ public class FingerprintAPI {
     static void onReceive(final Context context, final Intent intent) {
         resetFingerprintResult();
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            FingerprintManagerCompat fingerprintManagerCompat = FingerprintManagerCompat.from(context);
-            // make sure we have a valid fingerprint sensor before attempting to launch Fingerprint activity
-            if (validateFingerprintSensor(context, fingerprintManagerCompat)) {
-                Intent fingerprintIntent = new Intent(context, FingerprintActivity.class);
-                fingerprintIntent.putExtras(intent.getExtras());
-                fingerprintIntent.setFlags(FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(fingerprintIntent);
-            } else {
-                postFingerprintResult(context, intent, fingerprintResult);
-            }
+        FingerprintManagerCompat fingerprintManagerCompat = FingerprintManagerCompat.from(context);
+        // make sure we have a valid fingerprint sensor before attempting to launch Fingerprint activity
+        if (validateFingerprintSensor(context, fingerprintManagerCompat)) {
+            Intent fingerprintIntent = new Intent(context, FingerprintActivity.class);
+            fingerprintIntent.putExtras(intent.getExtras());
+            fingerprintIntent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(fingerprintIntent);
         } else {
-            // pre-marshmallow is unsupported
-            appendFingerprintError(ERROR_UNSUPPORTED_OS_VERSION);
             postFingerprintResult(context, intent, fingerprintResult);
         }
     }
@@ -118,7 +112,6 @@ public class FingerprintAPI {
     /**
      * Ensure that we have a fingerprint sensor and that the user has already enrolled fingerprints
      */
-    @TargetApi(Build.VERSION_CODES.M)
     protected static boolean validateFingerprintSensor(Context context, FingerprintManagerCompat fingerprintManagerCompat) {
         boolean result = true;
 
@@ -141,7 +134,6 @@ public class FingerprintAPI {
     /**
      * Activity that is necessary for authenticating w/ fingerprint sensor
      */
-    @TargetApi(Build.VERSION_CODES.M)
     public static class FingerprintActivity extends FragmentActivity{
 
         @Override

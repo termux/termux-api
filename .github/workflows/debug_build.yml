@@ -6,13 +6,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Clone repository
-      uses: actions/checkout@v2
-    - name: Build
-      run: |
-        ./gradlew assembleDebug
-    - name: Store generated APK file
-      uses: actions/upload-artifact@v2
-      with:
-        name: termux-api
-        path: ./app/build/outputs/apk/debug/app-debug.apk
+      - name: Clone repository
+        uses: actions/checkout@v2
+      - name: Set vars
+        run: |
+          # Set NEW_VERSION_NAME to "<CURRENT_VERSION_NAME>+<last_commit_hash>"
+          CURRENT_VERSION_NAME_REGEX='\s+versionName "([^"]+)"$'
+          CURRENT_VERSION_NAME="$(grep -m 1 -E "$CURRENT_VERSION_NAME_REGEX" ./app/build.gradle | sed -r "s/$CURRENT_VERSION_NAME_REGEX/\1/")"
+          NEW_VERSION_NAME="$CURRENT_VERSION_NAME+${GITHUB_SHA:0:7}"
+          echo "TERMUX_WIDGET_APP_VERSION_NAME=$NEW_VERSION_NAME" >> $GITHUB_ENV # Used by app/build.gradle
+          echo "TERMUX_WIDGET_APK_VERSION_TAG=v$NEW_VERSION_NAME-github-debug" >> $GITHUB_ENV # Used by app/build.gradle
+      - name: Echo version
+        run: echo "Building APK for '$TERMUX_WIDGET_APP_VERSION_NAME'"
+      - name: Build
+        run: ./gradlew assembleDebug
+      - name: Store generated APK file
+        uses: actions/upload-artifact@v2
+        with:
+          name: termux-api
+          path: |
+            ./app/build/outputs/apk/debug/termux-api_${{ env.TERMUX_WIDGET_APK_VERSION_TAG }}.apk
+            ./app/build/outputs/apk/debug/output-metadata.json

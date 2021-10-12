@@ -103,8 +103,13 @@ public class SmsInboxAPI {
         out.name("read").value(read);
 
         if (smsSenderName != null) {
-            out.name("sender").value(smsSenderName);
+            if (messageType.equals("inbox")){
+                out.name("sender").value(smsSenderName);
+            }else{
+                out.name("sender").value("You");
+            }
         }
+
         out.name("number").value(smsAddress);
 
         out.name("received").value(dateFormat.format(new Date(smsReceivedDate)));

@@ -126,9 +126,11 @@ public class PhotoAPI {
                     } catch (Exception e) {
                         stdout.println("Error writing image: " + e.getMessage());
                         TermuxApiLogger.error("Error writing image", e);
-                    } finally {
-                        closeCamera(camera, looper);
                     }
+                } finally {
+                    mImageReader.close();
+                    releaseSurfaces(outputSurfaces);
+                    closeCamera(camera, looper);
                 }
             }
         }.start(), null);
@@ -156,8 +158,6 @@ public class PhotoAPI {
                     Thread.sleep(500);
                     session.stopRepeating();
                     TermuxApiLogger.info("preview stoppend");
-                    previewTexture.release();
-                    dummySurface.release();
 
                     final CaptureRequest.Builder jpegRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                     // Render to our image reader:
@@ -170,6 +170,8 @@ public class PhotoAPI {
                     saveImage(camera, session, jpegRequest.build());
                 } catch (Exception e) {
                     TermuxApiLogger.error("onConfigured() error in preview", e);
+                    mImageReader.close();
+                    releaseSurfaces(outputSurfaces);
                     closeCamera(camera, looper);
                 }
             }
@@ -177,6 +179,8 @@ public class PhotoAPI {
             @Override
             public void onConfigureFailed(CameraCaptureSession session) {
                 TermuxApiLogger.error("onConfigureFailed() error in preview");
+                mImageReader.close();
+                releaseSurfaces(outputSurfaces);
                 closeCamera(camera, looper);
             }
         }, null);
@@ -187,7 +191,6 @@ public class PhotoAPI {
             @Override
             public void onCaptureCompleted(CameraCaptureSession completedSession, CaptureRequest request, TotalCaptureResult result) {
                 TermuxApiLogger.info("onCaptureCompleted()");
-                closeCamera(camera, null);
             }
         }, null);
     }
@@ -242,6 +245,13 @@ public class PhotoAPI {
         jpegOrientation = (jpegOrientation + 360) % 360;
         TermuxApiLogger.info(String.format("Returning JPEG orientation of %d degrees", jpegOrientation));
         return jpegOrientation;
+    }
+
+    static void releaseSurfaces(List<Surface> outputSurfaces) {
+        for (Surface outputSurface : outputSurfaces) {
+            outputSurface.release();
+        }
+        TermuxApiLogger.info("surfaces released");
     }
 
     static void closeCamera(CameraDevice camera, Looper looper) {

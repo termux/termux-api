@@ -84,7 +84,7 @@ public class SmsInboxAPI {
     }
 
     @SuppressLint("SimpleDateFormat")
-    private static void writeElement(Cursor c, JsonWriter out, Map<String, String> nameCache ,Context context) throws IOException {
+    private static void writeElement(Cursor c, JsonWriter out, Map<String, String> nameCache, Context context) throws IOException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         int threadID = c.getInt(c.getColumnIndexOrThrow(THREAD_ID));
@@ -103,9 +103,9 @@ public class SmsInboxAPI {
         out.name("read").value(read);
 
         if (smsSenderName != null) {
-            if (messageType.equals("inbox")){
+            if (messageType.equals("inbox")) {
                 out.name("sender").value(smsSenderName);
-            }else{
+            } else {
                 out.name("sender").value("You");
             }
         }

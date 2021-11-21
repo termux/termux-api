@@ -93,6 +93,7 @@ public class SmsInboxAPI {
         boolean read = (c.getInt(c.getColumnIndex(READ)) != 0);
         long smsReceivedDate = c.getLong(c.getColumnIndexOrThrow(DATE));
         // long smsSentDate = c.getLong(c.getColumnIndexOrThrow(TextBasedSmsColumns.DATE_SENT));
+        int smsID = c.getInt(c.getColumnIndexOrThrow("_id"));
 
         String smsSenderName = getContactNameFromNumber(nameCache, context, smsAddress);
         String messageType = getMessageType(c.getInt(c.getColumnIndexOrThrow(TYPE)));
@@ -119,6 +120,7 @@ public class SmsInboxAPI {
         // out.write(")");
         // }
         out.name("body").value(smsBody);
+        out.name("_id").value(smsID);
 
         out.endObject();
     }

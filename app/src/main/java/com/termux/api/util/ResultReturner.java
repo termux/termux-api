@@ -57,19 +57,19 @@ public abstract class ResultReturner {
             this.in = inputStream;
         }
     }
-    
+
     /**
      * Possible subclass of {@link ResultWriter} when the output is binary data instead of text.
      */
     public static abstract class BinaryOutput implements ResultWriter {
         private OutputStream out;
-        
+
         public void setOutput(OutputStream outputStream) {
             this.out = outputStream;
         }
-        
+
         public abstract void writeResult(OutputStream out) throws Exception;
-    
+
         /**
          * writeResult with a PrintWriter is marked as final and overwritten, so you don't accidentally use it
          */
@@ -178,7 +178,7 @@ public abstract class ResultReturner {
                     } else {
                         resultWriter.writeResult(writer);
                     }
-                    if(resultWriter instanceof WithAncillaryFd) {
+                    if (resultWriter instanceof WithAncillaryFd) {
                         int fd = ((WithAncillaryFd) resultWriter).getFd();
                         if (fd >= 0) {
                             pfds[0] = ParcelFileDescriptor.adoptFd(fd);
@@ -188,7 +188,7 @@ public abstract class ResultReturner {
                     }
                 }
 
-                if(pfds[0] != null) {
+                if (pfds[0] != null) {
                     pfds[0].close();
                 }
 

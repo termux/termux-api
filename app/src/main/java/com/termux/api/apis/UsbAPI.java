@@ -73,13 +73,11 @@ public class UsbAPI {
                                     } else out.append("No permission\n");
                                 }
                             });
-
                     break;
                 default:
                     ResultReturner.returnData(apiReceiver, intent, out -> out.append("Invalid action\n"));
             }
         }
-
     }
 
     private static void listDevices(final Context context, JsonWriter out) throws IOException {
@@ -184,7 +182,6 @@ public class UsbAPI {
                             if (looper != null) looper.quit();
                         }
                     }
-
                 }
             }
         };
@@ -201,7 +198,7 @@ public class UsbAPI {
 
     private static boolean getPermission(final @NonNull UsbDevice device, final Context context, final Intent intent) {
         boolean request = intent.getBooleanExtra("request", false);
-        if(request) {
+        if (request) {
             return requestPermission(device, context);
         } else {
             return hasPermission(device, context);

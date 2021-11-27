@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
@@ -84,12 +85,64 @@ public class UsbAPI {
     private static void listDevices(final Context context, JsonWriter out) throws IOException {
         final UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
-        Iterator<String> deviceIterator = deviceList.keySet().iterator();
         out.beginArray();
-        while (deviceIterator.hasNext()) {
-            out.value(deviceIterator.next());
+        for (UsbDevice device : deviceList.values()) {
+            out.beginObject();
+            out.name("device_name").value(device.getDeviceName());
+            out.name("device_id").value(device.getDeviceId());
+            out.name("vendor_id").value(String.format("0x%04x", device.getVendorId()));
+            out.name("product_id").value(String.format("0x%04x", device.getProductId()));
+            out.name("device_class").value(device.getDeviceClass()+" - "+translateDeviceClass(device.getDeviceClass()));
+            out.name("device_sub_class").value(device.getDeviceSubclass());
+            out.name("manufacturer_name").value(device.getManufacturerName());
+            out.name("device_protocol").value(device.getDeviceProtocol());
+            out.name("product_name").value(device.getProductName());
+            out.name("serial_number").value(device.getSerialNumber());
+            out.name("configurations").value(device.getConfigurationCount());
+            out.name("descriptor_type").value(device.describeContents());
+            out.name("access_granted").value(usbManager.hasPermission(device));
+            out.endObject();
         }
         out.endArray();
+    }
+    private static String translateDeviceClass(int usbClass){
+        switch(usbClass){
+        case UsbConstants.USB_CLASS_APP_SPEC:
+            return "App specific USB class";
+        case UsbConstants.USB_CLASS_AUDIO:
+            return "Audio device";
+        case UsbConstants.USB_CLASS_CDC_DATA:
+            return "CDC device (communications device class)";
+        case UsbConstants.USB_CLASS_COMM:
+            return "Communication device";
+        case UsbConstants.USB_CLASS_CONTENT_SEC:
+            return "Content security device";
+        case UsbConstants.USB_CLASS_CSCID:
+            return "Content smart card device";
+        case UsbConstants.USB_CLASS_HID:
+            return "Human interface device (for example a keyboard)";
+        case UsbConstants.USB_CLASS_HUB:
+            return "USB hub";
+        case UsbConstants.USB_CLASS_MASS_STORAGE:
+            return "Mass storage device";
+        case UsbConstants.USB_CLASS_MISC:
+            return "Wireless miscellaneous devices";
+        case UsbConstants.USB_CLASS_PER_INTERFACE:
+            return "Usb class is determined on a per-interface basis";
+        case UsbConstants.USB_CLASS_PHYSICA:
+            return "Physical device";
+        case UsbConstants.USB_CLASS_PRINTER:
+            return "Printer";
+        case UsbConstants.USB_CLASS_STILL_IMAGE:
+            return "Still image devices (digital cameras)";
+        case UsbConstants.USB_CLASS_VENDOR_SPEC:
+            return "Vendor specific USB class";
+        case UsbConstants.USB_CLASS_VIDEO:
+            return "Video device";
+        case UsbConstants.USB_CLASS_WIRELESS_CONTROLLER:
+            return "Wireless controller device";
+        default: return "Unknown USB class!";
+        }
     }
 
     private static UsbDevice getDevice(final TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {

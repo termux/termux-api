@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.termux.api"
-    android:sharedUserId="com.termux">
+    android:sharedUserId="${TERMUX_PACKAGE_NAME}">
 
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 

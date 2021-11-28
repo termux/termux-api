@@ -57,6 +57,9 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
 
+import static com.termux.shared.termux.TermuxConstants.TERMUX_PROPERTIES_PRIMARY_FILE_PATH;
+import static com.termux.shared.termux.TermuxConstants.TERMUX_PROPERTIES_SECONDARY_FILE_PATH;
+
 /**
  * API that allows receiving user input interactively in a variety of different ways
  */
@@ -65,10 +68,10 @@ public class DialogActivity extends AppCompatActivity {
     private boolean resultReturned = false;
 
     protected boolean getBlackUI() {
-        File propsFile = new File("/data/data/com.termux/files/home/.termux/termux.properties");
+        File propsFile = new File(TERMUX_PROPERTIES_PRIMARY_FILE_PATH);
 
         if (!propsFile.exists())
-            propsFile = new File("/data/data/com.termux/files/home/.config/termux.properties");
+            propsFile = new File(TERMUX_PROPERTIES_SECONDARY_FILE_PATH);
 
         boolean mUseBlackUi = false;
 

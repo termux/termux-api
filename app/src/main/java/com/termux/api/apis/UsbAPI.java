@@ -218,10 +218,21 @@ public class UsbAPI {
         protected void runOpenAction(Intent intent) {
             mThreadPoolExecutor.submit(() -> {
                 String deviceName = intent.getStringExtra("device");
+                String vendorId = intent.getStringExtra("vendorId");
+                String productId = intent.getStringExtra("productId");
+                if (deviceName == null && (vendorId == null || productId == null)) {
+                    Logger.logError(LOG_TAG, "Missing usb device info in open()");
+                }
 
-                Logger.logVerbose(LOG_TAG,"Running 'open' action for device \"" + deviceName + "\"");
+                UsbDevice device;
+                if (deviceName != null) {
+                    Logger.logVerbose(LOG_TAG,"Running 'open' action for device \"" + deviceName + "\"");
+                    device = getDevice(intent, deviceName);
+                } else {
+                    Logger.logVerbose(LOG_TAG,"Running 'open' action for vendor Id \"" + vendorId + "\" and product Id \"" + productId + "\"");
+                    device = getDevice(intent, vendorId, productId);
+                }
 
-                UsbDevice device = getDevice(intent, deviceName);
                 if (device == null) return;
 
                 int status = checkAndRequestUsbDevicePermission(intent, device);
@@ -279,6 +290,22 @@ public class UsbAPI {
             return device;
         }
 
+        protected UsbDevice getDevice(Intent intent, String vendorId, String productId) {
+            UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+
+            HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
+            for (UsbDevice dev : deviceList.values()) {
+                    if (String.format("0x%04x", dev.getVendorId()).equalsIgnoreCase(vendorId) &&
+                        String.format("0x%04x", dev.getProductId()).equalsIgnoreCase(productId)) {
+                            return dev;
+                    }
+
+            }
+            Logger.logVerbose(LOG_TAG, "Failed to find device with vendor Id \"" + vendorId + "\" and product Id\"" + productId + "\"");
+            ResultReturner.returnData(this, intent, out -> out.append("No such device.\n"));
+
+            return null;
+        }
 
 
         protected boolean checkUsbDevicePermission(@NonNull UsbDevice device) {

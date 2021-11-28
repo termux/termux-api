@@ -29,12 +29,14 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.termux.shared.termux.TermuxConstants.TERMUX_PREFIX_DIR_PATH;
+
 public class NotificationAPI {
 
     public static final String TERMUX_SERVICE = "com.termux.app.TermuxService";
     public static final String ACTION_EXECUTE = "com.termux.service_execute";
     public static final String EXTRA_ARGUMENTS = "com.termux.execute.arguments";
-    public static final String BIN_SH = "/data/data/com.termux/files/usr/bin/sh";
+    public static final String BIN_SH = TERMUX_PREFIX_DIR_PATH+"/bin/sh";
     private static final String EXTRA_EXECUTE_IN_BACKGROUND = "com.termux.execute.background";
     private static final String CHANNEL_ID = "termux-notification";
     private static final String CHANNEL_TITLE = "Termux API notification channel";

@@ -27,7 +27,7 @@ public class App extends Application
     private static final Pattern EXTRA_INT_LIST = Pattern.compile("--eia +([^ ]+) +(-?[0-9]+(?:,-?[0-9]+)*)");
     private static final Pattern EXTRA_LONG_LIST = Pattern.compile("--ela +([^ ]+) +(-?[0-9]+(?:,-?[0-9]+)*)");
     private static final Pattern EXTRA_UNSUPPORTED = Pattern.compile("--e[^izs ] +[^ ]+ +[^ ]+");
-
+    private static final Pattern ACTION = Pattern.compile("-a *([^ ]+)");
 
     @Override
     public void onCreate() {
@@ -49,6 +49,7 @@ public class App extends Application
                             in.readFully(b);
                             String cmdline = new String(b, StandardCharsets.UTF_8);
 
+                            Intent intent = new Intent(getApplicationContext(), TermuxApiReceiver.class);
                             //System.out.println(cmdline.replaceAll("--es socket_input \".*?\"","").replaceAll("--es socket_output \".*?\"",""));
                             HashMap<String, String> stringExtras = new HashMap<>();
                             HashMap<String, String[]> stringArrayExtras = new HashMap<>();
@@ -151,6 +152,12 @@ public class App extends Application
                             }
                             cmdline = m.replaceAll("");
 
+                            m = ACTION.matcher(cmdline);
+                            while (m.find()) {
+                                intent.setAction(m.group(1));
+                            }
+                            cmdline = m.replaceAll("");
+
                             m = EXTRA_UNSUPPORTED.matcher(cmdline);
                             if (m.find()) {
                                 String msg = "Unsupported argument type: " + m.group(0) + "\n";
@@ -174,30 +181,29 @@ public class App extends Application
                                 continue;
                             }
 
-                            // construct the intent with the extras
-                            Intent i = new Intent(getApplicationContext(), TermuxApiReceiver.class);
+                            // set the intent extras
                             for (Map.Entry<String, String> e : stringExtras.entrySet()) {
-                                i.putExtra(e.getKey(), e.getValue());
+                                intent.putExtra(e.getKey(), e.getValue());
                             }
                             for (Map.Entry<String, String[]> e : stringArrayExtras.entrySet()) {
-                                i.putExtra(e.getKey(), e.getValue());
+                                intent.putExtra(e.getKey(), e.getValue());
                             }
                             for (Map.Entry<String, Integer> e : intExtras.entrySet()) {
-                                i.putExtra(e.getKey(), e.getValue());
+                                intent.putExtra(e.getKey(), e.getValue());
                             }
                             for (Map.Entry<String, Boolean> e : booleanExtras.entrySet()) {
-                                i.putExtra(e.getKey(), e.getValue());
+                                intent.putExtra(e.getKey(), e.getValue());
                             }
                             for (Map.Entry<String, Float> e : floatExtras.entrySet()) {
-                                i.putExtra(e.getKey(), e.getValue());
+                                intent.putExtra(e.getKey(), e.getValue());
                             }
                             for (Map.Entry<String, int[]> e : intArrayExtras.entrySet()) {
-                                i.putExtra(e.getKey(), e.getValue());
+                                intent.putExtra(e.getKey(), e.getValue());
                             }
                             for (Map.Entry<String, long[]> e : longArrayExtras.entrySet()) {
-                                i.putExtra(e.getKey(), e.getValue());
+                                intent.putExtra(e.getKey(), e.getValue());
                             }
-                            getApplicationContext().sendOrderedBroadcast(i, null);
+                            getApplicationContext().sendOrderedBroadcast(intent, null);
                             // send a null byte as a sign that the arguments have been successfully received, parsed and the broadcast receiver is called
                             con.getOutputStream().write(0);
                             con.getOutputStream().flush();

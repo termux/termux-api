@@ -48,7 +48,7 @@
 
     <!-- This permission is not used, but a permission is needed on the sharedfiles contentprovider,
          which will always use FLAG_GRANT_READ_URI_PERMISSION. -->
-    <permission android:name="com.termux.sharedfiles.READ" android:protectionLevel="signature" />
+    <permission android:name="${TERMUX_PACKAGE_NAME}.sharedfiles.READ" android:protectionLevel="signature" />
 
     <application
         android:allowBackup="true"
@@ -57,9 +57,9 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light"
         tools:ignore="GoogleAppIndexingWarning">
-        <receiver android:name="com.termux.api.TermuxApiReceiver"/>
-        <activity android:name="com.termux.api.DialogActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
-        <activity android:name="com.termux.api.NfcActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false" >
+        <receiver android:name=".TermuxApiReceiver"/>
+        <activity android:name=".DialogActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
+        <activity android:name=".NfcActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.nfc.action.TAG_DISCOVERED"/>
@@ -72,23 +72,23 @@
                   android:noHistory="true"
                   android:excludeFromRecents="true"
                   android:exported="false"/>
-        <activity android:name="com.termux.api.util.TermuxApiPermissionActivity"
+        <activity android:name=".util.TermuxApiPermissionActivity"
                   android:theme="@android:style/Theme.NoDisplay"
                   android:noHistory="true"
                   android:excludeFromRecents="true"
                   android:exported="false"/>
-        <activity android:name="com.termux.api.StorageGetAPI$StorageActivity"
+        <activity android:name=".StorageGetAPI$StorageActivity"
                   android:theme="@android:style/Theme.Translucent.NoTitleBar"
                   android:excludeFromRecents="true"
                   android:exported="false"/>
-        <service android:name="com.termux.api.SpeechToTextAPI$SpeechToTextService"/>
-        <service android:name="com.termux.api.TextToSpeechAPI$TextToSpeechService" />
+        <service android:name=".SpeechToTextAPI$SpeechToTextService"/>
+        <service android:name=".TextToSpeechAPI$TextToSpeechService" />
         <service android:name=".SensorAPI$SensorReaderService"/>
-        <provider android:authorities="com.termux.sharedfiles"
-            android:readPermission="com.termux.sharedfiles.READ"
+        <provider android:authorities="${TERMUX_PACKAGE_NAME}.sharedfiles"
+            android:readPermission="${TERMUX_PACKAGE_NAME}.sharedfiles.READ"
             android:exported="true"
             android:grantUriPermissions="true"
-            android:name="com.termux.api.ShareAPI$ContentProvider" />
+            android:name=".ShareAPI$ContentProvider" />
         <service android:name=".MediaPlayerAPI$PlayerService" android:exported="false"/>
         <service android:name=".MicRecorderAPI$MicRecorderService" android:exported="false"/>
         <service android:name=".WallpaperAPI$WallpaperService"/>

@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion project.properties.compileSdkVersion.toInteger()
 
     defaultConfig {
         applicationId "com.termux.api"
-        minSdkVersion 24
-        targetSdkVersion 28
+        minSdkVersion project.properties.minSdkVersion.toInteger()
+        targetSdkVersion project.properties.targetSdkVersion.toInteger()
         versionCode 49
         versionName "0.49"
 

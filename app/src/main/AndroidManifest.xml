@@ -51,6 +51,7 @@
     <permission android:name="${TERMUX_PACKAGE_NAME}.sharedfiles.READ" android:protectionLevel="signature" />
 
     <application
+        android:name=".TermuxAPIApplication"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"

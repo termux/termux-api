@@ -61,19 +61,19 @@ public class UsbAPI {
                     device = getDevice(apiReceiver, context, intent);
                     if (device == null) return;
                     ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithAncillaryFd() {
-                                @Override
-                                public void writeResult(PrintWriter out) {
-                                    if (getPermission(device, context, intent)) {
-                                        int result = open(device, context);
-                                        if (result < 0) {
-                                            out.append("Failed to open device\n");
-                                        } else {
-                                            this.setFd(result);
-                                            out.append("@"); // has to be non-empty
-                                        }
-                                    } else out.append("No permission\n");
+                        @Override
+                        public void writeResult(PrintWriter out) {
+                            if (getPermission(device, context, intent)) {
+                                int result = open(device, context);
+                                if (result < 0) {
+                                    out.append("Failed to open device\n");
+                                } else {
+                                    this.setFd(result);
+                                    out.append("@"); // has to be non-empty
                                 }
-                            });
+                            } else out.append("No permission\n");
+                        }
+                    });
                     break;
                 default:
                     ResultReturner.returnData(apiReceiver, intent, out -> out.append("Invalid action\n"));

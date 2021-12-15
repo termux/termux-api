@@ -208,6 +208,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "WifiEnable":
                 WifiAPI.onReceiveWifiEnable(this, context, intent);
                 break;
+            case "SAF":
+                SAFAPI.onReceive(this, context, intent);
+                break;
             default:
                 TermuxApiLogger.error("Unrecognized 'api_method' extra: '" + apiMethod + "'");
         }

@@ -3,11 +3,14 @@ package com.termux.api;
 import android.content.Context;
 import android.content.Intent;
 import android.content.UriPermission;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.FileUtils;
+import android.provider.DocumentsContract;
 import android.util.JsonWriter;
+import android.webkit.MimeTypeMap;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,6 +19,7 @@ import androidx.documentfile.provider.DocumentFile;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.TermuxApiLogger;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -132,14 +136,9 @@ public class SAFAPI
     }
     
     private static void createDocument(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
-        String treeuri = intent.getStringExtra("treeuri");
-        if (treeuri == null) {
+        String treeURIString = intent.getStringExtra("treeuri");
+        if (treeURIString == null) {
             TermuxApiLogger.error("treeuri extra null");
-            return;
-        }
-        String mime = intent.getStringExtra("mimetype");
-        if (mime == null) {
-            TermuxApiLogger.error("mimetype extra null");
             return;
         }
         String name = intent.getStringExtra("filename");
@@ -147,15 +146,21 @@ public class SAFAPI
             TermuxApiLogger.error("filename extra null");
             return;
         }
-        DocumentFile tree = DocumentFile.fromTreeUri(context, Uri.parse(treeuri));
-        if (tree == null) {
-            return;
+        String mime = intent.getStringExtra("mimetype");
+        if (mime == null) {
+            mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(name);
         }
-        DocumentFile f = tree.createFile(mime, name);
-        if (f == null) {
-            return;
+        if (mime == null) {
+            mime = "application/octet-stream";
         }
-        ResultReturner.returnData(apiReceiver, intent, out -> out.write(f.getUri().toString()));
+        Uri treeURI = Uri.parse(treeURIString);
+        String id = DocumentsContract.getTreeDocumentId(treeURI);
+        try {
+            id = DocumentsContract.getDocumentId(Uri.parse(treeURIString));
+        } catch (IllegalArgumentException ignored) {}
+        final String finalMime = mime;
+        final String finalId = id;
+        ResultReturner.returnData(apiReceiver, intent, out -> out.write(DocumentsContract.createDocument(context.getContentResolver(), DocumentsContract.buildDocumentUriUsingTree(treeURI, finalId), finalMime, name).toString()));
     }
     
     private static void readDocument(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
@@ -172,23 +177,27 @@ public class SAFAPI
     }
     
     private static void listDirectory(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
-        String treeuri = intent.getStringExtra("treeuri");
-        if (treeuri == null) {
+        String treeURIString = intent.getStringExtra("treeuri");
+        if (treeURIString == null) {
             TermuxApiLogger.error("treeuri extra null");
             return;
         }
-        DocumentFile tree = DocumentFile.fromSingleUri(context, Uri.parse(treeuri));
-        if (tree == null) {
-            return;
-        }
+        Uri treeURI = Uri.parse(treeURIString);
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter()
         {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
                 out.beginArray();
+                String id = DocumentsContract.getTreeDocumentId(treeURI);
                 try {
-                    for (DocumentFile f : tree.listFiles()) {
-                        statDocumentFile(out, f);
+                    id = DocumentsContract.getDocumentId(Uri.parse(treeURIString));
+                } catch (IllegalArgumentException ignored) {}
+                try (Cursor c = context.getContentResolver().query(DocumentsContract.buildChildDocumentsUriUsingTree(Uri.parse(treeURIString), id), new String[] {
+                        DocumentsContract.Document.COLUMN_DOCUMENT_ID }, null, null, null)) {
+                    while (c.moveToNext()) {
+                        String documentId = c.getString(0);
+                        Uri documentUri = DocumentsContract.buildDocumentUriUsingTree(treeURI, documentId);
+                        statDocument(out, context, documentUri);
                     }
                 } catch (UnsupportedOperationException ignored) { }
                 out.endArray();
@@ -197,39 +206,26 @@ public class SAFAPI
     }
     
     private static void statURI(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
-        String uri = intent.getStringExtra("uri");
-        if (uri == null) {
+        String uriString = intent.getStringExtra("uri");
+        if (uriString == null) {
             TermuxApiLogger.error("uri extra null");
             return;
         }
-        DocumentFile f = DocumentFile.fromSingleUri(context, Uri.parse(uri));
-        if (f == null) {
-            return;
-        }
+        Uri uri = Uri.parse(uriString);
+        String id = DocumentsContract.getTreeDocumentId(Uri.parse(uriString));
+        try {
+            id = DocumentsContract.getDocumentId(Uri.parse(uriString));
+        } catch (IllegalArgumentException ignored) {}
+        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri, id);
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter()
         {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
-                statDocumentFile(out, f);
+                statDocument(out, context, Uri.parse(docUri.toString()));
             }
         });
     }
     
-    
-    private static void statDocumentFile(JsonWriter out, DocumentFile f) throws Exception {
-        out.beginObject();
-        out.name("name");
-        out.value(f.getName());
-        out.name("type");
-        out.value(f.getType());
-        out.name("uri");
-        out.value(f.getUri().toString());
-        if (! f.isDirectory()) {
-            out.name("length");
-            out.value(f.length());
-        }
-        out.endObject();
-    }
     
     private static void removeDocument(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
         String uri = intent.getStringExtra("uri");
@@ -237,17 +233,39 @@ public class SAFAPI
             TermuxApiLogger.error("uri extra null");
             return;
         }
-        DocumentFile f = DocumentFile.fromTreeUri(context, Uri.parse(uri));
-        if (f == null) {
-            return;
-        }
-        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter()
-        {
-            @Override
-            public void writeJson(JsonWriter out) throws Exception {
-                out.value(f.delete());
+        ResultReturner.returnData(apiReceiver, intent, out -> {
+            try {
+                if (DocumentsContract.deleteDocument(context.getContentResolver(), Uri.parse(uri))) {
+                    out.print(0);
+                } else {
+                    out.print(1);
+                }
+            } catch (FileNotFoundException | IllegalArgumentException e ) {
+                out.print(2);
             }
         });
+    }
+    
+    private static void statDocument(JsonWriter out, Context context, Uri uri) throws Exception {
+        try (Cursor c = context.getContentResolver().query(uri, null, null, null, null)) {
+            if (c == null || c.getCount() == 0) {
+                return;
+            }
+            c.moveToNext();
+            out.beginObject();
+            out.name("name");
+            out.value(c.getString(c.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)));
+            out.name("type");
+            String mime = c.getString(c.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE));
+            out.value(mime);
+            out.name("uri");
+            out.value(uri.toString());
+            if (! DocumentsContract.Document.MIME_TYPE_DIR.equals(mime)) {
+                out.name("length");
+                out.value(c.getInt(c.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)));
+            }
+            out.endObject();
+        }
     }
     
     private static void returnDocumentFile(TermuxApiReceiver apiReceiver, Context context, Intent intent, DocumentFile f) {

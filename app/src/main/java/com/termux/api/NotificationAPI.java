@@ -65,27 +65,9 @@ public class NotificationAPI {
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    String priorityExtra = intent.getStringExtra("priority");
-                    if (priorityExtra == null) priorityExtra = "default";
-                    int importance;
-                    switch (priorityExtra) {
-                        case "high":
-                        case "max":
-                            importance = NotificationManager.IMPORTANCE_HIGH;
-                            break;
-                        case "low":
-                            importance = NotificationManager.IMPORTANCE_LOW;
-                            break;
-                        case "min":
-                            importance = NotificationManager.IMPORTANCE_MIN;
-                            break;
-                        default:
-                            importance = NotificationManager.IMPORTANCE_DEFAULT;
-                    }
                     NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
-                            CHANNEL_TITLE, importance);
+                            CHANNEL_TITLE, priorityFromIntent(intent));
                     manager.createNotificationChannel(channel);
-                    notification.setChannelId(CHANNEL_ID);
                 }
 
                 manager.notify(notificationId, 0, notification.build());
@@ -93,6 +75,60 @@ public class NotificationAPI {
         });
     }
 
+    public static void onReceiveChannel(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                NotificationManager m = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                String channelId = intent.getStringExtra("id");
+                String channelName = intent.getStringExtra("name");
+                
+                if (channelId == null || channelId.equals("")) {
+                    ResultReturner.returnData(apiReceiver, intent, out -> out.println("Channel id not specified."));
+                    return;
+                }
+                
+                if (intent.getBooleanExtra("delete",false)) {
+                    m.deleteNotificationChannel(channelId);
+                    ResultReturner.returnData(apiReceiver, intent, out -> out.println("Deleted channel with id \""+channelId+"\"."));
+                    return;
+                }
+                
+                if (channelName == null || channelName.equals("")) {
+                    ResultReturner.returnData(apiReceiver, intent, out -> out.println("Cannot create a channel without a name."));
+                }
+                
+                NotificationChannel c = new NotificationChannel(channelId, channelName, priorityFromIntent(intent));
+                m.createNotificationChannel(c);
+                ResultReturner.returnData(apiReceiver, intent, out -> out.println("Created channel with id \""+channelId+"\" and name \""+channelName+"\"."));
+            } catch (Exception e) {
+                e.printStackTrace();
+                ResultReturner.returnData(apiReceiver, intent, out -> out.println("Could not create/delete channel."));
+            }
+        } else {
+            ResultReturner.returnData(apiReceiver, intent, out -> out.println("Notification channels are only available on Android 8.0 and higher, use the options for termux-notification instead."));
+        }
+    }
+    
+    private static int priorityFromIntent(Intent intent) {
+        String priorityExtra = intent.getStringExtra("priority");
+        if (priorityExtra == null) priorityExtra = "default";
+        int importance;
+        switch (priorityExtra) {
+            case "high":
+            case "max":
+                importance = NotificationManager.IMPORTANCE_HIGH;
+                break;
+            case "low":
+                importance = NotificationManager.IMPORTANCE_LOW;
+                break;
+            case "min":
+                importance = NotificationManager.IMPORTANCE_MIN;
+                break;
+            default:
+                importance = NotificationManager.IMPORTANCE_DEFAULT;
+        }
+        return importance;
+    }
 
     static Pair<NotificationCompat.Builder, String> buildNotification(final Context context, final Intent intent) {
         String priorityExtra = intent.getStringExtra("priority");
@@ -142,9 +178,14 @@ public class NotificationAPI {
         final String notificationId = getNotificationId(intent);
 
         String groupKey = intent.getStringExtra("group");
-
+        
+        String channel = intent.getStringExtra("channel");
+        if (channel == null) {
+            channel = CHANNEL_ID;
+        }
+        
         final NotificationCompat.Builder notification = new NotificationCompat.Builder(context,
-                CHANNEL_ID);
+                channel);
         notification.setSmallIcon(R.drawable.ic_event_note_black_24dp);
         notification.setColor(0xFF000000);
         notification.setContentTitle(title);

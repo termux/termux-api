@@ -41,8 +41,10 @@ public class SAFAPI
         @Override
         protected void onDestroy() {
             super.onDestroy();
+            finishAndRemoveTask();
             if (! resultReturned) {
                 ResultReturner.returnData(this, getIntent(), out -> out.write(""));
+                resultReturned = true;
             }
         }
         
@@ -108,7 +110,7 @@ public class SAFAPI
             public void writeJson(JsonWriter out) throws Exception {
                 out.beginArray();
                 for (UriPermission p : context.getContentResolver().getPersistedUriPermissions()) {
-                    out.value(p.getUri().toString());
+                    statDocument(out, context, treeUriToDocumentUri(p.getUri()));
                 }
                 out.endArray();
             }
@@ -148,9 +150,6 @@ public class SAFAPI
         }
         String mime = intent.getStringExtra("mimetype");
         if (mime == null) {
-            mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(name);
-        }
-        if (mime == null) {
             mime = "application/octet-stream";
         }
         Uri treeURI = Uri.parse(treeURIString);
@@ -160,7 +159,9 @@ public class SAFAPI
         } catch (IllegalArgumentException ignored) {}
         final String finalMime = mime;
         final String finalId = id;
-        ResultReturner.returnData(apiReceiver, intent, out -> out.write(DocumentsContract.createDocument(context.getContentResolver(), DocumentsContract.buildDocumentUriUsingTree(treeURI, finalId), finalMime, name).toString()));
+        ResultReturner.returnData(apiReceiver, intent, out -> 
+                out.write(DocumentsContract.createDocument(context.getContentResolver(), DocumentsContract.buildDocumentUriUsingTree(treeURI, finalId), finalMime, name).toString())
+        );
     }
     
     private static void readDocument(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
@@ -211,12 +212,7 @@ public class SAFAPI
             TermuxApiLogger.error("uri extra null");
             return;
         }
-        Uri uri = Uri.parse(uriString);
-        String id = DocumentsContract.getTreeDocumentId(Uri.parse(uriString));
-        try {
-            id = DocumentsContract.getDocumentId(Uri.parse(uriString));
-        } catch (IllegalArgumentException ignored) {}
-        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri, id);
+        Uri docUri = treeUriToDocumentUri(Uri.parse(uriString));
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter()
         {
             @Override
@@ -244,6 +240,15 @@ public class SAFAPI
                 out.print(2);
             }
         });
+    }
+    
+    
+    private static Uri treeUriToDocumentUri(Uri tree) {
+        String id = DocumentsContract.getTreeDocumentId(tree);
+        try {
+            id = DocumentsContract.getDocumentId(tree);
+        } catch (IllegalArgumentException ignored) {}
+        return DocumentsContract.buildDocumentUriUsingTree(tree, id);
     }
     
     private static void statDocument(JsonWriter out, Context context, Uri uri) throws Exception {

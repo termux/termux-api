@@ -56,7 +56,7 @@ public class SAFAPI
                 if (uri != null) {
                     getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     resultReturned = true;
-                    ResultReturner.returnData(this, getIntent(), out -> out.write(data.getDataString()));
+                    ResultReturner.returnData(this, getIntent(), out -> out.println(data.getDataString()));
                 }
             }
             finish();
@@ -160,7 +160,7 @@ public class SAFAPI
         final String finalMime = mime;
         final String finalId = id;
         ResultReturner.returnData(apiReceiver, intent, out -> 
-                out.write(DocumentsContract.createDocument(context.getContentResolver(), DocumentsContract.buildDocumentUriUsingTree(treeURI, finalId), finalMime, name).toString())
+                out.println(DocumentsContract.createDocument(context.getContentResolver(), DocumentsContract.buildDocumentUriUsingTree(treeURI, finalId), finalMime, name).toString())
         );
     }
     
@@ -232,12 +232,12 @@ public class SAFAPI
         ResultReturner.returnData(apiReceiver, intent, out -> {
             try {
                 if (DocumentsContract.deleteDocument(context.getContentResolver(), Uri.parse(uri))) {
-                    out.print(0);
+                    out.println(0);
                 } else {
-                    out.print(1);
+                    out.println(1);
                 }
             } catch (FileNotFoundException | IllegalArgumentException e ) {
-                out.print(2);
+                out.println(2);
             }
         });
     }

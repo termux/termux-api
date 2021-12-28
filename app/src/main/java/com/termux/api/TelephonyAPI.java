@@ -10,6 +10,10 @@ import android.telephony.CellInfoCdma;
 import android.telephony.CellInfoGsm;
 import android.telephony.CellInfoLte;
 import android.telephony.CellInfoWcdma;
+import android.telephony.CellInfoNr;
+import android.telephony.CellIdentityNr;
+import android.telephony.CellSignalStrength;
+import android.telephony.CellSignalStrengthNr;
 import android.telephony.TelephonyManager;
 import android.util.JsonWriter;
 import android.util.Log;
@@ -27,6 +31,18 @@ public class TelephonyAPI {
 
     private static void writeIfKnown(JsonWriter out, String name, int value) throws IOException {
         if (value != Integer.MAX_VALUE) out.name(name).value(value);
+    }
+    private static void writeIfKnown(JsonWriter out, String name, long value) throws IOException {
+        if (value != Long.MAX_VALUE) out.name(name).value(value);
+    }
+    private static void writeIfKnown(JsonWriter out, String name, int value[]) throws IOException {
+        if (value != null) {
+                out.name(name);
+                out.beginArray();
+                for (int i = 0; i < value.length; i++) out.value(value[i]);
+                out.endArray();
+
+        }
     }
 
     static void onReceiveTelephonyCellInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
@@ -76,6 +92,40 @@ public class TelephonyAPI {
                             writeIfKnown(out, "tac", lteInfo.getCellIdentity().getTac());
                             writeIfKnown(out, "mcc", lteInfo.getCellIdentity().getMcc());
                             writeIfKnown(out, "mnc", lteInfo.getCellIdentity().getMnc());
+
+                            writeIfKnown(out, "rsrp", lteInfo.getCellSignalStrength().getRsrp());
+                            writeIfKnown(out, "rsrq", lteInfo.getCellSignalStrength().getRsrq());
+                            writeIfKnown(out, "rssi", lteInfo.getCellSignalStrength().getRssi());
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                writeIfKnown(out, "bands", lteInfo.getCellIdentity().getBands());
+                            }
+                        } else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) && (cellInfo instanceof CellInfoNr)) {
+                            CellInfoNr nrInfo = (CellInfoNr) cellInfo;
+                            CellIdentityNr nrcellIdent = (CellIdentityNr) nrInfo.getCellIdentity();
+                            CellSignalStrength ssInfo = nrInfo.getCellSignalStrength();
+                            out.name("type").value("nr");
+                            out.name("registered").value(cellInfo.isRegistered());
+
+                            out.name("asu").value(ssInfo.getAsuLevel());
+                            out.name("dbm").value(ssInfo.getDbm());
+                            writeIfKnown(out, "level", ssInfo.getLevel());
+                            writeIfKnown(out, "nci", nrcellIdent.getNci());
+                            writeIfKnown(out, "pci", nrcellIdent.getPci());
+                            writeIfKnown(out, "tac", nrcellIdent.getTac());
+                            out.name("mcc").value(nrcellIdent.getMccString());
+                            out.name("mnc").value(nrcellIdent.getMncString());
+                            if (ssInfo instanceof  CellSignalStrengthNr) {
+                                CellSignalStrengthNr nrssInfo = (CellSignalStrengthNr) ssInfo;
+                                writeIfKnown(out, "csi_rsrp", nrssInfo.getCsiRsrp());
+                                writeIfKnown(out, "csi_rsrq", nrssInfo.getCsiRsrq());
+                                writeIfKnown(out, "csi_sinr", nrssInfo.getCsiSinr());
+                                writeIfKnown(out, "ss_rsrp", nrssInfo.getSsRsrp());
+                                writeIfKnown(out, "ss_rsrq", nrssInfo.getSsRsrq());
+                                writeIfKnown(out, "ss_sinr", nrssInfo.getSsSinr());
+                            }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                writeIfKnown(out, "bands", nrcellIdent.getBands());
+                            }
                         } else if (cellInfo instanceof CellInfoCdma) {
                             CellInfoCdma cdmaInfo = (CellInfoCdma) cellInfo;
                             out.name("type").value("cdma");
@@ -269,6 +319,10 @@ public class TelephonyAPI {
                             networkTypeName = "unknown";
                             break;
                         default:
+                            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) && (networkType == TelephonyManager.NETWORK_TYPE_NR)) {
+                                networkTypeName = "nr";
+                                break;
+                            }
                             networkTypeName = Integer.toString(networkType);
                             break;
                     }

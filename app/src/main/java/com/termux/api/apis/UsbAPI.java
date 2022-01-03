@@ -93,9 +93,9 @@ public class UsbAPI {
             out.name("product_id").value(String.format("0x%04x", device.getProductId()));
             out.name("device_class").value(device.getDeviceClass()+" - "+translateDeviceClass(device.getDeviceClass()));
             out.name("device_sub_class").value(device.getDeviceSubclass());
-            out.name("manufacturer_name").value(device.getManufacturerName());
+            out.name("manufacturer_name").value(device.getManufacturerName().replace("\u0000", ""));
             out.name("device_protocol").value(device.getDeviceProtocol());
-            out.name("product_name").value(device.getProductName());
+            out.name("product_name").value(device.getProductName().replace("\u0000", ""));
             out.name("serial_number").value(device.getSerialNumber());
             out.name("configurations").value(device.getConfigurationCount());
             out.name("descriptor_type").value(device.describeContents());

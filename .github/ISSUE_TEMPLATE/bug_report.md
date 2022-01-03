@@ -30,6 +30,7 @@ A clear and concise description of what you expected to happen.
 
 **Additional information**
 
-* Termux application version:
+* termux-api application version:
+* termux-api package version (installed through apt):
 * Android OS version:
 * Device model:

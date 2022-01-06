@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package usbapi;
+
+option java_package = "com.termux.api";
+option java_outer_classname = "UsbAPIProto";
+
+/* Modelled after libusb's struct libusb_device_descriptor */
+message termuxUsbDeviceDescriptor {
+  int32  configurationCount = 1;
+  int32  deviceClass        = 2;
+  int32  deviceProtocol     = 3;
+  int32  deviceSubclass     = 4;
+  int32  productId          = 5;
+  int32  vendorId           = 6;
+  string manufacturerName   = 7;
+  string productName        = 8;
+  string serialNumber       = 9;
+}
+
+/* Loosely modelled after libusb's internal struct libusb_device */
+message termuxUsbDevice {
+  int32  busNumber                           = 1;
+  int32  portNumber                          = 2;
+  string deviceAddress                       = 3;
+  termuxUsbDeviceDescriptor device           = 4;
+}
+
+message termuxUsb {
+  repeated termuxUsbDevice device = 1;
+}

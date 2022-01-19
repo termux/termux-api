@@ -13,6 +13,7 @@ import android.util.JsonWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
@@ -42,6 +43,27 @@ public abstract class ResultReturner {
 
         public void setInput(InputStream inputStream) throws Exception {
             this.in = inputStream;
+        }
+    }
+    
+    /**
+     * Possible subclass of {@link ResultWriter} when the output is binary data instead of text.
+     */
+    public static abstract class BinaryOutput implements ResultWriter {
+        private OutputStream out;
+        
+        public void setOutput(OutputStream outputStream) {
+            this.out = outputStream;
+        }
+        
+        public abstract void writeResult(OutputStream out) throws Exception;
+    
+        /**
+         * writeResult with a PrintWriter is marked as final and overwritten, so you don't accidentally use it
+         */
+        public final void writeResult(PrintWriter unused) throws Exception {
+            writeResult(out);
+            out.flush();
         }
     }
 
@@ -122,6 +144,10 @@ public abstract class ResultReturner {
                     outputSocket.connect(new LocalSocketAddress(outputSocketAdress));
                     try (PrintWriter writer = new PrintWriter(outputSocket.getOutputStream())) {
                         if (resultWriter != null) {
+                            if (resultWriter instanceof BinaryOutput) {
+                                BinaryOutput bout = (BinaryOutput) resultWriter;
+                                bout.setOutput(outputSocket.getOutputStream());
+                            }
                             if (resultWriter instanceof WithInput) {
                                 try (LocalSocket inputSocket = new LocalSocket()) {
                                     String inputSocketAdress = intent.getStringExtra(SOCKET_INPUT_EXTRA);

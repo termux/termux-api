@@ -82,6 +82,10 @@
                   android:theme="@android:style/Theme.Translucent.NoTitleBar"
                   android:excludeFromRecents="true"
                   android:exported="false"/>
+        <activity android:name=".SAFAPI$SAFActivity"
+                  android:theme="@style/TransparentTheme"
+                  android:exported="false"
+                  android:excludeFromRecents="true"/>
         <service android:name=".SpeechToTextAPI$SpeechToTextService"/>
         <service android:name=".TextToSpeechAPI$TextToSpeechService" />
         <service android:name=".SensorAPI$SensorReaderService"/>

@@ -5,8 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.nfc.NfcAdapter;
-import android.os.Build;
 import android.provider.Settings;
 import android.widget.Toast;
 
@@ -130,6 +128,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "Notification":
                 NotificationAPI.onReceiveShowNotification(this, context, intent);
+                break;
+            case "NotificationChannel":
+                NotificationAPI.onReceiveChannel(this, context, intent);
                 break;
             case "NotificationRemove":
                 NotificationAPI.onReceiveRemoveNotification(this, context, intent);

@@ -32,7 +32,7 @@ public class CallLogAPI {
 
     }
 
-    private static void getCallLogs(Context context, JsonWriter out, int offset, int limit) throws IOException {
+private static void getCallLogs(Context context, JsonWriter out, int offset, int limit) throws IOException {
         ContentResolver cr = context.getContentResolver();
         String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
 
@@ -44,6 +44,7 @@ public class CallLogAPI {
             int dateIndex = cur.getColumnIndex(CallLog.Calls.DATE);
             int durationIndex = cur.getColumnIndex(CallLog.Calls.DURATION);
             int callTypeIndex = cur.getColumnIndex(CallLog.Calls.TYPE);
+            int simtTypeIndex = cur.getColumnIndex(Calllog.Calls.PHONE_ACCOUNT_ID);
 
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             out.beginArray();
@@ -56,6 +57,7 @@ public class CallLogAPI {
                 out.name("type").value(getCallTypeString(cur.getInt(callTypeIndex)));
                 out.name("date").value(getDateString(cur.getLong(dateIndex), dateFormat));
                 out.name("duration").value(getTimeString(cur.getInt(durationIndex)));
+                out.name("sim_id").value(getString(simTypeIndex));                
 
                 cur.moveToPrevious();
                 out.endObject();

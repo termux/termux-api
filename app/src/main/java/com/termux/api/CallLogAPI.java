@@ -32,7 +32,7 @@ public class CallLogAPI {
 
     }
 
-private static void getCallLogs(Context context, JsonWriter out, int offset, int limit) throws IOException {
+    private static void getCallLogs(Context context, JsonWriter out, int offset, int limit) throws IOException {
         ContentResolver cr = context.getContentResolver();
         String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
 

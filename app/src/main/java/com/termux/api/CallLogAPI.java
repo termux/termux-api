@@ -4,8 +4,11 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.os.Build;
+import android.os.Bundle;
 import android.provider.CallLog;
 import android.util.JsonWriter;
+import android.util.Log;
 
 import com.termux.api.util.ResultReturner;
 
@@ -34,8 +37,50 @@ public class CallLogAPI {
 
     private static void getCallLogs(Context context, JsonWriter out, int offset, int limit) throws IOException {
         ContentResolver cr = context.getContentResolver();
-        String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Source: https://blog.csdn.net/u010471406/article/details/118112086
+            Bundle queryArgs = new Bundle();
+            queryArgs.putInt(ContentResolver.QUERY_ARG_OFFSET, offset);
+            queryArgs.putInt(ContentResolver.QUERY_ARG_SQL_SORT_ORDER, ContentResolver.QUERY_SORT_DIRECTION_DESCENDING);
+            try (Cursor cur = cr.query(CallLog.Calls.CONTENT_URI, null, queryArgs, null)) {
+                int begin = 0, end = cur.getCount();
+                if (end >= limit) {
+                    begin = end - limit;
+                    cur.move(begin + 1);
+                } else {
+                    cur.moveToFirst();
+                }
+
+                //Log.d("CallLogAPI", "getCallLogs: begin: " + begin + " end: " + end + " limit: " + limit);
+
+                int nameIndex = cur.getColumnIndex(CallLog.Calls.CACHED_NAME);
+                int numberIndex = cur.getColumnIndex(CallLog.Calls.NUMBER);
+                int dateIndex = cur.getColumnIndex(CallLog.Calls.DATE);
+                int durationIndex = cur.getColumnIndex(CallLog.Calls.DURATION);
+                int callTypeIndex = cur.getColumnIndex(CallLog.Calls.TYPE);
+
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                out.beginArray();
+
+                for (int j = begin; j < end; ++j) {
+                    out.beginObject();
+
+                    out.name("name").value(getCallerNameString(cur.getString(nameIndex)));
+                    out.name("phone_number").value(cur.getString(numberIndex));
+                    out.name("type").value(getCallTypeString(cur.getInt(callTypeIndex)));
+                    out.name("date").value(getDateString(cur.getLong(dateIndex), dateFormat));
+                    out.name("duration").value(getTimeString(cur.getInt(durationIndex)));
+
+                    cur.moveToNext();
+                    out.endObject();
+                }
+                out.endArray();
+            }
+            return;
+        }
+
+        String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
         try (Cursor cur = cr.query(CallLog.Calls.CONTENT_URI, null, null, null, sortOrder)) {
             cur.moveToLast();
 

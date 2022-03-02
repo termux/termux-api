@@ -46,6 +46,11 @@ public class JobSchedulerAPI {
                 description.add("(storage not low)");
             }
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (jobInfo.isPrefetch()) {
+                description.add("(prefetch)");
+            }
+        }        
         if (Build.VERSION.SDK_INT >= 28) {
             description.add(String.format(Locale.ENGLISH, "(network: %s)", jobInfo.getRequiredNetwork().toString()));
         }
@@ -72,6 +77,9 @@ public class JobSchedulerAPI {
         final boolean persisted = intent.getBooleanExtra("persisted", false);
         final boolean idle = intent.getBooleanExtra("idle", false);
         final boolean storageNotLow = intent.getBooleanExtra("storage_not_low", false);
+        final boolean prefetch = intent.getBooleanExtra("prefetch", false);
+	final long downloadBytes = intent.getLongExtra("download_bytes", 0);
+	final long uploadBytes = intent.getLongExtra("upload_bytes", 0);        
 
         int networkTypeCode;
         if (networkType != null) {
@@ -155,6 +163,14 @@ public class JobSchedulerAPI {
             builder = builder.setRequiresBatteryNotLow(batteryNotLow);
             builder = builder.setRequiresStorageNotLow(storageNotLow);
         }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            builder = builder.setPrefetch(prefetch);
+			
+	    if (downloadBytes > 0 || uploadBytes > 0) {
+		builder = builder.setEstimatedNetworkBytes(downloadBytes, uploadBytes);
+	    }
+        }	        
 
         if (periodicMillis > 0) {
             builder = builder.setPeriodic(periodicMillis);

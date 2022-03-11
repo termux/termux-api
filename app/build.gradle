@@ -66,7 +66,12 @@ dependencies {
     implementation 'com.google.android.material:material:1.4.0'
     implementation 'androidx.biometric:biometric:1.2.0-alpha03'
     implementation 'androidx.media:media:1.4.3'
-    implementation 'com.termux.termux-app:termux-shared:f3ffc36bfd'
+
+    implementation 'com.termux.termux-app:termux-shared:760ae78aff'
+    // Use if below libraries are published locally by termux-app with `./gradlew publishReleasePublicationToMavenLocal` and used with `mavenLocal()`.
+    // If updates are done, republish there and sync project with gradle files here
+    // https://github.com/termux/termux-app/wiki/Termux-Libraries
+    // implementation 'com.termux:termux-shared:0.118.0'
 }
 
 task versionName {

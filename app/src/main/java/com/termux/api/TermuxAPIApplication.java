@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.crash.TermuxCrashUtils;
 import com.termux.shared.termux.settings.preferences.TermuxAPIAppSharedPreferences;
 
@@ -19,12 +20,14 @@ public class TermuxAPIApplication extends Application {
         // Set log config for the app
         setLogLevel(getApplicationContext(), true);
 
-        SocketListener.createSocketListener(this);
-
         Logger.logDebug("Starting Application");
+
+        SocketListener.createSocketListener(this);
     }
 
     public static void setLogLevel(Context context, boolean commitToFile) {
+        Logger.setDefaultLogTag(TermuxConstants.TERMUX_API_APP_NAME.replaceAll(":", ""));
+
         // Load the log level from shared preferences and set it to the {@link Logger.CURRENT_LOG_LEVEL}
         TermuxAPIAppSharedPreferences preferences = TermuxAPIAppSharedPreferences.build(context);
         if (preferences == null) return;

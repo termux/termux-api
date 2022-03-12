@@ -31,9 +31,9 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.NFC"/>
 
-    <!-- permissions to install/uninstall apps --> 
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" /> 
-    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" /> 
+    <!-- permissions to install/uninstall apps -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <!-- Some of the used permissions imply uses-feature, so we need to make it optional.
          See http://developer.android.com/guide/topics/manifest/uses-feature-element.html#permissions -->
@@ -59,9 +59,29 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light"
         tools:ignore="GoogleAppIndexingWarning">
-        <receiver android:name=".TermuxApiReceiver"/>
-        <activity android:name=".DialogActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false"/>
-        <activity android:name=".NfcActivity" android:theme="@style/DialogTheme" android:noHistory="true" android:excludeFromRecents="true" android:exported="false" >
+
+        <activity android:name=".activities.TermuxApiPermissionActivity"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
+        <activity android:name=".apis.DialogAPI$DialogActivity" android:theme="@style/DialogTheme"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
+        <activity android:name=".apis.FingerprintAPI$FingerprintActivity" android:theme="@style/TransparentTheme"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
+        <activity android:name=".apis.NfcAPI$NfcActivity"
+            android:theme="@style/DialogTheme"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            tools:ignore="IntentFilterExportedReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.nfc.action.TAG_DISCOVERED"/>
@@ -70,36 +90,52 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
-        <activity android:name=".FingerprintAPI$FingerprintActivity" android:theme="@style/TransparentTheme"
-                  android:noHistory="true"
-                  android:excludeFromRecents="true"
-                  android:exported="false"/>
-        <activity android:name=".util.TermuxApiPermissionActivity"
-                  android:theme="@android:style/Theme.NoDisplay"
-                  android:noHistory="true"
-                  android:excludeFromRecents="true"
-                  android:exported="false"/>
-        <activity android:name=".StorageGetAPI$StorageActivity"
-                  android:theme="@android:style/Theme.Translucent.NoTitleBar"
-                  android:excludeFromRecents="true"
-                  android:exported="false"/>
-        <activity android:name=".SAFAPI$SAFActivity"
-                  android:theme="@style/TransparentTheme"
-                  android:exported="false"
-                  android:excludeFromRecents="true"/>
-        <service android:name=".SpeechToTextAPI$SpeechToTextService"/>
-        <service android:name=".TextToSpeechAPI$TextToSpeechService" />
-        <service android:name=".SensorAPI$SensorReaderService"/>
-        <provider android:authorities="${TERMUX_PACKAGE_NAME}.sharedfiles"
+
+        <activity android:name=".apis.SAFAPI$SAFActivity"
+            android:theme="@style/TransparentTheme"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
+        <activity android:name=".apis.StorageGetAPI$StorageActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
+
+
+        <provider
+            android:name=".apis.ShareAPI$ContentProvider"
+            android:authorities="${TERMUX_PACKAGE_NAME}.sharedfiles"
             android:readPermission="${TERMUX_PACKAGE_NAME}.sharedfiles.READ"
-            android:exported="true"
             android:grantUriPermissions="true"
-            android:name=".ShareAPI$ContentProvider" />
-        <service android:name=".MediaPlayerAPI$PlayerService" android:exported="false"/>
-        <service android:name=".MicRecorderAPI$MicRecorderService" android:exported="false"/>
-        <service android:name=".WallpaperAPI$WallpaperService"/>
+            android:exported="true" />
+
+
+
+        <receiver android:name=".TermuxApiReceiver"
+            android:exported="false" />
+
+
+
         <service
-            android:name=".NotificationService"
+            android:name=".KeepAliveService"
+            android:description="@string/keep_alive_service"
+            android:enabled="true"
+            android:exported="false" />
+
+        <service
+            android:name=".apis.JobSchedulerAPI$SchedulerJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+
+        <service android:name=".apis.MediaPlayerAPI$PlayerService"
+            android:exported="false" />
+
+        <service android:name=".apis.MicRecorderAPI$MicRecorderService"
+            android:exported="false" />
+
+        <service
+            android:name=".apis.NotificationListAPI$NotificationService"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:enabled="true"
             android:exported="true">
@@ -108,14 +144,19 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
-        <service
-            android:name=".SchedulerJobService"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
-        <service
-            android:name=".KeepAliveService"
-            android:description="@string/keep_alive_service"
-            android:enabled="true"
+
+        <service android:name=".apis.SensorAPI$SensorReaderService"
             android:exported="false" />
+
+        <service android:name=".apis.SpeechToTextAPI$SpeechToTextService"
+            android:exported="false" />
+
+        <service android:name=".apis.TextToSpeechAPI$TextToSpeechService"
+            android:exported="false" />
+
+        <service android:name=".apis.WallpaperAPI$WallpaperService"
+            android:exported="false" />
+
     </application>
 
 </manifest>

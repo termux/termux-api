@@ -8,8 +8,45 @@ import android.content.Intent;
 import android.provider.Settings;
 import android.widget.Toast;
 
+import com.termux.api.apis.AudioAPI;
+import com.termux.api.apis.BatteryStatusAPI;
+import com.termux.api.apis.BrightnessAPI;
+import com.termux.api.apis.CallLogAPI;
+import com.termux.api.apis.CameraInfoAPI;
+import com.termux.api.apis.ClipboardAPI;
+import com.termux.api.apis.ContactListAPI;
+import com.termux.api.apis.DialogAPI;
+import com.termux.api.apis.DownloadAPI;
+import com.termux.api.apis.FingerprintAPI;
+import com.termux.api.apis.InfraredAPI;
+import com.termux.api.apis.JobSchedulerAPI;
+import com.termux.api.apis.KeystoreAPI;
+import com.termux.api.apis.LocationAPI;
+import com.termux.api.apis.MediaPlayerAPI;
+import com.termux.api.apis.MediaScannerAPI;
+import com.termux.api.apis.MicRecorderAPI;
+import com.termux.api.apis.NfcAPI;
+import com.termux.api.apis.NotificationAPI;
+import com.termux.api.apis.NotificationListAPI;
+import com.termux.api.apis.PhotoAPI;
+import com.termux.api.apis.SAFAPI;
+import com.termux.api.apis.SensorAPI;
+import com.termux.api.apis.ShareAPI;
+import com.termux.api.apis.SmsInboxAPI;
+import com.termux.api.apis.SmsSendAPI;
+import com.termux.api.apis.SpeechToTextAPI;
+import com.termux.api.apis.StorageGetAPI;
+import com.termux.api.apis.TelephonyAPI;
+import com.termux.api.apis.TextToSpeechAPI;
+import com.termux.api.apis.ToastAPI;
+import com.termux.api.apis.TorchAPI;
+import com.termux.api.apis.UsbAPI;
+import com.termux.api.apis.VibrateAPI;
+import com.termux.api.apis.VolumeAPI;
+import com.termux.api.apis.WallpaperAPI;
+import com.termux.api.apis.WifiAPI;
 import com.termux.api.util.TermuxApiLogger;
-import com.termux.api.util.TermuxApiPermissionActivity;
+import com.termux.api.activities.TermuxApiPermissionActivity;
 
 public class TermuxApiReceiver extends BroadcastReceiver {
 
@@ -72,7 +109,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 }
                 break;
             case "Dialog":
-                context.startActivity(new Intent(context, DialogActivity.class).putExtras(intent.getExtras()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                DialogAPI.onReceive(context, intent);
                 break;
             case "Download":
                 DownloadAPI.onReceive(this, context, intent);
@@ -113,10 +150,10 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 }
                 break;
             case "Nfc":
-                context.startActivity(new Intent(context, NfcActivity.class).putExtras(intent.getExtras()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                NfcAPI.onReceive(context, intent);
                 break;
             case "NotificationList":
-                ComponentName cn = new ComponentName(context, NotificationService.class);
+                ComponentName cn = new ComponentName(context, NotificationListAPI.NotificationService.class);
                 String flat = Settings.Secure.getString(context.getContentResolver(), "enabled_notification_listeners");
                 final boolean NotificationServiceEnabled = flat != null && flat.contains(cn.flattenToString());
                 if (!NotificationServiceEnabled) {

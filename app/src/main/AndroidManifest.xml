@@ -124,7 +124,7 @@
             android:exported="false" />
 
         <service
-            android:name=".apis.JobSchedulerAPI$SchedulerJobService"
+            android:name=".apis.JobSchedulerAPI$JobSchedulerService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
 

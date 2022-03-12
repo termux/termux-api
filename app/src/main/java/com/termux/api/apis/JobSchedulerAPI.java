@@ -28,7 +28,7 @@ public class JobSchedulerAPI {
 
 
     private static String formatJobInfo(JobInfo jobInfo) {
-        final String path = jobInfo.getExtras().getString(SchedulerJobService.SCRIPT_FILE_PATH);
+        final String path = jobInfo.getExtras().getString(JobSchedulerService.SCRIPT_FILE_PATH);
         List<String> description = new ArrayList<String>();
         if (jobInfo.isPeriodic()) {
             description.add(String.format(Locale.ENGLISH, "(periodic: %dms)", jobInfo.getIntervalMillis()));
@@ -145,9 +145,9 @@ public class JobSchedulerAPI {
         }
 
         PersistableBundle extras = new PersistableBundle();
-        extras.putString(SchedulerJobService.SCRIPT_FILE_PATH, file.getAbsolutePath());
+        extras.putString(JobSchedulerService.SCRIPT_FILE_PATH, file.getAbsolutePath());
 
-        ComponentName serviceComponent = new ComponentName(context, SchedulerJobService.class);
+        ComponentName serviceComponent = new ComponentName(context, JobSchedulerService.class);
         JobInfo.Builder builder = new JobInfo.Builder(jobId, serviceComponent)
                 .setExtras(extras)
                 .setRequiredNetworkType(networkTypeCode)
@@ -206,7 +206,7 @@ public class JobSchedulerAPI {
 
 
 
-    public static class SchedulerJobService extends JobService {
+    public static class JobSchedulerService extends JobService {
 
         private static final String LOG_TAG = "TermuxAPISchedulerJob";
         public static final String SCRIPT_FILE_PATH = "com.termux.api.jobscheduler_script_path";

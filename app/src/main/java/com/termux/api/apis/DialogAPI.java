@@ -634,12 +634,12 @@ public class DialogAPI {
             @Override
             public Dialog onCreateDialog(Bundle savedInstanceState) {
                 // create custom BottomSheetDialog that has friendlier dismissal behavior
-                return new BottomSheetDialog(getActivity(), getTheme()) {
+                return new BottomSheetDialog(requireActivity(), getTheme()) {
                     @Override
                     public void onBackPressed() {
                         super.onBackPressed();
                         // make it so that user only has to hit back key one time to get rid of bottom sheet
-                        getActivity().onBackPressed();
+                        requireActivity().onBackPressed();
                         postCanceledResult();
                     }
 
@@ -651,7 +651,7 @@ public class DialogAPI {
                             showKeyboard();
                         }
                         // dismiss on single touch outside of dialog
-                        getActivity().onBackPressed();
+                        requireActivity().onBackPressed();
                         postCanceledResult();
                     }
                 };
@@ -665,8 +665,8 @@ public class DialogAPI {
                 layout.setPadding(16, 16, 16, 16);
                 layout.setOrientation(LinearLayout.VERTICAL);
 
-                NestedScrollView scrollView = new NestedScrollView(getContext());
-                final String[] values = getInputValues(Objects.requireNonNull(getActivity()).getIntent());
+                NestedScrollView scrollView = new NestedScrollView(requireContext());
+                final String[] values = getInputValues(requireActivity().getIntent());
 
                 for (int i = 0; i < values.length; ++i) {
                     final int j = i;
@@ -697,7 +697,7 @@ public class DialogAPI {
              */
 
             protected void hideKeyboard() {
-                getDialog().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                Objects.requireNonNull(getDialog()).getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
             }
 
             protected void showKeyboard() {
@@ -705,14 +705,14 @@ public class DialogAPI {
             }
 
             protected InputMethodManager getInputMethodManager() {
-                return (InputMethodManager) Objects.requireNonNull(getContext()).getSystemService(Context.INPUT_METHOD_SERVICE);
+                return (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             }
 
             /**
              * Checks to see if foreground application is Termux
              */
             protected boolean isCurrentAppTermux() {
-                final ActivityManager activityManager = (ActivityManager) Objects.requireNonNull(getContext()).getSystemService(Context.ACTIVITY_SERVICE);
+                final ActivityManager activityManager = (ActivityManager) requireContext().getSystemService(Context.ACTIVITY_SERVICE);
                 final List<ActivityManager.RunningAppProcessInfo> runningProcesses = Objects.requireNonNull(activityManager).getRunningAppProcesses();
                 for (final ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
                     if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {

@@ -391,6 +391,7 @@ public class TelephonyAPI {
         if (numberExtra == null) {
             Logger.logError(LOG_TAG, "No 'number' extra");
             ResultReturner.noteDone(apiReceiver, intent);
+            return;
         }
 
         if(numberExtra.contains("#"))

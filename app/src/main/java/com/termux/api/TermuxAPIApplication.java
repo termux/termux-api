@@ -18,14 +18,14 @@ public class TermuxAPIApplication extends Application {
         TermuxCrashUtils.setCrashHandler(this);
 
         // Set log config for the app
-        setLogLevel(getApplicationContext(), true);
+        setLogConfig(getApplicationContext(), true);
 
         Logger.logDebug("Starting Application");
 
         SocketListener.createSocketListener(this);
     }
 
-    public static void setLogLevel(Context context, boolean commitToFile) {
+    public static void setLogConfig(Context context, boolean commitToFile) {
         Logger.setDefaultLogTag(TermuxConstants.TERMUX_API_APP_NAME.replaceAll(":", ""));
 
         // Load the log level from shared preferences and set it to the {@link Logger.CURRENT_LOG_LEVEL}

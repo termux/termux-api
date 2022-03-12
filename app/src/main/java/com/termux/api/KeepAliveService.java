@@ -6,10 +6,16 @@ import android.os.IBinder;
 
 import androidx.annotation.Nullable;
 
-public class KeepAliveService extends Service
-{
+import com.termux.shared.logger.Logger;
+
+public class KeepAliveService extends Service {
+
+    private static final String LOG_TAG = "KeepAliveService";
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Logger.logDebug(LOG_TAG, "onStartCommand");
+
         return Service.START_STICKY;
     }
 

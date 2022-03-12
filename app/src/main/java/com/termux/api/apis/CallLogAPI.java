@@ -8,6 +8,7 @@ import android.provider.CallLog;
 import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 import java.io.IOException;
 import java.text.DateFormat;
@@ -20,7 +21,11 @@ import java.util.Locale;
  */
 public class CallLogAPI {
 
+    private static final String LOG_TAG = "CallLogAPI";
+
     public static void onReceive(final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         final int offset = intent.getIntExtra("offset", 0);
         final int limit = intent.getIntExtra("limit", 50);
 

@@ -16,10 +16,10 @@ import android.telephony.CellSignalStrength;
 import android.telephony.CellSignalStrengthNr;
 import android.telephony.TelephonyManager;
 import android.util.JsonWriter;
-import android.util.Log;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 import java.io.IOException;
 
@@ -29,6 +29,8 @@ import java.util.List;
  * Exposing {@link android.telephony.TelephonyManager}.
  */
 public class TelephonyAPI {
+
+    private static final String LOG_TAG = "TelephonyAPI";
 
     private static void writeIfKnown(JsonWriter out, String name, int value) throws IOException {
         if (value != Integer.MAX_VALUE) out.name(name).value(value);
@@ -47,6 +49,8 @@ public class TelephonyAPI {
     }
 
     public static void onReceiveTelephonyCellInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceiveTelephonyCellInfo");
+
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
@@ -174,6 +178,8 @@ public class TelephonyAPI {
 
 
     public static void onReceiveTelephonyDeviceInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceiveTelephonyDeviceInfo");
+
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
             @SuppressLint("HardwareIds")
             @Override
@@ -379,9 +385,11 @@ public class TelephonyAPI {
     }
 
     public static void onReceiveTelephonyCall(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceiveTelephonyCall");
+
         String numberExtra = intent.getStringExtra("number");
         if (numberExtra == null) {
-            Log.e("termux-api", "No 'number extra");
+            Logger.logError(LOG_TAG, "No 'number' extra");
             ResultReturner.noteDone(apiReceiver, intent);
         }
 
@@ -397,7 +405,7 @@ public class TelephonyAPI {
         try {
             context.startActivity(callIntent);
         } catch (SecurityException e) {
-            Log.e("termux-api", "Exception in phone call", e);
+            Logger.logStackTraceWithMessage(LOG_TAG, "Exception in phone call", e);
         }
 
         ResultReturner.noteDone(apiReceiver, intent);

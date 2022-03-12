@@ -14,10 +14,15 @@ import android.util.SizeF;
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
+import com.termux.shared.logger.Logger;
 
 public class CameraInfoAPI {
 
+    private static final String LOG_TAG = "CameraInfoAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {

@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
@@ -17,8 +17,8 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SocketListener
-{
+public class SocketListener {
+
     public static final String LISTEN_ADDRESS = "com.termux.api://listen";
     private static final Pattern EXTRA_STRING = Pattern.compile("(-e|--es|--esa) +([^ ]+) +\"(.*?)(?<!\\\\)\"", Pattern.DOTALL);
     private static final Pattern EXTRA_BOOLEAN = Pattern.compile("--ez +([^ ]+) +([^ ]+)");
@@ -30,7 +30,9 @@ public class SocketListener
     private static final Pattern ACTION = Pattern.compile("-a *([^ ]+)");
     
     private static Thread listener = null;
-    
+
+    private static final String LOG_TAG = "SocketListener";
+
     public static void createSocketListener(Application app) {
         if (listener == null) {
             listener = new Thread(() -> {
@@ -95,7 +97,7 @@ public class SocketListener
                                     }
                                     catch (NumberFormatException e) {
                                         String msg = "Invalid integer extra: " + m.group(0) + "\n";
-                                        TermuxApiLogger.info(msg);
+                                        Logger.logInfo(LOG_TAG, msg);
                                         out.write(msg);
                                         err = true;
                                         break;
@@ -110,7 +112,7 @@ public class SocketListener
                                     }
                                     catch (NumberFormatException e) {
                                         String msg = "Invalid float extra: " + m.group(0) + "\n";
-                                        TermuxApiLogger.info(msg);
+                                        Logger.logInfo(LOG_TAG, msg);
                                         out.write(msg);
                                         err = true;
                                         break;
@@ -130,7 +132,7 @@ public class SocketListener
                                     }
                                     catch (NumberFormatException e) {
                                         String msg = "Invalid int array extra: " + m.group(0) + "\n";
-                                        TermuxApiLogger.info(msg);
+                                        Logger.logInfo(LOG_TAG, msg);
                                         out.write(msg);
                                         err = true;
                                         break;
@@ -150,7 +152,7 @@ public class SocketListener
                                     }
                                     catch (NumberFormatException e) {
                                         String msg = "Invalid long array extra: " + m.group(0) + "\n";
-                                        TermuxApiLogger.info(msg);
+                                        Logger.logInfo(LOG_TAG, msg);
                                         out.write(msg);
                                         err = true;
                                         break;
@@ -167,7 +169,7 @@ public class SocketListener
                                 m = EXTRA_UNSUPPORTED.matcher(cmdline);
                                 if (m.find()) {
                                     String msg = "Unsupported argument type: " + m.group(0) + "\n";
-                                    TermuxApiLogger.info(msg);
+                                    Logger.logInfo(LOG_TAG, msg);
                                     out.write(msg);
                                     err = true;
                                 }
@@ -177,7 +179,7 @@ public class SocketListener
                                 cmdline = cmdline.replaceAll("\\s", "");
                                 if (!"".equals(cmdline)) {
                                     String msg = "Unsupported options: " + cmdline + "\n";
-                                    TermuxApiLogger.info(msg);
+                                    Logger.logInfo(LOG_TAG, msg);
                                     out.write(msg);
                                     err = true;
                                 }
@@ -215,7 +217,7 @@ public class SocketListener
                                 con.getOutputStream().flush();
                             }
                             catch (Exception e) {
-                                TermuxApiLogger.error("Error parsing arguments", e);
+                                Logger.logStackTraceWithMessage(LOG_TAG, "Error parsing arguments", e);
                                 out.write("Exception in the plugin\n");
                                 out.flush();
                             }
@@ -223,7 +225,7 @@ public class SocketListener
                     }
                 }
                 catch (Exception e) {
-                    TermuxApiLogger.error("Error listening for connections", e);
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Error listening for connections", e);
                 }
             });
             listener.start();

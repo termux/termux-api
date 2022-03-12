@@ -1,9 +1,7 @@
 package com.termux.api.apis;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -16,7 +14,7 @@ import androidx.core.hardware.fingerprint.FingerprintManagerCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +27,7 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
  * This API allows users to use device fingerprint sensor as an authentication mechanism
  */
 public class FingerprintAPI {
+
     protected static final String TAG             = "FingerprintAPI";
     protected static final String KEY_NAME        = "TermuxFingerprintAPIKey";
     protected static final String KEYSTORE_NAME   = "AndroidKeyStore";
@@ -63,10 +62,14 @@ public class FingerprintAPI {
     protected static boolean postedResult = false;
 
 
+    private static final String LOG_TAG = "FingerprintAPI";
+
     /**
      * Handles setup of fingerprint sensor and writes Fingerprint result to console
      */
     public static void onReceive(final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         resetFingerprintResult();
 
         FingerprintManagerCompat fingerprintManagerCompat = FingerprintManagerCompat.from(context);
@@ -136,8 +139,12 @@ public class FingerprintAPI {
      */
     public static class FingerprintActivity extends FragmentActivity{
 
+        private static final String LOG_TAG = "FingerprintActivity";
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
+            Logger.logDebug(LOG_TAG, "onCreate");
+
             super.onCreate(savedInstanceState);
             handleFingerprint();
         }
@@ -167,7 +174,7 @@ public class FingerprintAPI {
                     }
                     setAuthResult(AUTH_RESULT_FAILURE);
                     postFingerprintResult(context, intent, fingerprintResult);
-                    TermuxApiLogger.error(errString.toString());
+                    Logger.logError(LOG_TAG, errString.toString());
                 }
 
                 @Override

@@ -4,10 +4,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
+
+import androidx.annotation.Nullable;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.data.IntentUtils;
+import com.termux.shared.logger.Logger;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -19,7 +23,11 @@ public class StorageGetAPI {
 
     private static final String FILE_EXTRA = "com.termux.api.storage.file";
 
+    private static final String LOG_TAG = "StorageGetAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         ResultReturner.returnData(apiReceiver, intent, out -> {
             final String fileExtra = intent.getStringExtra("file");
             if (fileExtra == null || !new File(fileExtra).getParentFile().canWrite()) {
@@ -38,8 +46,19 @@ public class StorageGetAPI {
 
         private String outputFile;
 
+        private static final String LOG_TAG = "StorageActivity";
+
+        @Override
+        protected void onCreate(@Nullable Bundle savedInstanceState) {
+            Logger.logDebug(LOG_TAG, "onCreate");
+
+            super.onCreate(savedInstanceState);
+        }
+
         @Override
         public void onResume() {
+            Logger.logVerbose(LOG_TAG, "onResume");
+
             super.onResume();
             outputFile = getIntent().getStringExtra(FILE_EXTRA);
 
@@ -57,6 +76,8 @@ public class StorageGetAPI {
 
         @Override
         protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+            Logger.logVerbose(LOG_TAG, "onActivityResult: requestCode: " + requestCode + ", resultCode: "  + resultCode + ", data: "  + IntentUtils.getIntentString(resultData));
+
             super.onActivityResult(requestCode, resultCode, resultData);
             if (resultCode == RESULT_OK) {
                 Uri data = resultData.getData();
@@ -75,7 +96,7 @@ public class StorageGetAPI {
                         }
                     }
                 } catch (IOException e) {
-                    TermuxApiLogger.error("Error copying " + data + " to " + outputFile);
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Error copying " + data + " to " + outputFile, e);
                 }
             }
             finish();

@@ -7,10 +7,15 @@ import android.provider.Settings;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 public class BrightnessAPI {
 
+    private static final String LOG_TAG = "BrightnessAPI";
+
     public static void onReceive(final TermuxApiReceiver receiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         final ContentResolver contentResolver = context.getContentResolver();
         if (intent.hasExtra("auto")) {
             boolean auto = intent.getBooleanExtra("auto", false);

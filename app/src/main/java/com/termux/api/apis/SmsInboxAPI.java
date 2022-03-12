@@ -7,20 +7,17 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract.PhoneLookup;
-import android.provider.Telephony;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Sms.Conversations;
 import android.provider.Telephony.TextBasedSmsColumns;
 import android.util.JsonWriter;
-import android.util.Log;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
+import com.termux.shared.logger.Logger;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -37,7 +34,11 @@ public class SmsInboxAPI {
 
     private static final String[] DISPLAY_NAME_PROJECTION = {PhoneLookup.DISPLAY_NAME};
 
+    private static final String LOG_TAG = "SmsInboxAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         final int offset = intent.getIntExtra("offset", 0);
         final int limit = intent.getIntExtra("limit", 10);
         final String number = intent.hasExtra("from") ? intent.getStringExtra("from"):"";
@@ -191,6 +192,5 @@ public class SmsInboxAPI {
                 return Sms.CONTENT_URI;
         }
     }
-
 
 }

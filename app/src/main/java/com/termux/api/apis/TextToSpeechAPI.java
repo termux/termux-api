@@ -12,7 +12,8 @@ import android.speech.tts.UtteranceProgressListener;
 import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.data.IntentUtils;
+import com.termux.shared.logger.Logger;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -24,7 +25,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TextToSpeechAPI {
 
+    private static final String LOG_TAG = "TextToSpeechAPI";
+
     public static void onReceive(final Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         context.startService(new Intent(context, TextToSpeechService.class).putExtras(intent.getExtras()));
     }
 
@@ -32,12 +37,23 @@ public class TextToSpeechAPI {
         TextToSpeech mTts;
         final CountDownLatch mTtsLatch = new CountDownLatch(1);
 
+        private static final String LOG_TAG = "TextToSpeechService";
+
         public TextToSpeechService() {
             super(TextToSpeechService.class.getName());
         }
 
         @Override
+        public void onCreate() {
+            Logger.logDebug(LOG_TAG, "onCreate");
+
+            super.onCreate();
+        }
+
+        @Override
         public void onDestroy() {
+            Logger.logDebug(LOG_TAG, "onDestroy");
+
             if (mTts != null)
                 mTts.shutdown();
             super.onDestroy();
@@ -45,6 +61,8 @@ public class TextToSpeechAPI {
 
         @Override
         protected void onHandleIntent(final Intent intent) {
+            Logger.logDebug(LOG_TAG, "onHandleIntent:\n" + IntentUtils.getIntentString(intent));
+
             final String speechLanguage = intent.getStringExtra("language");
             final String speechRegion = intent.getStringExtra("region");
             final String speechVariant = intent.getStringExtra("variant");
@@ -83,7 +101,7 @@ public class TextToSpeechAPI {
                 if (status == TextToSpeech.SUCCESS) {
                     mTtsLatch.countDown();
                 } else {
-                    TermuxApiLogger.error("Failed tts initialization: status=" + status);
+                    Logger.logError(LOG_TAG, "Failed tts initialization: status=" + status);
                     stopSelf();
                 }
             }, speechEngine);
@@ -95,11 +113,11 @@ public class TextToSpeechAPI {
                     try {
                         try {
                             if (!mTtsLatch.await(10, TimeUnit.SECONDS)) {
-                                TermuxApiLogger.error("Timeout waiting for TTS initialization");
+                                Logger.logError(LOG_TAG, "Timeout waiting for TTS initialization");
                                 return;
                             }
                         } catch (InterruptedException e) {
-                            TermuxApiLogger.error("Interrupted awaiting TTS initialization");
+                            Logger.logError(LOG_TAG, "Interrupted awaiting TTS initialization");
                             return;
                         }
 
@@ -131,7 +149,7 @@ public class TextToSpeechAPI {
 
                             @Override
                             public void onError(String utteranceId) {
-                                TermuxApiLogger.error("UtteranceProgressListener.onError() called");
+                                Logger.logError(LOG_TAG, "UtteranceProgressListener.onError() called");
                                 synchronized (ttsDoneUtterancesCount) {
                                     ttsDoneUtterancesCount.incrementAndGet();
                                     ttsDoneUtterancesCount.notify();
@@ -150,7 +168,7 @@ public class TextToSpeechAPI {
                         if (speechLanguage != null) {
                             int setLanguageResult = mTts.setLanguage(getLocale(speechLanguage, speechRegion, speechVariant));
                             if (setLanguageResult != TextToSpeech.LANG_AVAILABLE) {
-                                TermuxApiLogger.error("tts.setLanguage('" + speechLanguage + "') returned " + setLanguageResult);
+                                Logger.logError(LOG_TAG, "tts.setLanguage('" + speechLanguage + "') returned " + setLanguageResult);
                             }
                         }
 
@@ -180,7 +198,7 @@ public class TextToSpeechAPI {
                             }
                         }
                     } catch (Exception e) {
-                        TermuxApiLogger.error("TTS error", e);
+                        Logger.logStackTraceWithMessage(LOG_TAG, "TTS error", e);
                     }
                 }
             });

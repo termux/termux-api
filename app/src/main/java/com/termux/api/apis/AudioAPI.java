@@ -10,10 +10,15 @@ import android.util.JsonWriter;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 public class AudioAPI {
 
+    private static final String LOG_TAG = "AudioAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         final String SampleRate = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
         final String framesPerBuffer = am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);

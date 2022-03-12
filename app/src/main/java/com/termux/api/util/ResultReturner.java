@@ -10,6 +10,8 @@ import android.net.LocalSocketAddress;
 import android.os.ParcelFileDescriptor;
 import android.util.JsonWriter;
 
+import com.termux.shared.logger.Logger;
+
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
 import java.io.InputStream;
@@ -18,6 +20,8 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
 public abstract class ResultReturner {
+
+    private static final String LOG_TAG = "ResultReturner";
 
     /**
      * An extra intent parameter which specifies a linux abstract namespace socket address where output from the API
@@ -179,7 +183,7 @@ public abstract class ResultReturner {
                     activity.setResult(0);
                 }
             } catch (Exception e) {
-                TermuxApiLogger.error("Error in ResultReturner", e);
+                Logger.logStackTraceWithMessage(LOG_TAG, "Error in ResultReturner", e);
                 if (asyncResult != null) {
                     asyncResult.setResultCode(1);
                 } else if (activity != null) {

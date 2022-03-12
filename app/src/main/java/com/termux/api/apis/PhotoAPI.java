@@ -22,7 +22,7 @@ import android.view.WindowManager;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,7 +37,11 @@ import java.util.Objects;
 
 public class PhotoAPI {
 
+    private static final String LOG_TAG = "PhotoAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         final String filePath = intent.getStringExtra("file");
         final File outputFile = new File(filePath);
         final File outputDir = outputFile.getParentFile();
@@ -66,26 +70,26 @@ public class PhotoAPI {
                     try {
                         proceedWithOpenedCamera(context, manager, camera, outputFile, looper, stdout);
                     } catch (Exception e) {
-                        TermuxApiLogger.error("Exception in onOpened()", e);
+                        Logger.logStackTraceWithMessage(LOG_TAG, "Exception in onOpened()", e);
                         closeCamera(camera, looper);
                     }
                 }
 
                 @Override
                 public void onDisconnected(CameraDevice camera) {
-                    TermuxApiLogger.info("onDisconnected() from camera");
+                    Logger.logInfo(LOG_TAG, "onDisconnected() from camera");
                 }
 
                 @Override
                 public void onError(CameraDevice camera, int error) {
-                    TermuxApiLogger.error("Failed opening camera: " + error);
+                    Logger.logError(LOG_TAG, "Failed opening camera: " + error);
                     closeCamera(camera, looper);
                 }
             }, null);
 
             Looper.loop();
         } catch (Exception e) {
-            TermuxApiLogger.error("Error getting camera", e);
+            Logger.logStackTraceWithMessage(LOG_TAG, "Error getting camera", e);
         }
     }
 
@@ -126,7 +130,7 @@ public class PhotoAPI {
                         output.write(bytes);
                     } catch (Exception e) {
                         stdout.println("Error writing image: " + e.getMessage());
-                        TermuxApiLogger.error("Error writing image", e);
+                        Logger.logStackTraceWithMessage(LOG_TAG, "Error writing image", e);
                     }
                 } finally {
                     mImageReader.close();
@@ -155,10 +159,10 @@ public class PhotoAPI {
 
                     // continous preview-capture for 1/2 second
                     session.setRepeatingRequest(previewReq.build(), null, null);
-                    TermuxApiLogger.info("preview started");
+                    Logger.logInfo(LOG_TAG, "preview started");
                     Thread.sleep(500);
                     session.stopRepeating();
-                    TermuxApiLogger.info("preview stoppend");
+                    Logger.logInfo(LOG_TAG, "preview stoppend");
 
                     final CaptureRequest.Builder jpegRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                     // Render to our image reader:
@@ -170,7 +174,7 @@ public class PhotoAPI {
 
                     saveImage(camera, session, jpegRequest.build());
                 } catch (Exception e) {
-                    TermuxApiLogger.error("onConfigured() error in preview", e);
+                    Logger.logStackTraceWithMessage(LOG_TAG, "onConfigured() error in preview", e);
                     mImageReader.close();
                     releaseSurfaces(outputSurfaces);
                     closeCamera(camera, looper);
@@ -179,7 +183,7 @@ public class PhotoAPI {
 
             @Override
             public void onConfigureFailed(CameraCaptureSession session) {
-                TermuxApiLogger.error("onConfigureFailed() error in preview");
+                Logger.logError(LOG_TAG, "onConfigureFailed() error in preview");
                 mImageReader.close();
                 releaseSurfaces(outputSurfaces);
                 closeCamera(camera, looper);
@@ -191,7 +195,7 @@ public class PhotoAPI {
         session.capture(request, new CameraCaptureSession.CaptureCallback() {
             @Override
             public void onCaptureCompleted(CameraCaptureSession completedSession, CaptureRequest request, TotalCaptureResult result) {
-                TermuxApiLogger.info("onCaptureCompleted()");
+                Logger.logInfo(LOG_TAG, "onCaptureCompleted()");
             }
         }, null);
     }
@@ -203,13 +207,13 @@ public class PhotoAPI {
     static int correctOrientation(final Context context, final CameraCharacteristics characteristics) {
         final Integer lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
         final boolean isFrontFacing = lensFacing != null && lensFacing == CameraCharacteristics.LENS_FACING_FRONT;
-        TermuxApiLogger.info((isFrontFacing ? "Using" : "Not using") + " a front facing camera.");
+        Logger.logInfo(LOG_TAG, (isFrontFacing ? "Using" : "Not using") + " a front facing camera.");
 
         Integer sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
         if (sensorOrientation != null) {
-            TermuxApiLogger.info(String.format("Sensor orientation: %s degrees", sensorOrientation));
+            Logger.logInfo(LOG_TAG, String.format("Sensor orientation: %s degrees", sensorOrientation));
         } else {
-            TermuxApiLogger.info("CameraCharacteristics didn't contain SENSOR_ORIENTATION. Assuming 0 degrees.");
+            Logger.logInfo(LOG_TAG, "CameraCharacteristics didn't contain SENSOR_ORIENTATION. Assuming 0 degrees.");
             sensorOrientation = 0;
         }
 
@@ -230,11 +234,11 @@ public class PhotoAPI {
                 deviceOrientation = 270;
                 break;
             default:
-                TermuxApiLogger.info(
+                Logger.logInfo(LOG_TAG,
                         String.format("Default display has unknown rotation %d. Assuming 0 degrees.", deviceRotation));
                 deviceOrientation = 0;
         }
-        TermuxApiLogger.info(String.format("Device orientation: %d degrees", deviceOrientation));
+        Logger.logInfo(LOG_TAG, String.format("Device orientation: %d degrees", deviceOrientation));
 
         int jpegOrientation;
         if (isFrontFacing) {
@@ -244,7 +248,7 @@ public class PhotoAPI {
         }
         // Add an extra 360 because (-90 % 360) == -90 and Android won't accept a negative rotation.
         jpegOrientation = (jpegOrientation + 360) % 360;
-        TermuxApiLogger.info(String.format("Returning JPEG orientation of %d degrees", jpegOrientation));
+        Logger.logInfo(LOG_TAG, String.format("Returning JPEG orientation of %d degrees", jpegOrientation));
         return jpegOrientation;
     }
 
@@ -252,14 +256,14 @@ public class PhotoAPI {
         for (Surface outputSurface : outputSurfaces) {
             outputSurface.release();
         }
-        TermuxApiLogger.info("surfaces released");
+        Logger.logInfo(LOG_TAG, "surfaces released");
     }
 
     static void closeCamera(CameraDevice camera, Looper looper) {
         try {
             camera.close();
         } catch (RuntimeException e) {
-            TermuxApiLogger.info("Exception closing camera: " + e.getMessage());
+            Logger.logInfo(LOG_TAG, "Exception closing camera: " + e.getMessage());
         }
         if (looper != null) looper.quit();
     }

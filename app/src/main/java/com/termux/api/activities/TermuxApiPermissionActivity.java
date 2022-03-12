@@ -8,10 +8,13 @@ import android.text.TextUtils;
 import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 import java.util.ArrayList;
 
 public class TermuxApiPermissionActivity extends Activity {
+
+    private static final String LOG_TAG = "TermuxApiPermissionActivity";
 
     /**
      * Intent extra containing the permissions to request.
@@ -56,12 +59,16 @@ public class TermuxApiPermissionActivity extends Activity {
 
     @Override
     protected void onNewIntent(Intent intent) {
+        Logger.logDebug(LOG_TAG, "onNewIntent");
+
         super.onNewIntent(intent);
         setIntent(intent);
     }
 
     @Override
     protected void onResume() {
+        Logger.logVerbose(LOG_TAG, "onResume");
+
         super.onResume();
         ArrayList<String> permissionValues = getIntent().getStringArrayListExtra(PERMISSIONS_EXTRA);
         requestPermissions(permissionValues.toArray(new String[0]), 123);

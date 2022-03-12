@@ -8,14 +8,18 @@ import android.telephony.SubscriptionInfo;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
 public class SmsSendAPI {
 
+    private static final String LOG_TAG = "SmsSendAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
             @Override
             public void writeResult(PrintWriter out) {
@@ -31,7 +35,7 @@ public class SmsSendAPI {
                 }
 
                 if (recipients == null || recipients.length == 0) {
-                    TermuxApiLogger.error("No recipient given");
+                    Logger.logError(LOG_TAG, "No recipient given");
                 } else {
                     final ArrayList<String> messages = smsManager.divideMessage(inputString);
                     for (String recipient : recipients) {
@@ -49,7 +53,7 @@ public class SmsSendAPI {
         } else {
             SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
             if(sm == null) {
-                TermuxApiLogger.error("SubscriptionManager not supported");
+                Logger.logError(LOG_TAG, "SubscriptionManager not supported");
                 return null;
             }
             for(SubscriptionInfo si: sm.getActiveSubscriptionInfoList()) {
@@ -57,7 +61,7 @@ public class SmsSendAPI {
                     return SmsManager.getSmsManagerForSubscriptionId(si.getSubscriptionId());
                 }
             }
-            TermuxApiLogger.error("Sim slot "+slot+" not found");
+            Logger.logError(LOG_TAG, "Sim slot "+slot+" not found");
             return null;
         }
     }

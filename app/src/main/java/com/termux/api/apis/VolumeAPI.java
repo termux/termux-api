@@ -8,6 +8,7 @@ import android.util.SparseArray;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 import java.io.IOException;
 
@@ -25,8 +26,11 @@ public class VolumeAPI {
         streamMap.append(AudioManager.STREAM_VOICE_CALL,    "call");
     }
 
+    private static final String LOG_TAG = "VolumeAPI";
 
     public static void onReceive(final TermuxApiReceiver receiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         final AudioManager audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
         String action = intent.getAction();
 

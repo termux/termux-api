@@ -8,12 +8,17 @@ import android.net.Uri;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 import java.io.File;
 
 public class DownloadAPI {
 
+    private static final String LOG_TAG = "DownloadAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         ResultReturner.returnData(apiReceiver, intent, out -> {
             final Uri downloadUri = intent.getData();
             if (downloadUri == null) {

@@ -12,7 +12,7 @@ import android.net.LocalSocketAddress;
 import android.os.IBinder;
 
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,10 +30,14 @@ import java.util.concurrent.Semaphore;
  */
 public class SensorAPI {
 
+    private static final String LOG_TAG = "SensorAPI";
+
     /**
      * Starts our SensorReader service
      */
     public static void onReceive(final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         Intent serviceIntent = new Intent(context, SensorReaderService.class);
         serviceIntent.setAction(intent.getAction());
         serviceIntent.putExtras(intent.getExtras());
@@ -45,6 +49,7 @@ public class SensorAPI {
      * All sensor listening functionality exists in this background service
      */
     public static class SensorReaderService extends Service {
+
         // indentation for JSON output
         protected static final int INDENTATION = 2;
 
@@ -55,8 +60,11 @@ public class SensorAPI {
         // prevent concurrent modifications w/ sensor readout
         protected static Semaphore semaphore;
 
+        private static final String LOG_TAG = "SensorReaderService";
 
         public void onCreate() {
+            Logger.logDebug(LOG_TAG, "onCreate");
+
             super.onCreate();
             sensorReadout = new JSONObject();
             semaphore = new Semaphore(1);
@@ -64,6 +72,8 @@ public class SensorAPI {
 
         @Override
         public int onStartCommand(Intent intent, int flags, int startId) {
+            Logger.logDebug(LOG_TAG, "onStartCommand");
+
             String command = intent.getAction();
             Context context = getApplicationContext();
             SensorManager sensorManager = getSensorManager(context);
@@ -87,9 +97,10 @@ public class SensorAPI {
 
         @Override
         public void onDestroy() {
+            Logger.logDebug(LOG_TAG, "onDestroy");
+
             super.onDestroy();
             cleanup();
-            TermuxApiLogger.info("SensorAPI SensorReaderService onDestroy()");
         }
 
         protected static void cleanup() {
@@ -127,7 +138,7 @@ public class SensorAPI {
                     sensorReadout.put(sensorEvent.sensor.getName(), sensorInfo);
                     semaphore.release();
                 } catch (JSONException e) {
-                    TermuxApiLogger.error("onSensorChanged error", e);
+                    Logger.logStackTraceWithMessage(LOG_TAG, "onSensorChanged error", e);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -194,7 +205,7 @@ public class SensorAPI {
                 output.put("sensors", sensorArray);
                 result.message = output.toString(INDENTATION);
             } catch (JSONException e) {
-                TermuxApiLogger.error("listHandler JSON error", e);
+                Logger.logStackTraceWithMessage(LOG_TAG, "listHandler JSON error", e);
             }
             return result;
         };
@@ -212,7 +223,7 @@ public class SensorAPI {
                     outputWriter = null;
                     sensorManager.unregisterListener(sensorEventListener);
                     result.message = "Sensor cleanup successful!";
-                    TermuxApiLogger.info("Cleanup()");
+                    Logger.logInfo(LOG_TAG, "Cleanup()");
                 } else {
                     result.message = "Sensor cleanup unnecessary";
                 }
@@ -272,7 +283,7 @@ public class SensorAPI {
                     sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
                 }
                 sensorsToListenTo = availableSensors;
-                TermuxApiLogger.info("Listening to ALL sensors");
+                Logger.logInfo(LOG_TAG, "Listening to ALL sensors");
             } else {
 
                 // try to find matching sensors that were sent in request
@@ -313,15 +324,15 @@ public class SensorAPI {
             outputWriter = new SensorOutputWriter(socketAddress);
             outputWriter.setOnErrorListener(e -> {
                 outputWriter = null;
-                TermuxApiLogger.error("SensorOutputWriter error", e);
+                Logger.logStackTraceWithMessage(LOG_TAG, "SensorOutputWriter error", e);
             });
 
             int delay = intent.getIntExtra("delay", SensorOutputWriter.DEFAULT_DELAY);
-            TermuxApiLogger.info("Delay set to: " + delay);
+            Logger.logInfo(LOG_TAG, "Delay set to: " + delay);
             outputWriter.setDelay(delay);
 
             int limit = intent.getIntExtra("limit", SensorOutputWriter.DEFAULT_LIMIT);
-            TermuxApiLogger.info("SensorOutput limit set to: " + limit);
+            Logger.logInfo(LOG_TAG, "SensorOutput limit set to: " + limit);
             outputWriter.setLimit(limit);
 
             return outputWriter;
@@ -385,7 +396,7 @@ public class SensorAPI {
                                 try {
                                     Thread.sleep(this.delay);
                                 } catch (InterruptedException e) {
-                                    TermuxApiLogger.info("SensorOutputWriter interrupted: " + e.getMessage());
+                                    Logger.logInfo(LOG_TAG, "SensorOutputWriter interrupted: " + e.getMessage());
                                 }
                                 semaphore.acquire();
                                 writer.write(sensorReadout.toString(INDENTATION) + "\n");
@@ -393,15 +404,15 @@ public class SensorAPI {
                                 semaphore.release();
 
                                 if (++counter >= limit) {
-                                    TermuxApiLogger.info("SensorOutput limit reached! Performing cleanup");
+                                    Logger.logInfo(LOG_TAG, "SensorOutput limit reached! Performing cleanup");
                                     cleanup();
                                 }
                             }
-                            TermuxApiLogger.info("SensorOutputWriter finished");
+                            Logger.logInfo(LOG_TAG, "SensorOutputWriter finished");
                         }
                     }
                 } catch (Exception e) {
-                    TermuxApiLogger.error("SensorOutputWriter error", e);
+                    Logger.logStackTraceWithMessage(LOG_TAG, "SensorOutputWriter error", e);
 
                     if (errorListener != null) {
                         errorListener.onError(e);

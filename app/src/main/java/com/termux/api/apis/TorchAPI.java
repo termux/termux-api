@@ -1,23 +1,25 @@
 package com.termux.api.apis;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
-import android.os.Build;
 import android.widget.Toast;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 public class TorchAPI {
     private static Camera legacyCamera;
 
+    private static final String LOG_TAG = "TorchAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         boolean enabled = intent.getBooleanExtra("enabled", false);
 
         toggleTorch(context, enabled);
@@ -35,12 +37,12 @@ public class TorchAPI {
                 Toast.makeText(context, "Torch unavailable on your device", Toast.LENGTH_LONG).show();
             }
         } catch (CameraAccessException e) {
-            TermuxApiLogger.error("Error toggling torch", e);
+            Logger.logStackTraceWithMessage(LOG_TAG, "Error toggling torch", e);
         }
     }
 
     private static void legacyToggleTorch(boolean enabled) {
-        TermuxApiLogger.info("Using legacy camera api to toggle torch");
+        Logger.logInfo(LOG_TAG, "Using legacy camera api to toggle torch");
 
         if (legacyCamera == null) {
             legacyCamera = Camera.open();

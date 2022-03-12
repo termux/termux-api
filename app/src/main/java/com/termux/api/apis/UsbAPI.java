@@ -14,6 +14,7 @@ import android.util.SparseArray;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -26,7 +27,11 @@ public class UsbAPI {
 
     private static SparseArray<UsbDeviceConnection> openDevices = new SparseArray<>();
 
+    private static final String LOG_TAG = "UsbAPI";
+
     public static void onReceive(final TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         UsbDevice device;
         String action = intent.getAction();
         if (action == null) {

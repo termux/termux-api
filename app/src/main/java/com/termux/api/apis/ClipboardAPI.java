@@ -9,12 +9,17 @@ import android.text.TextUtils;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 import java.io.PrintWriter;
 
 public class ClipboardAPI {
 
+    private static final String LOG_TAG = "ClipboardAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         final ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
         final ClipData clipData = clipboard.getPrimaryClip();
 

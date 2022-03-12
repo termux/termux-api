@@ -10,22 +10,25 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.JsonWriter;
-import android.util.Log;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import java.io.IOException;
 
 public class LocationAPI {
+
+    private static final String LOG_TAG = "LocationAPI";
 
     private static final String REQUEST_LAST_KNOWN = "last";
     private static final String REQUEST_ONCE = "once";
     private static final String REQUEST_UPDATES = "updates";
 
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
             @Override
             public void writeJson(final JsonWriter out) throws Exception {
@@ -75,7 +78,7 @@ public class LocationAPI {
                                 try {
                                     locationToJson(location, out);
                                 } catch (IOException e) {
-                                    TermuxApiLogger.error("Writing json", e);
+                                    Logger.logStackTraceWithMessage(LOG_TAG, "Writing json", e);
                                 } finally {
                                     Looper.myLooper().quit();
                                 }
@@ -108,7 +111,7 @@ public class LocationAPI {
                                     locationToJson(location, out);
                                     out.flush();
                                 } catch (IOException e) {
-                                    TermuxApiLogger.error("Writing json", e);
+                                    Logger.logStackTraceWithMessage(LOG_TAG, "Writing json", e);
                                 }
                             }
                         }, null);
@@ -119,7 +122,7 @@ public class LocationAPI {
                                 try {
                                     Thread.sleep(30 * 1000);
                                 } catch (InterruptedException e) {
-                                    Log.e("termux", "INTER", e);
+                                    Logger.logStackTraceWithMessage(LOG_TAG, "INTER", e);
                                 }
                                 looper.quit();
                             }

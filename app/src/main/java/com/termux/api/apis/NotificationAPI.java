@@ -22,7 +22,7 @@ import androidx.core.util.Pair;
 import com.termux.api.R;
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -34,6 +34,8 @@ import java.util.UUID;
 import static com.termux.shared.termux.TermuxConstants.TERMUX_PREFIX_DIR_PATH;
 
 public class NotificationAPI {
+
+    private static final String LOG_TAG = "NotificationAPI";
 
     public static final String TERMUX_SERVICE = "com.termux.app.TermuxService";
     public static final String ACTION_EXECUTE = "com.termux.service_execute";
@@ -48,6 +50,8 @@ public class NotificationAPI {
      * Show a notification. Driven by the termux-show-notification script.
      */
     public static void onReceiveShowNotification(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceiveShowNotification");
+
         Pair<NotificationCompat.Builder, String> pair = buildNotification(context, intent);
         NotificationCompat.Builder notification = pair.first;
         String notificationId = pair.second;
@@ -78,6 +82,8 @@ public class NotificationAPI {
     }
 
     public static void onReceiveChannel(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceiveChannel");
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
                 NotificationManager m = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -163,7 +169,7 @@ public class NotificationAPI {
             try {
                 ledColor = Integer.parseInt(lightsArgbExtra, 16) | 0xff000000;
             } catch (NumberFormatException e) {
-                TermuxApiLogger.error("Invalid LED color format! Ignoring!");
+                Logger.logError(LOG_TAG, "Invalid LED color format! Ignoring!");
             }
         }
 
@@ -313,6 +319,8 @@ public class NotificationAPI {
     }
 
     public static void onReceiveRemoveNotification(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceiveRemoveNotification");
+
         ResultReturner.noteDone(apiReceiver, intent);
         String notificationId = intent.getStringExtra("id");
         if (notificationId != null) {
@@ -375,6 +383,8 @@ public class NotificationAPI {
 
     public static void onReceiveReplyToNotification(TermuxApiReceiver termuxApiReceiver,
                                                     Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceiveReplyToNotification");
+
         String replyKey = intent.getStringExtra("replyKey");
         CharSequence reply = getMessageText(intent);
 
@@ -383,7 +393,7 @@ public class NotificationAPI {
         try {
             createAction(context, action).send();
         } catch (PendingIntent.CanceledException e) {
-            TermuxApiLogger.error("CanceledException when performing action: " + action);
+            Logger.logError(LOG_TAG, "CanceledException when performing action: " + action);
         }
 
         String notificationId = intent.getStringExtra("id");

@@ -12,10 +12,10 @@ import android.os.Build;
 import android.os.PersistableBundle;
 import androidx.annotation.RequiresApi;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ import java.util.Locale;
 public class JobSchedulerAPI {
 
     private static final String LOG_TAG = "JobSchedulerAPI";
-
 
     private static String formatJobInfo(JobInfo jobInfo) {
         final String path = jobInfo.getExtras().getString(JobSchedulerService.SCRIPT_FILE_PATH);
@@ -59,6 +58,7 @@ public class JobSchedulerAPI {
     }
 
     public static void onReceive(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
 
         final String scriptPath = intent.getStringExtra("script");
 
@@ -169,7 +169,7 @@ public class JobSchedulerAPI {
         final int scheduleResponse = jobScheduler.schedule(job);
 
         final String message = String.format(Locale.ENGLISH, "Scheduling %s - response %d", formatJobInfo(job), scheduleResponse);
-        Log.i(LOG_TAG, message);
+        Logger.logInfo(LOG_TAG, message);
         ResultReturner.returnData(apiReceiver, intent, out -> out.println(message));
 
 
@@ -208,7 +208,6 @@ public class JobSchedulerAPI {
 
     public static class JobSchedulerService extends JobService {
 
-        private static final String LOG_TAG = "TermuxAPISchedulerJob";
         public static final String SCRIPT_FILE_PATH = "com.termux.api.jobscheduler_script_path";
 
         // Constants from TermuxService.
@@ -216,10 +215,12 @@ public class JobSchedulerAPI {
         private static final String ACTION_EXECUTE = "com.termux.service_execute";
         private static final String EXTRA_EXECUTE_IN_BACKGROUND = "com.termux.execute.background";
 
+        private static final String LOG_TAG = "JobSchedulerService";
+
         @Override
         public boolean onStartJob(JobParameters params) {
+            Logger.logInfo(LOG_TAG, "onStartJob: " + params.toString());
 
-            Log.i(LOG_TAG, "Starting job " + params.toString());
             PersistableBundle extras = params.getExtras();
             String filePath = extras.getString(SCRIPT_FILE_PATH);
 
@@ -236,13 +237,14 @@ public class JobSchedulerAPI {
                 context.startService(executeIntent);
             }
 
-            Log.i(LOG_TAG, "Started job " + params.toString());
+            Logger.logInfo(LOG_TAG, "Job started for \"" + filePath + "\"");
+
             return false;
         }
 
         @Override
         public boolean onStopJob(JobParameters params) {
-            Log.i(LOG_TAG, "Stopped job " + params.toString());
+            Logger.logInfo(LOG_TAG, "onStopJob: " + params.toString());
             return false;
         }
     }

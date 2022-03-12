@@ -45,26 +45,32 @@ import com.termux.api.apis.VibrateAPI;
 import com.termux.api.apis.VolumeAPI;
 import com.termux.api.apis.WallpaperAPI;
 import com.termux.api.apis.WifiAPI;
-import com.termux.api.util.TermuxApiLogger;
 import com.termux.api.activities.TermuxApiPermissionActivity;
+import com.termux.shared.data.IntentUtils;
+import com.termux.shared.logger.Logger;
 
 public class TermuxApiReceiver extends BroadcastReceiver {
 
+    private static final String LOG_TAG = "TermuxApiReceiver";
+
     @Override
     public void onReceive(Context context, Intent intent) {
+        TermuxAPIApplication.setLogConfig(context, false);
+        Logger.logDebug(LOG_TAG, "Intent Received:\n" + IntentUtils.getIntentString(intent));
+
         try {
             doWork(context, intent);
         } catch (Exception e) {
             // Make sure never to throw exception from BroadCastReceiver to avoid "process is bad"
             // behaviour from the Android system.
-            TermuxApiLogger.error("Error in TermuxApiReceiver", e);
+            Logger.logStackTraceWithMessage(LOG_TAG, "Error in TermuxApiReceiver", e);
         }
     }
 
     private void doWork(Context context, Intent intent) {
         String apiMethod = intent.getStringExtra("api_method");
         if (apiMethod == null) {
-            TermuxApiLogger.error("Missing 'api_method' extra");
+            Logger.logError(LOG_TAG, "Missing 'api_method' extra");
             return;
         }
 
@@ -175,6 +181,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "NotificationReply":
                 NotificationAPI.onReceiveReplyToNotification(this, context, intent);
                 break;
+            case "SAF":
+                SAFAPI.onReceive(this, context, intent);
+                break;
             case "Sensor":
                 SensorAPI.onReceive(context, intent);
                 break;
@@ -246,11 +255,8 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "WifiEnable":
                 WifiAPI.onReceiveWifiEnable(this, context, intent);
                 break;
-            case "SAF":
-                SAFAPI.onReceive(this, context, intent);
-                break;
             default:
-                TermuxApiLogger.error("Unrecognized 'api_method' extra: '" + apiMethod + "'");
+                Logger.logError(LOG_TAG, "Unrecognized 'api_method' extra: '" + apiMethod + "'");
         }
     }
 

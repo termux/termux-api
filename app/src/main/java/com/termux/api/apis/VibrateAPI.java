@@ -7,10 +7,15 @@ import android.os.Vibrator;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 public class VibrateAPI {
 
+    private static final String LOG_TAG = "VibrateAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         int milliseconds = intent.getIntExtra("duration_ms", 1000);
         boolean force = intent.getBooleanExtra("force", false);

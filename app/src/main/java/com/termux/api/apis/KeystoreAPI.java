@@ -14,6 +14,7 @@ import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
 import com.termux.api.util.ResultReturner.WithInput;
+import com.termux.shared.logger.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -37,11 +38,16 @@ import java.security.spec.RSAKeyGenParameterSpec;
 import java.util.Enumeration;
 
 public class KeystoreAPI {
+
+    private static final String LOG_TAG = "KeystoreAPI";
+
     // this is the only provider name that is supported by Android
     private static final String PROVIDER = "AndroidKeyStore";
 
     @SuppressLint("NewApi")
     public static void onReceive(TermuxApiReceiver apiReceiver, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         switch (intent.getStringExtra("command")) {
             case "list":
                 listKeys(apiReceiver, intent);

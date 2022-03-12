@@ -14,13 +14,16 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.data.IntentUtils;
+import com.termux.shared.logger.Logger;
 
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class SpeechToTextAPI {
+
+    private static final String LOG_TAG = "SpeechToTextAPI";
 
     public static class SpeechToTextService extends IntentService {
 
@@ -37,8 +40,12 @@ public class SpeechToTextAPI {
         protected SpeechRecognizer mSpeechRecognizer;
         final LinkedBlockingQueue<String> queueu = new LinkedBlockingQueue<>();
 
+        private static final String LOG_TAG = "SpeechToTextService";
+
         @Override
         public void onCreate() {
+            Logger.logDebug(LOG_TAG, "onCreate");
+
             super.onCreate();
             final Context context = this;
 
@@ -53,7 +60,7 @@ public class SpeechToTextAPI {
                 @Override
                 public void onResults(Bundle results) {
                     List<String> recognitions = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                    TermuxApiLogger.error("RecognitionListener#onResults(" + recognitions + ")");
+                    Logger.logError(LOG_TAG, "RecognitionListener#onResults(" + recognitions + ")");
                     queueu.addAll(recognitions);
                 }
 
@@ -66,7 +73,7 @@ public class SpeechToTextAPI {
                 public void onPartialResults(Bundle partialResults) {
                     // Do nothing.
                     List<String> strings = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                    TermuxApiLogger.error("RecognitionListener#onPartialResults(" + strings + ")");
+                    Logger.logError(LOG_TAG, "RecognitionListener#onPartialResults(" + strings + ")");
                     queueu.addAll(strings);
                 }
 
@@ -94,13 +101,13 @@ public class SpeechToTextAPI {
                         default:
                             description = Integer.toString(error);
                     }
-                    TermuxApiLogger.error("RecognitionListener#onError(" + description + ")");
+                    Logger.logError(LOG_TAG, "RecognitionListener#onError(" + description + ")");
                     queueu.add(STOP_ELEMENT);
                 }
 
                 @Override
                 public void onEndOfSpeech() {
-                    TermuxApiLogger.error("RecognitionListener#onEndOfSpeech()");
+                    Logger.logError(LOG_TAG, "RecognitionListener#onEndOfSpeech()");
                     queueu.add(STOP_ELEMENT);
                 }
 
@@ -145,14 +152,16 @@ public class SpeechToTextAPI {
 
         @Override
         public void onDestroy() {
+            Logger.logDebug(LOG_TAG, "onDestroy");
+
             super.onDestroy();
-            TermuxApiLogger.error("onDestroy");
             mSpeechRecognizer.destroy();
         }
 
         @Override
         protected void onHandleIntent(final Intent intent) {
-            TermuxApiLogger.error("onHandleIntent");
+            Logger.logDebug(LOG_TAG, "onHandleIntent:\n" + IntentUtils.getIntentString(intent));
+
             ResultReturner.returnData(this, intent, new ResultReturner.WithInput() {
                 @Override
                 public void writeResult(PrintWriter out) throws Exception {
@@ -171,6 +180,8 @@ public class SpeechToTextAPI {
     }
 
     public static void onReceive(final Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         context.startService(new Intent(context, SpeechToTextService.class).putExtras(intent.getExtras()));
     }
 

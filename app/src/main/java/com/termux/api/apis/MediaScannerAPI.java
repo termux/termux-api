@@ -6,7 +6,7 @@ import android.media.MediaScannerConnection;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -15,7 +15,11 @@ import java.util.Stack;
 
 public class MediaScannerAPI {
 
+    private static final String LOG_TAG = "MediaScannerAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         final String[] filePaths = intent.getStringArrayExtra("paths");
         final boolean recursive = intent.getBooleanExtra("recursive", false);
         final Integer[] totalScanned = {0};
@@ -36,7 +40,7 @@ public class MediaScannerAPI {
                 context.getApplicationContext(),
                 filePaths,
                 null,
-                (path, uri) -> TermuxApiLogger.info("'" + path + "'" + (uri != null ? " -> '" + uri + "'" : "")));
+                (path, uri) -> Logger.logInfo(LOG_TAG, "'" + path + "'" + (uri != null ? " -> '" + uri + "'" : "")));
 
         if (verbose) for (String path : filePaths) {
                 out.println(path);
@@ -55,7 +59,7 @@ public class MediaScannerAPI {
                 try {
                     fileList = currentPath.listFiles();
                 } catch (SecurityException e) {
-                    TermuxApiLogger.error(String.format("Failed to open '%s'", currentPath.toString()), e);
+                    Logger.logStackTraceWithMessage(LOG_TAG, String.format("Failed to open '%s'", currentPath.toString()), e);
                 }
 
                 if (fileList != null && fileList.length > 0) {

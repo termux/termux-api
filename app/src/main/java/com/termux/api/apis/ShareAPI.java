@@ -14,15 +14,20 @@ import android.webkit.MimeTypeMap;
 import com.termux.api.R;
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 public class ShareAPI {
 
+    private static final String LOG_TAG = "ShareAPI";
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         final String fileExtra = intent.getStringExtra("file");
         final String titleExtra = intent.getStringExtra("title");
         final String contentTypeExtra = intent.getStringExtra("content-type");
@@ -44,7 +49,7 @@ public class ShareAPI {
                     intentAction = Intent.ACTION_VIEW;
                     break;
                 default:
-                    TermuxApiLogger.error("Invalid action '" + actionExtra + "', using 'view'");
+                    Logger.logError(LOG_TAG, "Invalid action '" + actionExtra + "', using 'view'");
                     break;
             }
         }
@@ -118,6 +123,8 @@ public class ShareAPI {
 
     public static class ContentProvider extends android.content.ContentProvider {
 
+        private static final String LOG_TAG = "ContentProvider";
+
         @Override
         public boolean onCreate() {
             return true;
@@ -184,7 +191,17 @@ public class ShareAPI {
         @Override
         public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
             File file = new File(uri.getPath());
+
+            try {
+                String path = file.getCanonicalPath();
+                String callingPackageName = getCallingPackage();
+                Logger.logDebug(LOG_TAG, "Open file request received from " + callingPackageName + " for \"" + path + "\" with mode \"" + mode + "\"");
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+
             return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
         }
     }
+
 }

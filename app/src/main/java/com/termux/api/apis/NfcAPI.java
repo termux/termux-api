@@ -12,28 +12,36 @@ import android.nfc.tech.Ndef;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.JsonWriter;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.logger.Logger;
 
 public class NfcAPI {
 
+    private static final String LOG_TAG = "NfcAPI";
+
     public static void onReceive(final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         context.startActivity(new Intent(context, NfcActivity.class).putExtras(intent.getExtras()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
     }
 
 
 
     public static class NfcActivity extends AppCompatActivity {
+
         private NfcAdapter adapter;
         static String socket_input;
         static String socket_output;
         String mode;
         String param;
         String value;
+
+        private static final String LOG_TAG = "NfcActivity";
+
         //Check for NFC
         protected void errorNfc(final Context context, Intent intent, String error) {
             ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
@@ -53,6 +61,8 @@ public class NfcAPI {
 
         @Override
         protected void onCreate(@Nullable Bundle savedInstanceState) {
+            Logger.logDebug(LOG_TAG, "onCreate");
+
             super.onCreate(savedInstanceState);
             Intent intent = this.getIntent();
             if (intent != null) {
@@ -80,6 +90,8 @@ public class NfcAPI {
 
         @Override
         protected void onResume() {
+            Logger.logVerbose(LOG_TAG, "onResume");
+
             super.onResume();
             adapter = NfcAdapter.getDefaultAdapter(this);
             Intent intentNew = new Intent(this, NfcActivity.class).addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
@@ -93,16 +105,16 @@ public class NfcAPI {
 
         @Override
         protected void onNewIntent(Intent intent) {
+            Logger.logDebug(LOG_TAG, "onNewIntent");
+
             intent.putExtra("socket_input", socket_input);
             intent.putExtra("socket_output", socket_output);
 
             if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
                 try {
                     postResult(this, intent);
-                }
-                catch (Exception e)
-                {
-                    Log.e("Termix-api.NfcAction",e.getMessage());
+                } catch (Exception e) {
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Error posting result" ,e);
                 }
                 finish();
             }
@@ -111,12 +123,16 @@ public class NfcAPI {
 
         @Override
         protected void onPause() {
+            Logger.logDebug(LOG_TAG, "onPause");
+
             adapter.disableForegroundDispatch(this);
             super.onPause();
         }
 
         @Override
         protected void onDestroy() {
+            Logger.logDebug(LOG_TAG, "onDestroy");
+
             socket_input = null;
             socket_output = null;
             super.onDestroy();
@@ -126,16 +142,15 @@ public class NfcAPI {
             ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
                 @Override
                 public void writeJson(JsonWriter out) throws Exception {
-                    Log.e("NFC","postResult");
-                    try
-                    {
+                    Logger.logDebug(LOG_TAG, "postResult");
+                    try {
                         switch (mode) {
                             case "write":
                                 switch (param) {
                                     case "text":
-                                        Log.e("NFC","-->write");
+                                        Logger.logVerbose(LOG_TAG, "Write start");
                                         onReceiveNfcWrite(context, intent);
-                                        Log.e("NFC","<--write");
+                                        Logger.logVerbose(LOG_TAG, "Write end");
                                         break;
                                     default:
                                         onUnexpectedAction(out, "Wrong Params", "Should be text for TAG");
@@ -162,29 +177,30 @@ public class NfcAPI {
                                 onUnexpectedAction(out, "Wrong Params", "Should be correct mode value ");
                                 break;
                         }
-                    }
-                    catch (Exception e){
+                    } catch (Exception e){
                         onUnexpectedAction(out, "exception", e.getMessage());
                     }
                 }
             });
         }
+
         public void onReceiveNfcWrite( final Context context, Intent intent) throws Exception {
-            {
-                Log.e("NFC","---->onReceiveNfcWrite");
-                NfcAdapter adapter = NfcAdapter.getDefaultAdapter(context);
-                Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-                NdefRecord record = NdefRecord.createTextRecord("en", value);
-                NdefMessage msg = new NdefMessage(new NdefRecord[]{record});
-                Ndef ndef = Ndef.get(tag);
-                ndef.connect();
-                ndef.writeNdefMessage(msg);
-                ndef.close();
-            }
+            Logger.logVerbose(LOG_TAG, "onReceiveNfcWrite");
+
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(context);
+            Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            NdefRecord record = NdefRecord.createTextRecord("en", value);
+            NdefMessage msg = new NdefMessage(new NdefRecord[]{record});
+            Ndef ndef = Ndef.get(tag);
+            ndef.connect();
+            ndef.writeNdefMessage(msg);
+            ndef.close();
         }
 
 
         public void readNDEFTag(Intent intent, JsonWriter out) throws Exception {
+            Logger.logVerbose(LOG_TAG, "readNDEFTag");
+
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
             Parcelable[] msgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
@@ -228,6 +244,8 @@ public class NfcAPI {
         }
 
         public void readFullNDEFTag(Intent intent, JsonWriter out) throws Exception {
+            Logger.logVerbose(LOG_TAG, "readFullNDEFTag");
+
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
             Ndef ndefTag = Ndef.get(tag);
@@ -262,7 +280,7 @@ public class NfcAPI {
                     out.endArray();
                 }
                 if (msgs.length == 1) {
-                    Log.e("NFC", "-->> readFullNDEFTag - 06");
+                    Logger.logInfo(LOG_TAG, "-->> readFullNDEFTag - 06");
                     nmsgs[0] = (NdefMessage) msgs[0];
                     NdefRecord records[] = nmsgs[0].getRecords();
                     {

@@ -10,7 +10,7 @@ import android.os.Build;
 import android.os.IBinder;
 
 import com.termux.api.util.ResultReturner;
-import com.termux.api.util.TermuxApiLogger;
+import com.termux.shared.logger.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +24,11 @@ import java.util.concurrent.TimeoutException;
 
 public class WallpaperAPI {
 
+    private static final String LOG_TAG = "WallpaperAPI";
+
     public static void onReceive(final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         Intent wallpaperService = new Intent(context, WallpaperService.class);
         wallpaperService.putExtras(intent.getExtras());
         context.startService(wallpaperService);
@@ -38,8 +42,11 @@ public class WallpaperAPI {
     public static class WallpaperService extends Service {
         protected static final int DOWNLOAD_TIMEOUT = 30;
 
+        private static final String LOG_TAG = "WallpaperService";
 
         public int onStartCommand(Intent intent, int flags, int startId) {
+            Logger.logDebug(LOG_TAG, "onStartCommand");
+
             if (intent.hasExtra("file")) {
                 getWallpaperFromFile(intent);
             } else if (intent.hasExtra("url")) {
@@ -72,7 +79,7 @@ public class WallpaperAPI {
             try {
                 result = wallpaperDownload.get(DOWNLOAD_TIMEOUT, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                TermuxApiLogger.info("Wallpaper download interrupted");
+                Logger.logInfo(LOG_TAG, "Wallpaper download interrupted");
             } catch (ExecutionException e) {
                 result.error = "Unknown host!";
             } catch (TimeoutException e) {

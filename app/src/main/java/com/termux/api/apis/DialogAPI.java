@@ -19,7 +19,6 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.text.InputType;
 import android.util.JsonWriter;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -49,6 +48,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.termux.api.R;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.activities.TermuxApiPermissionActivity;
+import com.termux.shared.logger.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -67,13 +67,19 @@ import java.util.Properties;
  */
 public class DialogAPI {
 
+    private static final String LOG_TAG = "DialogAPI";
+
     public static void onReceive(final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceive");
+
         context.startActivity(new Intent(context, DialogActivity.class).putExtras(intent.getExtras()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
     }
 
 
 
     public static class DialogActivity extends AppCompatActivity {
+
+        private static final String LOG_TAG = "DialogActivity";
 
         private boolean resultReturned = false;
 
@@ -95,7 +101,7 @@ public class DialogAPI {
                     }
                     mUseBlackUi = props.getProperty("use-black-ui").equals("true");
                 } catch (Exception e) {
-                    Log.e("termux-api", "Error loading props", e);
+                    Logger.logStackTraceWithMessage(LOG_TAG,  "Error loading props", e);
                 }
             }
 
@@ -104,6 +110,8 @@ public class DialogAPI {
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
+            Logger.logDebug(LOG_TAG, "onCreate");
+
             super.onCreate(savedInstanceState);
             final Intent intent = getIntent();
             final Context context = this;
@@ -123,12 +131,16 @@ public class DialogAPI {
 
         @Override
         protected void onNewIntent(Intent intent) {
+            Logger.logDebug(LOG_TAG, "onNewIntent");
+
             super.onNewIntent(intent);
             setIntent(intent);
         }
 
         @Override
         protected void onDestroy() {
+            Logger.logDebug(LOG_TAG, "onDestroy");
+
             super.onDestroy();
 
             if (!resultReturned) {

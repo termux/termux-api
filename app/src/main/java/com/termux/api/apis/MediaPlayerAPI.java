@@ -20,12 +20,12 @@ import java.io.IOException;
 public class MediaPlayerAPI {
 
     /**
-     * Starts our PlayerService
+     * Starts our MediaPlayerService
      */
     public static void onReceive(final Context context, final Intent intent) {
         // Create intent for starting our player service and make sure
         // we retain all relevant info from this intent
-        Intent playerService = new Intent(context, PlayerService.class);
+        Intent playerService = new Intent(context, MediaPlayerService.class);
         playerService.setAction(intent.getAction());
         playerService.putExtras(intent.getExtras());
 
@@ -55,7 +55,7 @@ public class MediaPlayerAPI {
     /**
      * All media functionality exists in this background service
      */
-    public static class PlayerService extends Service implements MediaPlayer.OnErrorListener,
+    public static class MediaPlayerService extends Service implements MediaPlayer.OnErrorListener,
             MediaPlayer.OnCompletionListener {
 
         protected static MediaPlayer mediaPlayer;

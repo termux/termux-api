@@ -65,7 +65,7 @@ public class NfcAPI {
                 value=intent.getStringExtra("value");
                 if (null == socket_input) socket_input = intent.getStringExtra("socket_input");
                 if (null == socket_output) socket_output = intent.getStringExtra("socket_output");
-                if (mode == "noData") {
+                if (mode.equals("noData")) {
                     errorNfc(this, intent,"");
                     finish();
                 }

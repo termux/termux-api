@@ -49,6 +49,9 @@ import com.termux.api.R;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.activities.TermuxApiPermissionActivity;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.theme.TermuxThemeUtils;
+import com.termux.shared.theme.NightMode;
+import com.termux.shared.theme.ThemeUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -83,31 +86,6 @@ public class DialogAPI {
 
         private boolean resultReturned = false;
 
-        protected boolean getBlackUI() {
-            File propsFile = new File(TERMUX_PROPERTIES_PRIMARY_FILE_PATH);
-
-            if (!propsFile.exists())
-                propsFile = new File(TERMUX_PROPERTIES_SECONDARY_FILE_PATH);
-
-            boolean mUseBlackUi = false;
-
-            if (propsFile.exists()) {
-                Properties props = new Properties();
-                try {
-                    if (propsFile.isFile() && propsFile.canRead()) {
-                        try (FileInputStream in = new FileInputStream(propsFile)) {
-                            props.load(new InputStreamReader(in, StandardCharsets.UTF_8));
-                        }
-                    }
-                    mUseBlackUi = props.getProperty("use-black-ui").equals("true");
-                } catch (Exception e) {
-                    Logger.logStackTraceWithMessage(LOG_TAG,  "Error loading props", e);
-                }
-            }
-
-            return mUseBlackUi;
-        }
-
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             Logger.logDebug(LOG_TAG, "onCreate");
@@ -119,7 +97,10 @@ public class DialogAPI {
 
             String methodType = intent.hasExtra("input_method") ? intent.getStringExtra("input_method") : "";
 
-            if (getBlackUI())
+            // Set NightMode.APP_NIGHT_MODE
+            TermuxThemeUtils.setAppNightMode(context);
+            boolean shouldEnableDarkTheme = ThemeUtils.shouldEnableDarkTheme(this, NightMode.getAppNightMode().getName());
+            if (shouldEnableDarkTheme)
                 this.setTheme(R.style.DialogTheme_Dark);
 
             InputMethod method = InputMethodFactory.get(methodType, this);

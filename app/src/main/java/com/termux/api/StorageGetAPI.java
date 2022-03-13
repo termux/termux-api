@@ -45,7 +45,7 @@ public class StorageGetAPI {
             }
             return;
         }
-        if (!intent.getBooleanExtra("async", false)) {
+        if (!intent.getBooleanExtra("wait", false)) {
             ResultReturner.returnData(apiReceiver, intent, out -> { });
         }
     }
@@ -54,7 +54,7 @@ public class StorageGetAPI {
 
         private String outputFile;
         private Intent mIntent;
-        private boolean async;
+        private boolean wait;
         private boolean folder;
         private boolean persist;
         private boolean multiple;
@@ -70,7 +70,7 @@ public class StorageGetAPI {
             mIntent = intent.getParcelableExtra(INTENT_EXTRA);
             outputFile = mIntent.getStringExtra("file");
             mimeType = mIntent.getStringExtra("type");
-            async = mIntent.getBooleanExtra("async", false);
+            wait = mIntent.getBooleanExtra("wait", false);
             folder = mIntent.getBooleanExtra("folder", false);
             persist = mIntent.getBooleanExtra("persist", false);
             multiple = mIntent.getBooleanExtra("multiple", false);
@@ -164,7 +164,7 @@ public class StorageGetAPI {
                     try { if (out != null) { out.close(); } } catch (Exception e) { }
                 }
             }
-            if (async) {
+            if (wait) {
                 if (json) {
                     ResultReturner.returnData(this, mIntent, new ResultReturner.ResultJsonWriter() {
                         @Override

@@ -80,7 +80,7 @@
                   android:exported="false"/>
         <activity android:name=".StorageGetAPI$StorageActivity"
                   android:theme="@android:style/Theme.Translucent.NoTitleBar"
-                  android:excludeFromRecents="true"
+                  android:excludeFromRecents="false"
                   android:exported="false"/>
         <activity android:name=".SAFAPI$SAFActivity"
                   android:theme="@style/TransparentTheme"

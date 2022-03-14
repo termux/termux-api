@@ -196,7 +196,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 }
                 break;
             case "SmsSend":
-                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.SEND_SMS)) {
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_PHONE_STATE, Manifest.permission.SEND_SMS)) {
                     SmsSendAPI.onReceive(this, context, intent);
                 }
                 break;

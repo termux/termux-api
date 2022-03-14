@@ -544,8 +544,7 @@ public class DialogAPI {
 
             @Override
             String getResult() {
-                String result = String.format(Locale.getDefault(), "%02d:%02d", widgetView.getHour(), widgetView.getMinute());
-                return result;
+                return String.format(Locale.getDefault(), "%02d:%02d", widgetView.getHour(), widgetView.getMinute());
             }
 
             @Override

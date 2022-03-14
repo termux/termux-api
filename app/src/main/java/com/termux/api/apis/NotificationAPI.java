@@ -331,9 +331,8 @@ public class NotificationAPI {
                                                        int buttonNum,
                                                        String buttonText,
                                                        String buttonAction, String notificationId) {
-        String replyLabel = buttonText;
         RemoteInput remoteInput = new RemoteInput.Builder(KEY_TEXT_REPLY)
-                .setLabel(replyLabel)
+                .setLabel(buttonText)
                 .build();
 
         // Build a PendingIntent for the reply action to trigger.
@@ -344,26 +343,22 @@ public class NotificationAPI {
                         PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Create the reply action and add the remote input.
-        NotificationCompat.Action action =
-                new NotificationCompat.Action.Builder(R.drawable.ic_event_note_black_24dp,
+        return new NotificationCompat.Action.Builder(R.drawable.ic_event_note_black_24dp,
                         buttonText,
                         replyPendingIntent)
                         .addRemoteInput(remoteInput)
                         .build();
-
-        return action;
     }
 
     private static Intent getMessageReplyIntent(Intent oldIntent,
                                                 String buttonText, String buttonAction,
                                                 String notificationId) {
-        Intent intent = oldIntent.
+        return oldIntent.
                 setClassName(TermuxConstants.TERMUX_API_PACKAGE_NAME, TermuxAPIConstants.TERMUX_API_RECEIVER_NAME).
                 putExtra("api_method", "NotificationReply").
                 putExtra("id", notificationId).
                 putExtra("action", buttonAction).
                 putExtra("replyKey", buttonText);
-        return intent;
     }
 
 

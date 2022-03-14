@@ -206,7 +206,7 @@ public class NfcAPI {
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
             Ndef ndefTag = Ndef.get(tag);
             boolean bNdefPresent = false;
-            String strs[] = tag.getTechList();
+            String[] strs = tag.getTechList();
             for (String s: strs){
                 if (s.equals("android.nfc.tech.Ndef")) {
                     bNdefPresent = true;
@@ -220,7 +220,7 @@ public class NfcAPI {
             NdefMessage[] nmsgs = new NdefMessage[msgs.length];
             if (msgs.length == 1) {
                 nmsgs[0] = (NdefMessage) msgs[0];
-                NdefRecord records[] = nmsgs[0].getRecords();
+                NdefRecord[] records = nmsgs[0].getRecords();
                 out.beginObject();
                 if (records.length >0 ) {
                     {
@@ -232,7 +232,7 @@ public class NfcAPI {
                             int pos = 1 + record.getPayload()[0];
                             pos = (NdefRecord.TNF_WELL_KNOWN==record.getTnf())?(int)record.getPayload()[0]+1:0;
                             int len = record.getPayload().length - pos;
-                            byte msg[] = new byte[len];
+                            byte[] msg = new byte[len];
                             System.arraycopy(record.getPayload(), pos, msg, 0, len);
                             out.name("Payload").value(new String(msg));
                             out.endObject();
@@ -253,7 +253,7 @@ public class NfcAPI {
             Ndef ndefTag = Ndef.get(tag);
             Parcelable[] msgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
 
-            String strs[] = tag.getTechList();
+            String[] strs = tag.getTechList();
             boolean bNdefPresent = false;
             for (String s: strs){
                 if (s.equals("android.nfc.tech.Ndef")) {
@@ -286,7 +286,7 @@ public class NfcAPI {
                 if (msgs.length == 1) {
                     Logger.logInfo(LOG_TAG, "-->> readFullNDEFTag - 06");
                     nmsgs[0] = (NdefMessage) msgs[0];
-                    NdefRecord records[] = nmsgs[0].getRecords();
+                    NdefRecord[] records = nmsgs[0].getRecords();
                     {
                         out.name("record");
                         if (records.length > 1)
@@ -300,7 +300,7 @@ public class NfcAPI {
                             int pos = 1 + record.getPayload()[0];
                             pos = (NdefRecord.TNF_WELL_KNOWN==record.getTnf())?(int)record.getPayload()[0]+1:0;
                             int len = record.getPayload().length - pos;
-                            byte msg[] = new byte[len];
+                            byte[] msg = new byte[len];
                             System.arraycopy(record.getPayload(), pos, msg, 0, len);
                             out.name("payload").value(new String(msg));
                             out.endObject();

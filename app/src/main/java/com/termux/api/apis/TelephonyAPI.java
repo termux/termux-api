@@ -41,7 +41,7 @@ public class TelephonyAPI {
     private static void writeIfKnown(JsonWriter out, String name, long value) throws IOException {
         if (value != Long.MAX_VALUE) out.name(name).value(value);
     }
-    private static void writeIfKnown(JsonWriter out, String name, int value[]) throws IOException {
+    private static void writeIfKnown(JsonWriter out, String name, int[] value) throws IOException {
         if (value != null) {
                 out.name(name);
                 out.beginArray();

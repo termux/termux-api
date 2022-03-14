@@ -117,11 +117,7 @@ public class JobSchedulerAPI {
             jobScheduler.cancelAll();
             return;
         } else if (cancel) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                cancelJob(apiReceiver, intent, jobScheduler, jobId);
-            } else {
-                ResultReturner.returnData(apiReceiver, intent, out -> out.println("Need at least Android N to cancel individual jobs"));
-            }
+            cancelJob(apiReceiver, intent, jobScheduler, jobId);
             return;
         }
 

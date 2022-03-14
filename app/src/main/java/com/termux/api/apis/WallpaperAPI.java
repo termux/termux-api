@@ -123,13 +123,8 @@ public class WallpaperAPI {
 
             if (result.wallpaper != null) {
                 try {
-                    // allow setting of lock screen wallpaper for Nougat and later
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        int flag = intent.hasExtra("lockscreen") ? WallpaperManager.FLAG_LOCK : WallpaperManager.FLAG_SYSTEM;
-                        wallpaperManager.setBitmap(result.wallpaper, null, true, flag);
-                    } else {
-                        wallpaperManager.setBitmap(result.wallpaper);
-                    }
+                    int flag = intent.hasExtra("lockscreen") ? WallpaperManager.FLAG_LOCK : WallpaperManager.FLAG_SYSTEM;
+                    wallpaperManager.setBitmap(result.wallpaper, null, true, flag);
                     result.message = "Wallpaper set successfully!";
                 } catch (IOException e) {
                     result.error = "Error setting wallpaper: " + e.getMessage();

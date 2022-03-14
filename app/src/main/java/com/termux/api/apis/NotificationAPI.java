@@ -306,7 +306,8 @@ public class NotificationAPI {
             PendingIntent pi = createAction(context, onDeleteActionExtra);
             notification.setDeleteIntent(pi);
         }
-        return new Pair(notification, notificationId);
+
+        return new Pair<>(notification, notificationId);
     }
 
     private static String getNotificationId(Intent intent) {

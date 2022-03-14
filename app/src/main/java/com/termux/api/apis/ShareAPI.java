@@ -12,9 +12,11 @@ import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
 import com.termux.api.R;
+import com.termux.api.TermuxAPIConstants;
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.net.uri.UriUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -88,7 +90,9 @@ public class ShareAPI {
 
                 Intent sendIntent = new Intent();
                 sendIntent.setAction(finalIntentAction);
-                Uri uriToShare = Uri.parse("content://com.termux.sharedfiles" + fileToShare.getAbsolutePath());
+
+                // Do not create Uri with Uri.parse() and use Uri.Builder().path(), check UriUtils.getUriFilePath().
+                Uri uriToShare = UriUtils.getContentUri(TermuxAPIConstants.TERMUX_API_FILE_SHARE_URI_AUTHORITY, fileToShare.getAbsolutePath());
                 sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
                 String contentTypeToUse;

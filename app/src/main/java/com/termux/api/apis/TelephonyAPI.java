@@ -98,9 +98,15 @@ public class TelephonyAPI {
                             writeIfKnown(out, "mcc", lteInfo.getCellIdentity().getMcc());
                             writeIfKnown(out, "mnc", lteInfo.getCellIdentity().getMnc());
 
-                            writeIfKnown(out, "rsrp", lteInfo.getCellSignalStrength().getRsrp());
-                            writeIfKnown(out, "rsrq", lteInfo.getCellSignalStrength().getRsrq());
-                            writeIfKnown(out, "rssi", lteInfo.getCellSignalStrength().getRssi());
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                writeIfKnown(out, "rsrp", lteInfo.getCellSignalStrength().getRsrp());
+                                writeIfKnown(out, "rsrq", lteInfo.getCellSignalStrength().getRsrq());
+                            }
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                writeIfKnown(out, "rssi", lteInfo.getCellSignalStrength().getRssi());
+                            }
+
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 writeIfKnown(out, "bands", lteInfo.getCellIdentity().getBands());
                             }
@@ -176,7 +182,6 @@ public class TelephonyAPI {
         });
     }
 
-
     public static void onReceiveTelephonyDeviceInfo(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceiveTelephonyDeviceInfo");
 
@@ -242,7 +247,9 @@ public class TelephonyAPI {
                     String device_id = null;
 
                     try {
-                        device_id = phoneType == TelephonyManager.PHONE_TYPE_GSM ? manager.getImei() : manager.getMeid();
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            device_id = phoneType == TelephonyManager.PHONE_TYPE_GSM ? manager.getImei() : manager.getMeid();
+                        }
                     } catch (SecurityException e) {
                         // Failed to obtain device id.
                         // Android 10+.

@@ -190,10 +190,14 @@ public abstract class ResultReturner {
                     activity.setResult(1);
                 }
             } finally {
-                if (asyncResult != null) {
-                    asyncResult.finish();
-                } else if (activity != null) {
-                    activity.finish();
+                try {
+                    if (asyncResult != null) {
+                        asyncResult.finish();
+                    } else if (activity != null) {
+                        activity.finish();
+                    }
+                } catch (Exception e) {
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Failed to cleanup", e);
                 }
             }
         };

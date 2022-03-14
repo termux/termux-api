@@ -70,7 +70,7 @@ public class JobSchedulerAPI {
         final boolean cancelAll = intent.getBooleanExtra("cancel_all", false);
 
         final int periodicMillis = intent.getIntExtra("period_ms", 0);
-        final String networkType = intent.getStringExtra("network");
+        String networkType = intent.getStringExtra("network");
         final boolean batteryNotLow = intent.getBooleanExtra("battery_not_low", true);
         final boolean charging = intent.getBooleanExtra("charging", false);
         final boolean persisted = intent.getBooleanExtra("persisted", false);
@@ -87,7 +87,10 @@ public class JobSchedulerAPI {
                     networkTypeCode = JobInfo.NETWORK_TYPE_UNMETERED;
                     break;
                 case "cellular":
-                    networkTypeCode = JobInfo.NETWORK_TYPE_CELLULAR;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                        networkTypeCode = JobInfo.NETWORK_TYPE_CELLULAR;
+                    else
+                        networkTypeCode = JobInfo.NETWORK_TYPE_UNMETERED;
                     break;
                 case "not_roaming":
                     networkTypeCode = JobInfo.NETWORK_TYPE_NOT_ROAMING;

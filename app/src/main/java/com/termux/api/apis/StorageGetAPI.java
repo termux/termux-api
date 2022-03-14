@@ -11,10 +11,12 @@ import androidx.annotation.Nullable;
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
+import com.termux.shared.errors.Error;
+import com.termux.shared.file.FileUtils;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
+import com.termux.shared.termux.file.TermuxFileUtils;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,13 +33,24 @@ public class StorageGetAPI {
 
         ResultReturner.returnData(apiReceiver, intent, out -> {
             final String fileExtra = intent.getStringExtra("file");
-            if (fileExtra == null || !new File(fileExtra).getParentFile().canWrite()) {
-                out.println("ERROR: Not a writable folder: " + fileExtra);
+            if (fileExtra == null || fileExtra.isEmpty()) {
+                out.println("ERROR: " + "File path not passed");
+
+                return;
+            }
+
+            // Get canonical path of fileExtra
+            String filePath = TermuxFileUtils.getCanonicalPath(fileExtra, null, true);
+            String fileParentDirPath = FileUtils.getFileBasename(filePath);
+
+            Error error = FileUtils.checkMissingFilePermissions("file parent directory", fileParentDirPath, "rw-", true);
+            if (error != null) {
+                out.println("ERROR: " + error.getErrorLogString());
                 return;
             }
 
             Intent intent1 = new Intent(context, StorageActivity.class);
-            intent1.putExtra(FILE_EXTRA, fileExtra);
+            intent1.putExtra(FILE_EXTRA, filePath);
             intent1.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent1);
         });

@@ -27,7 +27,6 @@ import com.termux.shared.logger.Logger;
 import java.io.File;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
 

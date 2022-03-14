@@ -1,8 +1,5 @@
 package com.termux.api.apis;
 
-import static com.termux.shared.termux.TermuxConstants.TERMUX_PROPERTIES_PRIMARY_FILE_PATH;
-import static com.termux.shared.termux.TermuxConstants.TERMUX_PROPERTIES_SECONDARY_FILE_PATH;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -53,17 +50,12 @@ import com.termux.shared.termux.theme.TermuxThemeUtils;
 import com.termux.shared.theme.NightMode;
 import com.termux.shared.theme.ThemeUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Properties;
 
 /**
  * API that allows receiving user input interactively in a variety of different ways

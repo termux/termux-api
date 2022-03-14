@@ -1,5 +1,6 @@
 package com.termux.api.apis;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
@@ -10,6 +11,8 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.JsonWriter;
+
+import androidx.annotation.RequiresPermission;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
@@ -30,6 +33,7 @@ public class LocationAPI {
         Logger.logDebug(LOG_TAG, "onReceive");
 
         ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
+            @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
             @Override
             public void writeJson(final JsonWriter out) throws Exception {
                 LocationManager manager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);

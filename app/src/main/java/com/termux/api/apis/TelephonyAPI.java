@@ -1,5 +1,6 @@
 package com.termux.api.apis;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -16,6 +17,8 @@ import android.telephony.CellSignalStrength;
 import android.telephony.CellSignalStrengthNr;
 import android.telephony.TelephonyManager;
 import android.util.JsonWriter;
+
+import androidx.annotation.RequiresPermission;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
@@ -186,6 +189,7 @@ public class TelephonyAPI {
         Logger.logDebug(LOG_TAG, "onReceiveTelephonyDeviceInfo");
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+            @RequiresPermission(Manifest.permission.READ_PHONE_STATE)
             @SuppressLint("HardwareIds")
             @Override
             public void writeJson(JsonWriter out) throws Exception {

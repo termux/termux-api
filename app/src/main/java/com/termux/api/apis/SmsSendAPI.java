@@ -1,10 +1,13 @@
 package com.termux.api.apis;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionInfo;
+
+import androidx.annotation.RequiresPermission;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
@@ -21,6 +24,7 @@ public class SmsSendAPI {
         Logger.logDebug(LOG_TAG, "onReceive");
 
         ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
+            @RequiresPermission(allOf = { Manifest.permission.READ_PHONE_STATE, Manifest.permission.SEND_SMS })
             @Override
             public void writeResult(PrintWriter out) {
                 final SmsManager smsManager = getSmsManager(context,intent);
@@ -46,6 +50,7 @@ public class SmsSendAPI {
         });
     }
 
+    @RequiresPermission(Manifest.permission.READ_PHONE_STATE)
     static SmsManager getSmsManager(Context context, final Intent intent) {
         int slot = intent.getIntExtra("slot", -1);
         if(slot == -1) {

@@ -385,8 +385,11 @@ public class NotificationAPI {
         String replyKey = intent.getStringExtra("replyKey");
         CharSequence reply = getMessageText(intent);
 
-        String action = intent.getStringExtra("action")
-                .replace("$REPLY", shellEscape(reply));
+        String action = intent.getStringExtra("action");
+
+        if (action != null && reply != null)
+            action = action.replace("$REPLY", shellEscape(reply));
+
         try {
             createAction(context, action).send();
         } catch (PendingIntent.CanceledException e) {

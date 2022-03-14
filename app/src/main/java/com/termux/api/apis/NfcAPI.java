@@ -208,8 +208,10 @@ public class NfcAPI {
             boolean bNdefPresent = false;
             String strs[] = tag.getTechList();
             for (String s: strs){
-                if (s.equals("android.nfc.tech.Ndef"))
+                if (s.equals("android.nfc.tech.Ndef")) {
                     bNdefPresent = true;
+                    break;
+                }
             }
             if (!bNdefPresent){
                 onUnexpectedAction(out, "Wrong Technology","termux API support only NFEF Tag");
@@ -254,8 +256,10 @@ public class NfcAPI {
             String strs[] = tag.getTechList();
             boolean bNdefPresent = false;
             for (String s: strs){
-                if (s.equals("android.nfc.tech.Ndef"))
+                if (s.equals("android.nfc.tech.Ndef")) {
                     bNdefPresent = true;
+                    break;
+                }
             }
             if (!bNdefPresent){
                 onUnexpectedAction(out, "Wrong Technology","termux API support only NFEF Tag");

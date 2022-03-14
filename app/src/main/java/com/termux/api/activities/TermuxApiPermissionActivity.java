@@ -9,6 +9,7 @@ import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
 
 import java.util.ArrayList;
 
@@ -19,7 +20,7 @@ public class TermuxApiPermissionActivity extends Activity {
     /**
      * Intent extra containing the permissions to request.
      */
-    public static final String PERMISSIONS_EXTRA = "com.termux.api.permission_extra";
+    public static final String PERMISSIONS_EXTRA = TermuxConstants.TERMUX_API_PACKAGE_NAME + ".permission_extra";
 
     /**
      * Check for and request permissions if necessary.

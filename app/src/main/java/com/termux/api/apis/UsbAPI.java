@@ -15,6 +15,7 @@ import android.util.SparseArray;
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -112,7 +113,7 @@ public class UsbAPI {
         Looper looper = Looper.myLooper();
         final boolean[] result = new boolean[1];
 
-        final String ACTION_USB_PERMISSION = "com.termux.api.USB_PERMISSION";
+        final String ACTION_USB_PERMISSION = TermuxConstants.TERMUX_API_PACKAGE_NAME + ".USB_PERMISSION";
         final BroadcastReceiver usbReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(final Context usbContext, final Intent usbIntent) {

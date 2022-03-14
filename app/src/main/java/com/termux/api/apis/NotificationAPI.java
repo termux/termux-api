@@ -20,9 +20,13 @@ import androidx.core.app.RemoteInput;
 import androidx.core.util.Pair;
 
 import com.termux.api.R;
+import com.termux.api.TermuxAPIConstants;
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.shell.command.ExecutionCommand;
+import com.termux.shared.termux.TermuxConstants;
+import com.termux.shared.termux.TermuxConstants.TERMUX_APP.TERMUX_SERVICE;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -30,17 +34,11 @@ import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.UUID;
 
-import static com.termux.shared.termux.TermuxConstants.TERMUX_PREFIX_DIR_PATH;
-
 public class NotificationAPI {
 
     private static final String LOG_TAG = "NotificationAPI";
 
-    public static final String TERMUX_SERVICE = "com.termux.app.TermuxService";
-    public static final String ACTION_EXECUTE = "com.termux.service_execute";
-    public static final String EXTRA_ARGUMENTS = "com.termux.execute.arguments";
-    public static final String BIN_SH = TERMUX_PREFIX_DIR_PATH+"/bin/sh";
-    private static final String EXTRA_EXECUTE_IN_BACKGROUND = "com.termux.execute.background";
+    public static final String BIN_SH = TermuxConstants.TERMUX_PREFIX_DIR_PATH + "/bin/sh";
     private static final String CHANNEL_ID = "termux-notification";
     private static final String CHANNEL_TITLE = "Termux API notification channel";
     private static final String KEY_TEXT_REPLY = "TERMUX_TEXT_REPLY";
@@ -359,7 +357,7 @@ public class NotificationAPI {
                                                 String buttonText, String buttonAction,
                                                 String notificationId) {
         Intent intent = oldIntent.
-                setClassName("com.termux.api", "com.termux.api.TermuxApiReceiver").
+                setClassName(TermuxConstants.TERMUX_API_PACKAGE_NAME, TermuxAPIConstants.TERMUX_API_RECEIVER_NAME).
                 putExtra("api_method", "NotificationReply").
                 putExtra("id", notificationId).
                 putExtra("action", buttonAction).
@@ -410,16 +408,18 @@ public class NotificationAPI {
     }
 
     static Intent createExecuteIntent(String action){
-        String[] arguments = new String[]{"-c", action};
-        Uri executeUri = new Uri.Builder().scheme("com.termux.file")
-                .path(BIN_SH)
-                .appendQueryParameter("arguments", Arrays.toString(arguments))
-                .build();
-        Intent executeIntent = new Intent(ACTION_EXECUTE, executeUri);
-        executeIntent.setClassName("com.termux", TERMUX_SERVICE);
-        executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
-        executeIntent.putExtra(EXTRA_ARGUMENTS, arguments);
-        return executeIntent;
+        ExecutionCommand executionCommand = new ExecutionCommand();
+        executionCommand.executableUri = new Uri.Builder().scheme(TERMUX_SERVICE.URI_SCHEME_SERVICE_EXECUTE).path(BIN_SH).build();
+        executionCommand.arguments = new String[]{"-c", action};
+        executionCommand.runner = ExecutionCommand.Runner.APP_SHELL.getName();
+
+        // Create execution intent with the action TERMUX_SERVICE#ACTION_SERVICE_EXECUTE to be sent to the TERMUX_SERVICE
+        Intent executionIntent = new Intent(TERMUX_SERVICE.ACTION_SERVICE_EXECUTE, executionCommand.executableUri);
+        executionIntent.setClassName(TermuxConstants.TERMUX_PACKAGE_NAME, TermuxConstants.TERMUX_APP.TERMUX_SERVICE_NAME);
+        executionIntent.putExtra(TERMUX_SERVICE.EXTRA_ARGUMENTS, executionCommand.arguments);
+        executionIntent.putExtra(TERMUX_SERVICE.EXTRA_RUNNER, executionCommand.runner);
+        executionIntent.putExtra(TERMUX_SERVICE.EXTRA_BACKGROUND, true); // Also pass in case user using termux-app version < 0.119.0
+        return executionIntent;
     }
 
     static PendingIntent createAction(final Context context, String action){

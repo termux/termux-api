@@ -46,6 +46,7 @@ import com.termux.api.R;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.activities.TermuxApiPermissionActivity;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.theme.TermuxThemeUtils;
 import com.termux.shared.theme.NightMode;
 import com.termux.shared.theme.ThemeUtils;
@@ -702,7 +703,7 @@ public class DialogAPI {
                 for (final ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
                     if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
                         for (final String activeProcess : processInfo.pkgList) {
-                            if (activeProcess.equals("com.termux")) {
+                            if (activeProcess.equals(TermuxConstants.TERMUX_PACKAGE_NAME)) {
                                 return true;
                             }
                         }

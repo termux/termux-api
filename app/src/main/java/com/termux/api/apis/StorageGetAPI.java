@@ -12,6 +12,7 @@ import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,7 +22,7 @@ import java.io.OutputStream;
 
 public class StorageGetAPI {
 
-    private static final String FILE_EXTRA = "com.termux.api.storage.file";
+    private static final String FILE_EXTRA = TermuxConstants.TERMUX_API_PACKAGE_NAME + ".storage.file";
 
     private static final String LOG_TAG = "StorageGetAPI";
 

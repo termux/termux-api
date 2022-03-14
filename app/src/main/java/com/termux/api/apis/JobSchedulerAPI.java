@@ -16,6 +16,9 @@ import android.text.TextUtils;
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.shell.command.ExecutionCommand;
+import com.termux.shared.termux.TermuxConstants;
+import com.termux.shared.termux.TermuxConstants.TERMUX_APP.TERMUX_SERVICE;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -207,12 +210,7 @@ public class JobSchedulerAPI {
 
     public static class JobSchedulerService extends JobService {
 
-        public static final String SCRIPT_FILE_PATH = "com.termux.api.jobscheduler_script_path";
-
-        // Constants from TermuxService.
-        private static final String TERMUX_SERVICE = "com.termux.app.TermuxService";
-        private static final String ACTION_EXECUTE = "com.termux.service_execute";
-        private static final String EXTRA_EXECUTE_IN_BACKGROUND = "com.termux.execute.background";
+        public static final String SCRIPT_FILE_PATH = TermuxConstants.TERMUX_API_PACKAGE_NAME + ".jobscheduler_script_path";
 
         private static final String LOG_TAG = "JobSchedulerService";
 
@@ -223,17 +221,22 @@ public class JobSchedulerAPI {
             PersistableBundle extras = params.getExtras();
             String filePath = extras.getString(SCRIPT_FILE_PATH);
 
-            Uri scriptUri = new Uri.Builder().scheme("com.termux.file").path(filePath).build();
-            Intent executeIntent = new Intent(ACTION_EXECUTE, scriptUri);
-            executeIntent.setClassName("com.termux", TERMUX_SERVICE);
-            executeIntent.putExtra(EXTRA_EXECUTE_IN_BACKGROUND, true);
+            ExecutionCommand executionCommand = new ExecutionCommand();
+            executionCommand.executableUri = new Uri.Builder().scheme(TERMUX_SERVICE.URI_SCHEME_SERVICE_EXECUTE).path(filePath).build();
+            executionCommand.runner = ExecutionCommand.Runner.APP_SHELL.getName();
+
+            // Create execution intent with the action TERMUX_SERVICE#ACTION_SERVICE_EXECUTE to be sent to the TERMUX_SERVICE
+            Intent executionIntent = new Intent(TERMUX_SERVICE.ACTION_SERVICE_EXECUTE, executionCommand.executableUri);
+            executionIntent.setClassName(TermuxConstants.TERMUX_PACKAGE_NAME, TermuxConstants.TERMUX_APP.TERMUX_SERVICE_NAME);
+            executionIntent.putExtra(TERMUX_SERVICE.EXTRA_RUNNER, executionCommand.runner);
+            executionIntent.putExtra(TERMUX_SERVICE.EXTRA_BACKGROUND, true); // Also pass in case user using termux-app version < 0.119.0
 
             Context context = getApplicationContext();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // https://developer.android.com/about/versions/oreo/background.html
-                context.startForegroundService(executeIntent);
+                context.startForegroundService(executionIntent);
             } else {
-                context.startService(executeIntent);
+                context.startService(executionIntent);
             }
 
             Logger.logInfo(LOG_TAG, "Job started for \"" + filePath + "\"");

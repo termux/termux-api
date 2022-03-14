@@ -22,7 +22,10 @@ import android.view.WindowManager;
 
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.errors.Error;
+import com.termux.shared.file.FileUtils;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.file.TermuxFileUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -43,16 +46,32 @@ public class PhotoAPI {
         Logger.logDebug(LOG_TAG, "onReceive");
 
         final String filePath = intent.getStringExtra("file");
-        final File outputFile = new File(filePath);
-        final File outputDir = outputFile.getParentFile();
         final String cameraId = Objects.toString(intent.getStringExtra("camera"), "0");
 
         ResultReturner.returnData(apiReceiver, intent, stdout -> {
-            if (!(outputDir.isDirectory() || outputDir.mkdirs())) {
-                stdout.println("Not a folder (and unable to create it): " + outputDir.getAbsolutePath());
-            } else {
-                takePicture(stdout, context, outputFile, cameraId);
+            if (filePath == null || filePath.isEmpty()) {
+                stdout.println("ERROR: " + "File path not passed");
+                return;
             }
+
+            // Get canonical path of filePath
+            String photoFilePath = TermuxFileUtils.getCanonicalPath(filePath, null, true);
+            String photoDirPath = FileUtils.getFileBasename(photoFilePath);
+
+            // If workingDirectory is not a directory, or is not readable or writable, then just return
+            // Creation of missing directory and setting of read, write and execute permissions are only done if workingDirectory is
+            // under allowed termux working directory paths.
+            // We try to set execute permissions, but ignore if they are missing, since only read and write permissions are required
+            // for working directories.
+            Error error = TermuxFileUtils.validateDirectoryFileExistenceAndPermissions("photo directory", photoDirPath,
+                    true, true, true,
+                    false, true);
+            if (error != null) {
+                stdout.println("ERROR: " + error.getErrorLogString());
+                return;
+            }
+
+            takePicture(stdout, context, new File(photoFilePath), cameraId);
         });
     }
 

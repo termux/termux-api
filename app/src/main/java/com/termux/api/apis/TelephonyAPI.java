@@ -256,7 +256,8 @@ public class TelephonyAPI {
                         }
                     } catch (SecurityException e) {
                         // Failed to obtain device id.
-                        // Android 10+.
+                        // Android 10+ requires READ_PRIVILEGED_PHONE_STATE
+                        // https://source.android.com/devices/tech/config/device-identifiers
                     }
 
                     out.name("device_id").value(device_id);

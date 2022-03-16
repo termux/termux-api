@@ -77,7 +77,7 @@ public class DialogAPI {
 
         private static final String LOG_TAG = "DialogActivity";
 
-        private boolean resultReturned = false;
+        private volatile boolean resultReturned = false;
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
@@ -117,9 +117,7 @@ public class DialogAPI {
 
             super.onDestroy();
 
-            if (!resultReturned) {
-                postResult(this, null);
-            }
+            postResult(this, null);
         }
 
         /**
@@ -144,7 +142,14 @@ public class DialogAPI {
         /**
          * Writes the InputResult to the console
          */
-        protected void postResult(final Context context, final InputResult result) {
+        protected synchronized void postResult(final Context context, final InputResult resultParam) {
+            if (resultReturned) {
+                Logger.logDebug(LOG_TAG, "Ignoring call to postResult");
+                return;
+            } else {
+                Logger.logDebug(LOG_TAG, "postResult");
+            }
+
             ResultReturner.returnData(context, getIntent(), new ResultReturner.ResultJsonWriter() {
 
                 @Override

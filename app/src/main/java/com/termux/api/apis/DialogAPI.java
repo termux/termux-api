@@ -50,6 +50,7 @@ import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.theme.TermuxThemeUtils;
 import com.termux.shared.theme.NightMode;
 import com.termux.shared.theme.ThemeUtils;
+import com.termux.shared.view.KeyboardUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -712,15 +713,11 @@ public class DialogAPI {
              */
 
             protected void hideKeyboard() {
-                Objects.requireNonNull(getDialog()).getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                KeyboardUtils.setSoftKeyboardAlwaysHiddenFlags(getActivity());
             }
 
             protected void showKeyboard() {
-                getInputMethodManager().showSoftInput(getView(), InputMethodManager.SHOW_FORCED);
-            }
-
-            protected InputMethodManager getInputMethodManager() {
-                return (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                KeyboardUtils.showSoftKeyboard(getActivity(), getView());
             }
 
             /**

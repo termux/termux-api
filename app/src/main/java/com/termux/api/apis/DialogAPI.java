@@ -78,6 +78,7 @@ public class DialogAPI {
         private static final String LOG_TAG = "DialogActivity";
 
         private volatile boolean resultReturned = false;
+        private InputMethod mInputMethod;
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
@@ -96,11 +97,17 @@ public class DialogAPI {
             if (shouldEnableDarkTheme)
                 this.setTheme(R.style.DialogTheme_Dark);
 
-            InputMethod method = InputMethodFactory.get(methodType, this);
-            method.create(this, result -> {
+            mInputMethod = InputMethodFactory.get(methodType, this);
+            if (mInputMethod != null) {
+                mInputMethod.create(this, result -> {
+                    postResult(context, result);
+                    finish();
+                });
+            } else {
+                InputResult result = new InputResult();
+                result.error = "Unknown Input Method: " + methodType;
                 postResult(context, result);
-                finish();
-            });
+            }
         }
 
         @Override
@@ -118,6 +125,20 @@ public class DialogAPI {
             super.onDestroy();
 
             postResult(this, null);
+
+            if (mInputMethod != null) {
+                Dialog dialog = mInputMethod.getDialog();
+                dismissDialog(dialog);
+            }
+        }
+
+        private static void dismissDialog(Dialog dialog) {
+            try {
+                if (dialog != null)
+                    dialog.dismiss();
+            } catch (Exception e) {
+                Logger.logStackTraceWithMessage(LOG_TAG, "Failed tp dismiss dialog", e);
+            }
         }
 
         /**
@@ -219,11 +240,7 @@ public class DialogAPI {
                     case "time":
                         return new TimeInputMethod(activity);
                     default:
-                        return (activity1, resultListener) -> {
-                            InputResult result = new InputResult();
-                            result.error = "Unknown Input Method: " + type;
-                            resultListener.onResult(result);
-                        };
+                        return null;
                 }
             }
         }
@@ -233,6 +250,8 @@ public class DialogAPI {
          * Interface for creating an input method type
          */
         interface InputMethod {
+            Dialog getDialog();
+
             void create(AppCompatActivity activity, InputResultListener resultListener);
         }
 
@@ -410,7 +429,7 @@ public class DialogAPI {
                     if (values.length != RANGE_LENGTH) {
                         inputResult.error = "Invalid range! Must be 3 int values!";
                         postCanceledResult();
-                        dialog.dismiss();
+                        dismissDialog(dialog);
                     } else {
                         min = Math.min(values[0], values[1]);
                         max = Math.max(values[0], values[1]);
@@ -674,7 +693,7 @@ public class DialogAPI {
                         InputResult result = new InputResult();
                         result.text = values[j];
                         result.index = j;
-                        dialog.dismiss();
+                        dismissDialog(dialog);
                         resultListener.onResult(result);
                     });
 
@@ -940,6 +959,10 @@ public class DialogAPI {
                 initActivityDisplay(activity);
             }
 
+            @Override
+            public Dialog getDialog() {
+                return dialog;
+            }
 
             @Override
             public void create(AppCompatActivity activity, final InputResultListener resultListener) {

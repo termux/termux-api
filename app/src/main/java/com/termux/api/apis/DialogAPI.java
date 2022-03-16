@@ -156,6 +156,12 @@ public class DialogAPI {
                 public void writeJson(JsonWriter out) throws Exception {
                     out.beginObject();
 
+                    InputResult result = resultParam;
+                    if (result == null) {
+                        result = new InputResult();
+                        result.code = Dialog.BUTTON_NEGATIVE;
+                    }
+
                     out.name("code").value(result.code);
                     out.name("text").value(result.text);
                     if(result.index > -1) {

@@ -3,11 +3,11 @@ package com.termux.api.activities;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.text.TextUtils;
 import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
+import com.termux.shared.android.PermissionUtils;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
 
@@ -30,7 +30,7 @@ public class TermuxApiPermissionActivity extends Activity {
     public static boolean checkAndRequestPermissions(Context context, Intent intent, String... permissions) {
         final ArrayList<String> permissionsToRequest = new ArrayList<>();
         for (String permission : permissions) {
-            if (context.checkSelfPermission(permission) == PackageManager.PERMISSION_DENIED) {
+            if (!PermissionUtils.checkPermission(context, permission)) {
                 permissionsToRequest.add(permission);
             }
         }
@@ -72,7 +72,7 @@ public class TermuxApiPermissionActivity extends Activity {
 
         super.onResume();
         ArrayList<String> permissionValues = getIntent().getStringArrayListExtra(PERMISSIONS_EXTRA);
-        requestPermissions(permissionValues.toArray(new String[0]), 123);
+        PermissionUtils.requestPermissions(this, permissionValues.toArray(new String[0]), 0);
         finish();
     }
 

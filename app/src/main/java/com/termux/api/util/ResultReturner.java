@@ -1,9 +1,11 @@
 package com.termux.api.util;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.IntentService;
 import android.content.BroadcastReceiver;
 import android.content.BroadcastReceiver.PendingResult;
+import android.content.Context;
 import android.content.Intent;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
@@ -11,6 +13,8 @@ import android.os.ParcelFileDescriptor;
 import android.util.JsonWriter;
 
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
+import com.termux.shared.termux.crash.TermuxCrashUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
@@ -20,6 +24,9 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
 public abstract class ResultReturner {
+
+    @SuppressLint("StaticFieldLeak")
+    private static Context context;
 
     private static final String LOG_TAG = "ResultReturner";
 
@@ -183,7 +190,12 @@ public abstract class ResultReturner {
                     activity.setResult(0);
                 }
             } catch (Exception e) {
-                Logger.logStackTraceWithMessage(LOG_TAG, "Error in ResultReturner", e);
+                String message = "Error in " + LOG_TAG;
+                Logger.logStackTraceWithMessage(LOG_TAG, message, e);
+
+                TermuxCrashUtils.sendPluginCrashReportNotification(ResultReturner.context, LOG_TAG,
+                        TermuxConstants.TERMUX_API_APP_NAME + " Error", message, e);
+
                 if (asyncResult != null) {
                     asyncResult.setResultCode(1);
                 } else if (activity != null) {
@@ -207,6 +219,10 @@ public abstract class ResultReturner {
         } else {
             new Thread(runnable).start();
         }
+    }
+
+    public static void setContext(Context context) {
+        ResultReturner.context = context.getApplicationContext();
     }
 
 }

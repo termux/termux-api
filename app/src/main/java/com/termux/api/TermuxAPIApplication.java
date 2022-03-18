@@ -3,6 +3,7 @@ package com.termux.api;
 import android.app.Application;
 import android.content.Context;
 
+import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.crash.TermuxCrashUtils;
@@ -16,6 +17,7 @@ public class TermuxAPIApplication extends Application {
 
         // Set crash handler for the app
         TermuxCrashUtils.setCrashHandler(this);
+        ResultReturner.setContext(this);
 
         // Set log config for the app
         setLogConfig(getApplicationContext(), true);

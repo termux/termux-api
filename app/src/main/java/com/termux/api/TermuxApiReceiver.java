@@ -48,6 +48,8 @@ import com.termux.api.apis.WifiAPI;
 import com.termux.api.activities.TermuxApiPermissionActivity;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
+import com.termux.shared.termux.crash.TermuxCrashUtils;
 
 public class TermuxApiReceiver extends BroadcastReceiver {
 
@@ -61,9 +63,13 @@ public class TermuxApiReceiver extends BroadcastReceiver {
         try {
             doWork(context, intent);
         } catch (Exception e) {
+            String message = "Error in " + LOG_TAG;
             // Make sure never to throw exception from BroadCastReceiver to avoid "process is bad"
             // behaviour from the Android system.
-            Logger.logStackTraceWithMessage(LOG_TAG, "Error in TermuxApiReceiver", e);
+            Logger.logStackTraceWithMessage(LOG_TAG, message, e);
+
+            TermuxCrashUtils.sendPluginCrashReportNotification(context, LOG_TAG,
+                    TermuxConstants.TERMUX_API_APP_NAME + " Error", message, e);
         }
     }
 

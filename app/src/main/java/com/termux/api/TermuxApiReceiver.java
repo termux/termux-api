@@ -46,6 +46,7 @@ import com.termux.api.apis.VolumeAPI;
 import com.termux.api.apis.WallpaperAPI;
 import com.termux.api.apis.WifiAPI;
 import com.termux.api.activities.TermuxApiPermissionActivity;
+import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
@@ -70,6 +71,8 @@ public class TermuxApiReceiver extends BroadcastReceiver {
 
             TermuxCrashUtils.sendPluginCrashReportNotification(context, LOG_TAG,
                     TermuxConstants.TERMUX_API_APP_NAME + " Error", message, e);
+
+            ResultReturner.noteDone(this, intent);
         }
     }
 

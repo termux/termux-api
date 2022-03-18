@@ -148,38 +148,41 @@ public abstract class ResultReturner {
         final Activity activity = (Activity) ((context instanceof Activity) ? context : null);
 
         final Runnable runnable = () -> {
+            PrintWriter writer = null;
+            LocalSocket outputSocket = null;
             try {
                 final ParcelFileDescriptor[] pfds = { null };
-                try (LocalSocket outputSocket = new LocalSocket()) {
-                    String outputSocketAdress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
-                    outputSocket.connect(new LocalSocketAddress(outputSocketAdress));
-                    try (PrintWriter writer = new PrintWriter(outputSocket.getOutputStream())) {
-                        if (resultWriter != null) {
-                            if (resultWriter instanceof BinaryOutput) {
-                                BinaryOutput bout = (BinaryOutput) resultWriter;
-                                bout.setOutput(outputSocket.getOutputStream());
-                            }
-                            if (resultWriter instanceof WithInput) {
-                                try (LocalSocket inputSocket = new LocalSocket()) {
-                                    String inputSocketAdress = intent.getStringExtra(SOCKET_INPUT_EXTRA);
-                                    inputSocket.connect(new LocalSocketAddress(inputSocketAdress));
-                                    ((WithInput) resultWriter).setInput(inputSocket.getInputStream());
-                                    resultWriter.writeResult(writer);
-                                }
-                            } else {
-                                resultWriter.writeResult(writer);
-                            }
-                            if(resultWriter instanceof WithAncillaryFd) {
-                                int fd = ((WithAncillaryFd) resultWriter).getFd();
-                                if (fd >= 0) {
-                                    pfds[0] = ParcelFileDescriptor.adoptFd(fd);
-                                    FileDescriptor[] fds = { pfds[0].getFileDescriptor() };
-                                    outputSocket.setFileDescriptorsForSend(fds);
-                                }
-                            }
+                outputSocket = new LocalSocket();
+                String outputSocketAdress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
+                Logger.logDebug(LOG_TAG, "Connecting to output socket \"" + outputSocketAdress + "\"");
+                outputSocket.connect(new LocalSocketAddress(outputSocketAdress));
+                writer = new PrintWriter(outputSocket.getOutputStream());
+
+                if (resultWriter != null) {
+                    if (resultWriter instanceof BinaryOutput) {
+                        BinaryOutput bout = (BinaryOutput) resultWriter;
+                        bout.setOutput(outputSocket.getOutputStream());
+                    }
+                    if (resultWriter instanceof WithInput) {
+                        try (LocalSocket inputSocket = new LocalSocket()) {
+                            String inputSocketAdress = intent.getStringExtra(SOCKET_INPUT_EXTRA);
+                            inputSocket.connect(new LocalSocketAddress(inputSocketAdress));
+                            ((WithInput) resultWriter).setInput(inputSocket.getInputStream());
+                            resultWriter.writeResult(writer);
+                        }
+                    } else {
+                        resultWriter.writeResult(writer);
+                    }
+                    if(resultWriter instanceof WithAncillaryFd) {
+                        int fd = ((WithAncillaryFd) resultWriter).getFd();
+                        if (fd >= 0) {
+                            pfds[0] = ParcelFileDescriptor.adoptFd(fd);
+                            FileDescriptor[] fds = { pfds[0].getFileDescriptor() };
+                            outputSocket.setFileDescriptorsForSend(fds);
                         }
                     }
                 }
+
                 if(pfds[0] != null) {
                     pfds[0].close();
                 }
@@ -203,13 +206,22 @@ public abstract class ResultReturner {
                 }
             } finally {
                 try {
+                    if (writer != null)
+                        writer.close();
+                    if (outputSocket != null)
+                        outputSocket.close();
+                } catch (Exception e) {
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Failed to close", e);
+                }
+
+                try {
                     if (asyncResult != null) {
                         asyncResult.finish();
                     } else if (activity != null) {
                         activity.finish();
                     }
                 } catch (Exception e) {
-                    Logger.logStackTraceWithMessage(LOG_TAG, "Failed to cleanup", e);
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Failed to finish", e);
                 }
             }
         };

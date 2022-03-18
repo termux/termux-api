@@ -13,4 +13,23 @@
     <string name="grant_permission">Grant permission</string>
     <string name="keep_alive_service">This service keeps Termux:API running in the background for faster startup of termux-* commands.</string>
     <string name="permission_description">This app needs the following permission(s):\n</string>
+
+    <string name="plugin_info">&TERMUX_API_APP_NAME; is a plugin app for the &TERMUX_APP_NAME; app
+        that executes termux-api package commands.
+        Check &TERMUX_APP_NAME; app github %1$s, &TERMUX_API_APP_NAME; app github %2$s and
+        %3$s package github %4$s for more info.
+
+        \n\nThe &TERMUX_API_APP_NAME; app requires `%3$s` apt package to function.
+        Run `pkg install %3$s` to install it.
+
+        \n\nNote that if &TERMUX_API_APP_NAME; app crashes too many times, then android will mark the
+        app as a bad process and you will need to manually start this activity again once for the
+        api commands to start working again, otherwise the commands will hang.
+
+        \n\nReports for some crashes may be shown when you restart &TERMUX_APP_NAME; app.</string>
+
+
+    <string name="action_info">Info</string>
+    <string name="action_settings">Settings</string>
+
 </resources>

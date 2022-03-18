@@ -65,6 +65,16 @@
         android:theme="@android:style/Theme.Material.Light"
         tools:ignore="GoogleAppIndexingWarning">
 
+        <activity
+            android:name=".activities.TermuxAPIActivity"
+            android:theme="@style/Theme.BaseActivity.DayNight.NoActionBar"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
         <activity android:name=".activities.TermuxApiPermissionActivity"
             android:theme="@android:style/Theme.NoDisplay"
             android:noHistory="true"
@@ -108,6 +118,14 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
+        <!-- If you see "Unresolved package" errors for ReportActivity with manifest placeholder,
+        ignore it. Android Studio linter is broken and correct package name will be used at build time." -->
+        <activity
+            android:name="${TERMUX_PACKAGE_NAME}.shared.activities.ReportActivity"
+            android:theme="@style/Theme.MarkdownViewActivity.DayNight"
+            android:documentLaunchMode="intoExisting"
+            tools:ignore="MissingClass" />
+
 
 
         <provider
@@ -121,6 +139,12 @@
 
         <receiver android:name=".TermuxApiReceiver"
             android:exported="false" />
+
+        <receiver
+            android:name=".shared.activities.ReportActivity$ReportActivityBroadcastReceiver"
+            android:exported="false"
+            tools:ignore="MissingClass" />
+
 
 
 

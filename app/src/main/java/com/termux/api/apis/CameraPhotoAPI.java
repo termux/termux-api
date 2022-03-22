@@ -38,9 +38,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-public class PhotoAPI {
+public class CameraPhotoAPI {
 
-    private static final String LOG_TAG = "PhotoAPI";
+    private static final String LOG_TAG = "CameraPhotoAPI";
 
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");

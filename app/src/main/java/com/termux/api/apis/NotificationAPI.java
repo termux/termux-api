@@ -357,8 +357,7 @@ public class NotificationAPI {
                 setClassName(TermuxConstants.TERMUX_API_PACKAGE_NAME, TermuxAPIConstants.TERMUX_API_RECEIVER_NAME).
                 putExtra("api_method", "NotificationReply").
                 putExtra("id", notificationId).
-                putExtra("action", buttonAction).
-                putExtra("replyKey", buttonText);
+                putExtra("action", buttonAction);
     }
 
 
@@ -378,7 +377,6 @@ public class NotificationAPI {
                                                     Context context, Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceiveReplyToNotification");
 
-        String replyKey = intent.getStringExtra("replyKey");
         CharSequence reply = getMessageText(intent);
 
         String action = intent.getStringExtra("action");

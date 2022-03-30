@@ -29,6 +29,29 @@
         \n\nReports for some crashes may be shown when you restart &TERMUX_APP_NAME; app.</string>
 
 
+
+    <!-- TermuxAPIActivity -->
+    <string name="msg_battery_optimization_not_disabled_warning">Android battery optimizations
+        should be disabled for the &TERMUX_API_APP_NAME; app so that termux-api script can start
+        it from the background if its failing to do so. Do not worry, this will not drain battery,
+        the app currently only runs commands when called from termux-api script.
+        Check https://developer.android.com/about/versions/oreo/background and
+        https://developer.android.com/guide/components/foreground-services#background-start-restrictions
+        for more info.
+
+        \n\nAlso check https://dontkillmyapp.com for info on vendor specific app killers.
+        Depending on vendor you may need to do things like enable AutoStart, disable DuraSpeed,
+        enable `Display pop-up windows while running in the background` for the app.</string>
+    <string name="action_disable_battery_optimizations">Disable Battery Optimizations</string>
+    <string name="msg_display_over_other_apps_permission_not_granted_warning">The display over other
+        apps permission should be granted to &TERMUX_API_APP_NAME; app for starting foreground
+        activities from background. Check https://developer.android.com/guide/components/activities/background-starts
+        for more info.
+    </string>
+    <string name="action_grant_display_over_other_apps_permission">Grant Draw Over Apps Permission</string>
+
+    <string name="action_already_granted">Already Granted</string>
+    <string name="action_already_disabled">Already Disabled</string>
     <string name="action_info">Info</string>
     <string name="action_settings">Settings</string>
 

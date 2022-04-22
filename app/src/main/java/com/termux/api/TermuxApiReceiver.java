@@ -50,7 +50,7 @@ import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
-import com.termux.shared.termux.crash.TermuxCrashUtils;
+import com.termux.shared.termux.plugins.TermuxPluginUtils;
 
 public class TermuxApiReceiver extends BroadcastReceiver {
 
@@ -69,7 +69,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             // behaviour from the Android system.
             Logger.logStackTraceWithMessage(LOG_TAG, message, t);
 
-            TermuxCrashUtils.sendPluginCrashReportNotification(context, LOG_TAG,
+            TermuxPluginUtils.sendPluginCommandErrorNotification(context, LOG_TAG,
                     TermuxConstants.TERMUX_API_APP_NAME + " Error", message, t);
 
             ResultReturner.noteDone(this, intent);

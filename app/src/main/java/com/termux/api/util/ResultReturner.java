@@ -14,7 +14,7 @@ import android.util.JsonWriter;
 
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
-import com.termux.shared.termux.crash.TermuxCrashUtils;
+import com.termux.shared.termux.plugins.TermuxPluginUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
@@ -201,7 +201,7 @@ public abstract class ResultReturner {
                 String message = "Error in " + LOG_TAG;
                 Logger.logStackTraceWithMessage(LOG_TAG, message, t);
 
-                TermuxCrashUtils.sendPluginCrashReportNotification(ResultReturner.context, LOG_TAG,
+                TermuxPluginUtils.sendPluginCommandErrorNotification(ResultReturner.context, LOG_TAG,
                         TermuxConstants.TERMUX_API_APP_NAME + " Error", message, t);
 
                 if (asyncResult != null) {

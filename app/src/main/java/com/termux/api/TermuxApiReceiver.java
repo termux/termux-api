@@ -63,14 +63,14 @@ public class TermuxApiReceiver extends BroadcastReceiver {
 
         try {
             doWork(context, intent);
-        } catch (Exception e) {
+        } catch (Throwable t) {
             String message = "Error in " + LOG_TAG;
             // Make sure never to throw exception from BroadCastReceiver to avoid "process is bad"
             // behaviour from the Android system.
-            Logger.logStackTraceWithMessage(LOG_TAG, message, e);
+            Logger.logStackTraceWithMessage(LOG_TAG, message, t);
 
             TermuxCrashUtils.sendPluginCrashReportNotification(context, LOG_TAG,
-                    TermuxConstants.TERMUX_API_APP_NAME + " Error", message, e);
+                    TermuxConstants.TERMUX_API_APP_NAME + " Error", message, t);
 
             ResultReturner.noteDone(this, intent);
         }

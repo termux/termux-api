@@ -197,12 +197,12 @@ public abstract class ResultReturner {
                 } else if (activity != null) {
                     activity.setResult(0);
                 }
-            } catch (Exception e) {
+            } catch (Throwable t) {
                 String message = "Error in " + LOG_TAG;
-                Logger.logStackTraceWithMessage(LOG_TAG, message, e);
+                Logger.logStackTraceWithMessage(LOG_TAG, message, t);
 
                 TermuxCrashUtils.sendPluginCrashReportNotification(ResultReturner.context, LOG_TAG,
-                        TermuxConstants.TERMUX_API_APP_NAME + " Error", message, e);
+                        TermuxConstants.TERMUX_API_APP_NAME + " Error", message, t);
 
                 if (asyncResult != null) {
                     asyncResult.setResultCode(1);

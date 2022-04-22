@@ -57,8 +57,9 @@ android {
     }
 
     packagingOptions {
-        // Remove terminal-emulator JNI libs added via termux-shared dependency
+        // Remove terminal-emulator and termux-shared JNI libs added via termux-shared dependency
         exclude 'lib/*/libtermux.so'
+        exclude 'lib/*/liblocal-socket.so'
     }
 }
 

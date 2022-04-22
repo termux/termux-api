@@ -18,6 +18,7 @@ import com.termux.shared.termux.crash.TermuxCrashUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -154,6 +155,8 @@ public abstract class ResultReturner {
                 final ParcelFileDescriptor[] pfds = { null };
                 outputSocket = new LocalSocket();
                 String outputSocketAdress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
+                if (outputSocketAdress == null || outputSocketAdress.isEmpty())
+                    throw new IOException("Missing '" + SOCKET_OUTPUT_EXTRA + "' extra");
                 Logger.logDebug(LOG_TAG, "Connecting to output socket \"" + outputSocketAdress + "\"");
                 outputSocket.connect(new LocalSocketAddress(outputSocketAdress));
                 writer = new PrintWriter(outputSocket.getOutputStream());
@@ -166,6 +169,8 @@ public abstract class ResultReturner {
                     if (resultWriter instanceof WithInput) {
                         try (LocalSocket inputSocket = new LocalSocket()) {
                             String inputSocketAdress = intent.getStringExtra(SOCKET_INPUT_EXTRA);
+                            if (inputSocketAdress == null || inputSocketAdress.isEmpty())
+                                throw new IOException("Missing '" + SOCKET_INPUT_EXTRA + "' extra");
                             inputSocket.connect(new LocalSocketAddress(inputSocketAdress));
                             ((WithInput) resultWriter).setInput(inputSocket.getInputStream());
                             resultWriter.writeResult(writer);

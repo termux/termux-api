@@ -41,7 +41,8 @@ public class StorageGetAPI {
 
             // Get canonical path of fileExtra
             String filePath = TermuxFileUtils.getCanonicalPath(fileExtra, null, true);
-            String fileParentDirPath = FileUtils.getFileBasename(filePath);
+            String fileParentDirPath = FileUtils.getFileDirname(filePath);
+            Logger.logVerbose(LOG_TAG, "filePath=\"" + filePath + "\", fileParentDirPath=\"" + fileParentDirPath + "\"");
 
             Error error = FileUtils.checkMissingFilePermissions("file parent directory", fileParentDirPath, "rw-", true);
             if (error != null) {

@@ -54,9 +54,10 @@ public class CameraPhotoAPI {
                 return;
             }
 
-            // Get canonical path of filePath
+            // Get canonical path of photoFilePath
             String photoFilePath = TermuxFileUtils.getCanonicalPath(filePath, null, true);
-            String photoDirPath = FileUtils.getFileBasename(photoFilePath);
+            String photoDirPath = FileUtils.getFileDirname(photoFilePath);
+            Logger.logVerbose(LOG_TAG, "photoFilePath=\"" + photoFilePath + "\", photoDirPath=\"" + photoDirPath + "\"");
 
             // If workingDirectory is not a directory, or is not readable or writable, then just return
             // Creation of missing directory and setting of read, write and execute permissions are only done if workingDirectory is

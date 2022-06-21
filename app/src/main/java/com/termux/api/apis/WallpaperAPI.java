@@ -122,8 +122,11 @@ public class WallpaperAPI {
 
             if (result.wallpaper != null) {
                 try {
-                    int flag = intent.hasExtra("lockscreen") ? WallpaperManager.FLAG_LOCK : WallpaperManager.FLAG_SYSTEM;
-                    wallpaperManager.setBitmap(result.wallpaper, null, true, flag);
+                    int which = WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
+                    if (intent.hasExtra("lockscreen")) {
+                        which = intent.getBooleanExtra("lockscreen", false) ? WallpaperManager.FLAG_LOCK : WallpaperManager.FLAG_SYSTEM;
+                    }
+                    wallpaperManager.setBitmap(result.wallpaper, null, true, which);
                     result.message = "Wallpaper set successfully!";
                 } catch (IOException e) {
                     result.error = "Error setting wallpaper: " + e.getMessage();

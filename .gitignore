@@ -31,3 +31,6 @@ local.properties
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Temp/backup files
+*~

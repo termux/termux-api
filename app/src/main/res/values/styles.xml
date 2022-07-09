@@ -15,10 +15,12 @@
 
     <style name="DialogTheme" parent="Theme.AppCompat.Light.Dialog.Alert">
         <item name="windowNoTitle">true</item>
+        <item name="bottomSheetDialogTheme">@style/Theme.Design.Light.BottomSheetDialog</item>
     </style>
 
     <style name="DialogTheme.Dark" parent="Theme.AppCompat.Dialog.Alert">
         <item name="windowNoTitle">true</item>
+        <item name="bottomSheetDialogTheme">@style/Theme.Design.BottomSheetDialog</item>
     </style>
 
     <style name="TransparentTheme" parent="@style/Theme.AppCompat.Light">

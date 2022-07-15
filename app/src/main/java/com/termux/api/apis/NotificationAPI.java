@@ -17,6 +17,7 @@ import android.text.TextUtils;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.RemoteInput;
+import androidx.core.graphics.drawable.IconCompat;
 import androidx.core.util.Pair;
 
 import com.termux.api.R;
@@ -27,6 +28,9 @@ import com.termux.shared.logger.Logger;
 import com.termux.shared.shell.command.ExecutionCommand;
 import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.TermuxConstants.TERMUX_APP.TERMUX_SERVICE;
+import com.termux.shared.termux.theme.TermuxThemeUtils;
+import com.termux.shared.theme.NightMode;
+import com.termux.shared.theme.ThemeUtils;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -202,6 +206,11 @@ public class NotificationAPI {
 
         String SmallIcon = intent.getStringExtra("icon");
 
+        // When dark mode is enabled, assume the notification icon is shown on a dark background
+        // and color it white for better visibility
+        TermuxThemeUtils.setAppNightMode(context);
+        boolean shouldUseWhiteIcon = ThemeUtils.shouldEnableDarkTheme(context, NightMode.getAppNightMode().getName());
+
         if (SmallIcon != null) {
             final Class<?> clz = R.drawable.class;
             final Field[] fields = clz.getDeclaredFields();
@@ -209,10 +218,16 @@ public class NotificationAPI {
                 String name = field.getName();
                 if (name.equals("ic_" + SmallIcon + "_black_24dp")) {
                     try {
-                        notification.setSmallIcon(field.getInt(clz));
-                    } catch (Exception e) {
-                        break;
-                    }
+                        int id = field.getInt(clz);
+                        if (shouldUseWhiteIcon) {
+                            IconCompat icon = IconCompat.createWithResource(context, id);
+                            icon.setTint(0xFFFFFFFF);
+                            notification.setSmallIcon(icon);
+                        } else {
+                            notification.setSmallIcon(id);
+                        }
+                    } catch (Exception ignored) {}
+                    break;
                 }
             }
         }

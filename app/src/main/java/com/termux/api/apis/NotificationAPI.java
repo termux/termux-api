@@ -421,6 +421,6 @@ public class NotificationAPI {
 
     static PendingIntent createAction(final Context context, String action){
         Intent executeIntent = createExecuteIntent(action);
-        return PendingIntent.getService(context, 0, executeIntent, 0);
+        return PendingIntent.getService(context, UUID.randomUUID().hashCode(), executeIntent, 0);
     }
 }

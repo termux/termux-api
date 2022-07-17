@@ -223,6 +223,9 @@ public class SocketListener {
                                 out.flush();
                             }
                         }
+                        catch (java.io.IOException e) {
+                            Logger.logStackTraceWithMessage(LOG_TAG, "Connection error", e);
+                        }
                     }
                 }
                 catch (Exception e) {

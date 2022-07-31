@@ -174,7 +174,7 @@ public class NotificationAPI {
         int ledOffMs = intent.getIntExtra("led-off", 800);
 
         long[] vibratePattern = intent.getLongArrayExtra("vibrate");
-        boolean useSound = intent.getBooleanExtra("sound", false);
+        boolean silent = intent.getBooleanExtra("silent", false);
         boolean ongoing = intent.getBooleanExtra("ongoing", false);
         boolean alertOnce = intent.getBooleanExtra("alert-once", false);
 
@@ -275,7 +275,7 @@ public class NotificationAPI {
             notification.setVibrate(vibrateArg);
         }
 
-        if (useSound) notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI);
+        if (silent) notification.setSilent(true);
 
         notification.setAutoCancel(true);
 

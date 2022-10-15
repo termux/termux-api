@@ -2,6 +2,7 @@ package com.termux.api.apis;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -9,6 +10,7 @@ import android.util.JsonWriter;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.hardware.fingerprint.FingerprintManagerCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -20,6 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
@@ -32,8 +38,7 @@ public class FingerprintAPI {
     protected static final String KEY_NAME        = "TermuxFingerprintAPIKey";
     protected static final String KEYSTORE_NAME   = "AndroidKeyStore";
 
-    // milliseconds to wait before canceling
-    protected static final int SENSOR_TIMEOUT = 10000;
+    protected static int SENSOR_TIMEOUT;
 
     // maximum authentication attempts before locked out
     protected static final int MAX_ATTEMPTS   = 5;
@@ -53,22 +58,25 @@ public class FingerprintAPI {
     protected static final String AUTH_RESULT_FAILURE = "AUTH_RESULT_FAILURE";
     protected static final String AUTH_RESULT_UNKNOWN = "AUTH_RESULT_UNKNOWN";
 
-
-
     // store result of fingerprint initialization / authentication
     protected static FingerprintResult fingerprintResult = new FingerprintResult();
 
     // have we posted our result back?
     protected static boolean postedResult = false;
-
+    protected static boolean timedOut = false;
 
     private static final String LOG_TAG = "FingerprintAPI";
+
+    private static final Lock lock = new ReentrantLock();
+    private static final Condition condition = lock.newCondition();
+    protected static final String EXTRA_LOCK_ACTION = "EXTRA_LOCK_ACTION";
 
     /**
      * Handles setup of fingerprint sensor and writes Fingerprint result to console
      */
     public static void onReceive(final Context context, final Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");
+        SENSOR_TIMEOUT = intent.getIntExtra("authenticationTimeout", 10)*1000;
 
         resetFingerprintResult();
 
@@ -79,6 +87,21 @@ public class FingerprintAPI {
             fingerprintIntent.putExtras(intent.getExtras());
             fingerprintIntent.setFlags(FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(fingerprintIntent);
+
+            if (intent.getBooleanExtra(EXTRA_LOCK_ACTION, false)) {
+                lock.lock();
+                try {
+                    if (SENSOR_TIMEOUT >= 0) {
+                        if (!condition.await(SENSOR_TIMEOUT, TimeUnit.MILLISECONDS)) {
+                            timedOut = true;
+                        }
+                    } else condition.await();
+                } catch (InterruptedException e) {
+                    // If interrupted, nothing currently
+                } finally {
+                    lock.unlock();
+                }
+            }
         } else {
             postFingerprintResult(context, intent, fingerprintResult);
         }
@@ -88,28 +111,37 @@ public class FingerprintAPI {
      * Writes the result of our fingerprint result to the console
      */
     protected static void postFingerprintResult(Context context, Intent intent, final FingerprintResult result) {
-        ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
-            @Override
-            public void writeJson(JsonWriter out) throws Exception {
-                out.beginObject();
-
-                out.name("errors");
-                out.beginArray();
-
-                for (String error : result.errors) {
-                    out.value(error);
-                }
-                out.endArray();
-
-                out.name("failed_attempts").value(result.failedAttempts);
-                out.name("auth_result").value(result.authResult);
-                out.endObject();
-
-                out.flush();
-                out.close();
-                postedResult = true;
+        if (intent.getBooleanExtra(EXTRA_LOCK_ACTION, false)) {
+            lock.lock();
+            try {
+                condition.signalAll();
+            } finally {
+                lock.unlock();
             }
-        });
+        } else {
+            ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {
+                @Override
+                public void writeJson(JsonWriter out) throws Exception {
+                    out.beginObject();
+
+                    out.name("errors");
+                    out.beginArray();
+
+                    for (String error : result.errors) {
+                        out.value(error);
+                    }
+                    out.endArray();
+
+                    out.name("failed_attempts").value(result.failedAttempts);
+                    out.name("auth_result").value(result.authResult);
+                    out.endObject();
+
+                    out.flush();
+                    out.close();
+                    postedResult = true;
+                }
+            });
+        }
     }
 
     /**
@@ -161,37 +193,40 @@ public class FingerprintAPI {
          * Handles authentication callback from our fingerprint sensor
          */
         protected static void authenticateWithFingerprint(final FragmentActivity context, final Intent intent, final Executor executor) {
-            BiometricPrompt biometricPrompt = new BiometricPrompt(context, executor, new BiometricPrompt.AuthenticationCallback() {
-                @Override
-                public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
-                    if (errorCode == BiometricPrompt.ERROR_LOCKOUT) {
-                        appendFingerprintError(ERROR_LOCKOUT);
+            BiometricPrompt biometricPrompt = new BiometricPrompt(context, executor,
+                    new BiometricPrompt.AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                            if (errorCode == BiometricPrompt.ERROR_LOCKOUT) {
+                                appendFingerprintError(ERROR_LOCKOUT);
 
-                        // first time locked out, subsequent auth attempts will fail immediately for a bit
-                        if (fingerprintResult.failedAttempts >= MAX_ATTEMPTS) {
-                            appendFingerprintError(ERROR_TOO_MANY_FAILED_ATTEMPTS);
+                                // first time locked out, subsequent auth attempts will fail immediately for a bit
+                                if (fingerprintResult.failedAttempts >= MAX_ATTEMPTS) {
+                                    appendFingerprintError(ERROR_TOO_MANY_FAILED_ATTEMPTS);
+                                }
+                            }
+                            setAuthResult(AUTH_RESULT_FAILURE);
+                            if (timedOut) timedOut = false;
+                            else postFingerprintResult(context, intent, fingerprintResult);
+                            Logger.logError(LOG_TAG, errString.toString());
                         }
-                    }
-                    setAuthResult(AUTH_RESULT_FAILURE);
-                    postFingerprintResult(context, intent, fingerprintResult);
-                    Logger.logError(LOG_TAG, errString.toString());
-                }
 
-                @Override
-                public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                    setAuthResult(AUTH_RESULT_SUCCESS);
-                    postFingerprintResult(context, intent, fingerprintResult);
-                }
+                        @Override
+                        public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                            setAuthResult(AUTH_RESULT_SUCCESS);
+                            postFingerprintResult(context, intent, fingerprintResult);
+                        }
 
-                @Override
-                public void onAuthenticationFailed() {
-                    addFailedAttempt();
-                }
-            });
+                        @Override
+                        public void onAuthenticationFailed() {
+                            addFailedAttempt();
+                        }
+                    });
 
+            boolean[] auths = intent.getBooleanArrayExtra("auths");
             BiometricPrompt.PromptInfo.Builder builder = new BiometricPrompt.PromptInfo.Builder();
-            builder.setTitle(intent.hasExtra("title") ? intent.getStringExtra("title") : "Authenticate");
-            builder.setNegativeButtonText(intent.hasExtra("cancel") ? intent.getStringExtra("cancel") : "Cancel");
+            builder.setTitle(intent.hasExtra("title") ?
+                             intent.getStringExtra("title") : "Authenticate");
             if (intent.hasExtra("description")) {
                 builder.setDescription(intent.getStringExtra("description"));
             }
@@ -199,10 +234,19 @@ public class FingerprintAPI {
                 builder.setSubtitle(intent.getStringExtra("subtitle"));
             }
 
+            if (auths == null || !auths[0]) {
+                builder.setNegativeButtonText(intent.hasExtra("cancel") ?
+                        intent.getStringExtra("cancel") : "Cancel");
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !auths[1]) {
+                builder.setAllowedAuthenticators(BiometricManager.Authenticators.DEVICE_CREDENTIAL); //Can't test yet
+            } else builder.setDeviceCredentialAllowed(true);
+
             // listen to fingerprint sensor
             biometricPrompt.authenticate(builder.build());
 
-            addSensorTimeout(context, intent, biometricPrompt);
+            if (!intent.getBooleanExtra(EXTRA_LOCK_ACTION, false)) {
+                addSensorTimeout(context, intent, biometricPrompt);
+            }
         }
 
         /**

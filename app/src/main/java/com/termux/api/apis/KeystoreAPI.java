@@ -8,6 +8,7 @@ import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
+import android.security.keystore.UserNotAuthenticatedException;
 import android.util.Base64;
 import android.util.JsonWriter;
 
@@ -41,8 +42,8 @@ import java.security.KeyStore;
 import java.security.KeyStore.Entry;
 import java.security.KeyStore.PrivateKeyEntry;
 import java.security.KeyStore.SecretKeyEntry;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.Signature;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
@@ -55,6 +56,7 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -68,6 +70,7 @@ public class KeystoreAPI {
     // this is the only provider name that is supported by Android
     private static final String PROVIDER = "AndroidKeyStore";
     private static final String PREFERENCES_PREFIX = "keystore_api__encrypted_data";
+    private static final int MAX_AUTH_RETRIES = 1;
 
     @SuppressLint("NewApi")
     public static void onReceive(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
@@ -130,34 +133,19 @@ public class KeystoreAPI {
 
                     if (pref) {
                         JSONObject prefsJSON = getPrefsJSON(context, alias);
-                        Iterator<String> prefKeys =prefsJSON.keys();
+                        Iterator<String> prefKeys = prefsJSON.keys();
                         out.name("Preferences");
                         out.beginObject();
-                            while (prefKeys.hasNext()) {
-                                String transientKey = prefKeys.next();
-                                out.name(transientKey)
-                                   .value(detailed ?
-                                          prefsJSON.getString(transientKey) : "");
-                            }
+                        while (prefKeys.hasNext()) {
+                            String transientKey = prefKeys.next();
+                            out.name(transientKey)
+                               .value(detailed ? prefsJSON.getString(transientKey) : "");
+                        }
                         out.endObject();
                     } else {
-                        Entry entry = keyStore.getEntry(alias, null);
-                        if (entry instanceof PrivateKeyEntry) {
-                            PrivateKeyEntry privateEntry = (PrivateKeyEntry) entry;
-                            PrivateKey privateKey = privateEntry.getPrivateKey();
-                            PublicKey publicKey = privateEntry.getCertificate().getPublicKey();
-                            String algorithm = privateKey.getAlgorithm();
-                            KeyInfo keyInfo = KeyFactory.getInstance(algorithm)
-                                    .getKeySpec(privateKey, KeyInfo.class);
-                            printKey(out, algorithm, keyInfo, detailed, publicKey);
-                        } else if (entry instanceof SecretKeyEntry) {
-                            SecretKeyEntry secretEntry = (SecretKeyEntry) entry;
-                            SecretKey secretKey = secretEntry.getSecretKey();
-                            String algorithm = secretKey.getAlgorithm();
-                            KeyInfo keyInfo = (KeyInfo) SecretKeyFactory.getInstance(algorithm)
-                                    .getKeySpec(secretKey, KeyInfo.class);
-                            printKey(out, algorithm, keyInfo, detailed, null);
-                        }
+                        Key key = getKey(alias, false);
+                        printKey(out, detailed, key,
+                                 key instanceof PrivateKey ? getKey(alias, true) : null);
                     }
 
                     out.endObject();
@@ -171,44 +159,51 @@ public class KeystoreAPI {
      * Helper function for printing the parameters of a given key.
      */
     @RequiresApi(api = Build.VERSION_CODES.M)
-    private static void printKey(JsonWriter out, String algorithm, KeyInfo keyInfo,
-            boolean detailed, Key pubKey) throws GeneralSecurityException, IOException {
+    private static void printKey(JsonWriter out, boolean detailed, Key key, Key pubKey)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        String algorithm = key.getAlgorithm();
+        KeyInfo keyInfo = getKeyInfo(key);
+
         String mode = String.join(",", keyInfo.getBlockModes());
         String padding = String.join(",", keyInfo.getEncryptionPaddings());
         boolean authRequired = keyInfo.isUserAuthenticationRequired();
         int validityDuration = keyInfo.getUserAuthenticationValidityDurationSeconds();
 
         out.name("algorithm");
-            out.beginObject();
-                out.name("name").value(algorithm);
-                if (!mode.isEmpty()) {
-                    out.name("block_mode").value(mode);
-                    out.name("encryption_padding").value(padding);
-                }
-            out.endObject();
+        out.beginObject();
+        out.name("name").value(algorithm);
+        if (!mode.isEmpty()) {
+            out.name("block_mode").value(mode);
+            out.name("encryption_padding").value(padding);
+        }
+        out.endObject();
         out.name("size").value(keyInfo.getKeySize());
-        out.name("purposes").value(decomposeBinary(keyInfo.getPurposes()));
+        out.name("purposes").value(decomposeBinary(keyInfo.getPurposes())
+                                                 .stream().map(String::valueOf)
+                                                 .collect(Collectors.joining("|")));
 
         out.name("inside_secure_hardware").value(keyInfo.isInsideSecureHardware());
 
         out.name("user_authentication");
-            out.beginObject();
-                out.name("required").value(authRequired);
-                out.name("enforced_by_secure_hardware")
-                   .value(keyInfo.isUserAuthenticationRequirementEnforcedBySecureHardware());
-                if (validityDuration >= 0) out.name("validity_duration_seconds")
-                                              .value(validityDuration);
-                if (detailed && authRequired) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        out.name("authentication_type")
-                           .value(decomposeBinary(keyInfo.getUserAuthenticationType()));
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        out.name("invalidated_by_new_biometric")
-                           .value(keyInfo.isInvalidatedByBiometricEnrollment());
-                    }
-                }
-            out.endObject();
+        out.beginObject();
+        out.name("required").value(authRequired);
+        out.name("enforced_by_secure_hardware")
+                .value(keyInfo.isUserAuthenticationRequirementEnforcedBySecureHardware());
+        if (validityDuration >= 0) out.name("validity_duration_seconds")
+                .value(validityDuration);
+        if (detailed && authRequired) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { //Can't test yet
+                out.name("authentication_type")
+                   .value(decomposeBinary(keyInfo.getUserAuthenticationType())
+                                        .stream().map(String::valueOf)
+                                        .collect(Collectors.joining("|")));
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                out.name("invalidated_by_new_biometric")
+                        .value(keyInfo.isInvalidatedByBiometricEnrollment());
+            }
+        }
+        out.endObject();
 
         if (detailed && pubKey instanceof RSAPublicKey) {
             RSAPublicKey rsa = (RSAPublicKey) pubKey;
@@ -225,9 +220,9 @@ public class KeystoreAPI {
     }
 
     /**
-     * Decomposes binary for options (e.g. 3->'1|2').
+     * Decomposes binary for options (e.g. 3->{1,2}).
      */
-    private static String decomposeBinary(int binary) {
+    private static ArrayList<Integer> decomposeBinary(int binary) {
         ArrayList<Integer> values = new ArrayList<>();
         int power = 0;
         while (binary != 0) {
@@ -235,7 +230,7 @@ public class KeystoreAPI {
             power += 1;
             binary >>= 1;
         }
-        return values.stream().map(String::valueOf).collect(Collectors.joining("|"));
+        return values;
     }
 
     /**
@@ -247,12 +242,12 @@ public class KeystoreAPI {
      * </ul>
      */
     private static void deleteData(TermuxApiReceiver apiReceiver, final Context context,
-                                  final Intent intent) {
+                                   final Intent intent) {
         ResultReturner.returnData(apiReceiver, intent, out -> {
             String alias = intent.getStringExtra("alias");
             String pref = intent.getStringExtra("pref");
 
-            if (!pref.equals("-1")) {
+            if (!"-1".equals(pref)) {
                 JSONObject prefsJSON = getPrefsJSON(context, alias);
                 prefsJSON.remove(pref);
                 setPrefsJSON(context, alias, prefsJSON);
@@ -261,10 +256,10 @@ public class KeystoreAPI {
                 // nor does it throw an exception if the alias does not exist
                 getKeyStore().deleteEntry(alias);
                 TermuxAPIAppSharedPreferences.build(context)
-                           .getSharedPreferences()
-                           .edit()
-                           .remove(String.join("__", PREFERENCES_PREFIX, alias))
-                           .commit();
+                                             .getSharedPreferences()
+                                             .edit()
+                                             .remove(String.join("__", PREFERENCES_PREFIX, alias))
+                                             .commit();
             }
         });
     }
@@ -341,33 +336,33 @@ public class KeystoreAPI {
 
             KeyGenParameterSpec.Builder builder =
                     new KeyGenParameterSpec.Builder(alias, purposes)
-                            .setKeySize(size)
-                            .setUserAuthenticationRequired((authorizations != 0))
-                            .setUserAuthenticationValidityDurationSeconds(userValidity);
+                                           .setKeySize(size)
+                                           .setUserAuthenticationRequired((authorizations != 0))
+                                           .setUserAuthenticationValidityDurationSeconds(userValidity);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                builder.setInvalidatedByBiometricEnrollment(invalidate); //Not working? Cannot turn off invalidation (test with keyInfo.isInvalidatedByBiometricEnrollment())
+                builder.setInvalidatedByBiometricEnrollment(invalidate);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     builder.setUnlockedDeviceRequired(unlocked);
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        builder.setUserAuthenticationParameters(userValidity, authorizations);
+                        builder.setUserAuthenticationParameters(userValidity, authorizations); //Can't test yet
                     }
                 }
             }
-            if (!mode.equals("-1")) builder.setBlockModes(mode).setEncryptionPaddings(padding);
+            if (!"-1".equals(mode)) builder.setBlockModes(mode).setEncryptionPaddings(padding);
 
-            if (mode.equals(KeyProperties.BLOCK_MODE_ECB) &&
-                    (padding.equals(KeyProperties.ENCRYPTION_PADDING_NONE) ||
-                            padding.equals(KeyProperties.ENCRYPTION_PADDING_PKCS7))) {
+            if (KeyProperties.BLOCK_MODE_ECB.equals(mode) &&
+                    (KeyProperties.ENCRYPTION_PADDING_NONE.equals(padding) ||
+                            KeyProperties.ENCRYPTION_PADDING_PKCS7.equals(padding))) {
                 builder.setRandomizedEncryptionRequired(false);
             }
 
-            if (algorithm.equals(KeyProperties.KEY_ALGORITHM_AES)) {
+            if (KeyProperties.KEY_ALGORITHM_AES.equals(algorithm)) {
                 KeyGenerator generator = KeyGenerator.getInstance(algorithm, PROVIDER);
                 generator.init(builder.build());
                 generator.generateKey();
             } else {
                 builder.setDigests(digests);
-                if (algorithm.equals(KeyProperties.KEY_ALGORITHM_RSA)) {
+                if (KeyProperties.KEY_ALGORITHM_RSA.equals(algorithm)) {
                     builder.setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1);
                 }
                 KeyPairGenerator generator = KeyPairGenerator.getInstance(algorithm, PROVIDER);
@@ -399,8 +394,7 @@ public class KeystoreAPI {
                 String algorithm = intent.getStringExtra("algorithm");
                 byte[] input = readStream(in);
 
-                PrivateKeyEntry key = (PrivateKeyEntry) getKeyStore()
-                                                            .getEntry(alias, null);
+                PrivateKeyEntry key = (PrivateKeyEntry) getKeyStore().getEntry(alias, null);
                 Signature signature = Signature.getInstance(algorithm);
                 signature.initSign(key.getPrivateKey());
                 signature.update(input);
@@ -482,20 +476,14 @@ public class KeystoreAPI {
                 String store = intent.getStringExtra("store");
                 boolean quiet = (intent.getIntExtra("quiet", 0) == 1);
 
-                byte[] input;
                 ByteArrayOutputStream encrypted = new ByteArrayOutputStream();
-
-                if (path.equals("-1")) {
-                    input = readStream(in);
-                } else {
-                    input = readFile(path);
-                }
-
                 String[] alg = algorithm.split("/", 3);
-                Cipher cipher = Cipher.getInstance(algorithm);
-                cipher.init(Cipher.ENCRYPT_MODE, getKey(alias, alg[0], true));
-                byte[] encryptedData = cipher.doFinal(input); Arrays.fill(input, (byte) 0);
+                byte[] input = "-1".equals(path) ? readStream(in) : readFile(path);
 
+                Cipher cipher = Cipher.getInstance(algorithm);
+                cipherCall(context, intent, alias, cipher, Cipher.ENCRYPT_MODE, null);
+
+                byte[] encryptedData = cipher.doFinal(input); Arrays.fill(input, (byte) 0);
                 byte[] iv = cipher.getIV();
                 if (iv == null) {
                     encrypted.write((byte) 0);
@@ -509,11 +497,11 @@ public class KeystoreAPI {
                 // we are not allowed to output bytes in this function
                 // one option is to encode using base64 which is a plain string
                 if (!quiet) out.write(Base64.encodeToString(
-                                encrypted.toByteArray(), Base64.NO_WRAP));
-                if (!store.equals("-1")) {
+                        encrypted.toByteArray(), Base64.NO_WRAP));
+                if (!"-1".equals(store)) {
                     JSONObject prefsJSON = getPrefsJSON(context, alias);
-                    prefsJSON.put(store,
-                                  Base64.encodeToString(encrypted.toByteArray(), Base64.NO_WRAP));
+                    prefsJSON.put(store, Base64.encodeToString(
+                                                    encrypted.toByteArray(), Base64.NO_WRAP));
                     setPrefsJSON(context, alias, prefsJSON);
                 }
                 encrypted.reset();
@@ -552,11 +540,11 @@ public class KeystoreAPI {
                 String store = intent.getStringExtra("store");
                 boolean quiet = (intent.getIntExtra("quiet", 0) == 1);
 
-                byte[] input;
                 ByteArrayOutputStream decrypted = new ByteArrayOutputStream();
-
-                if (path.equals("-1")) {
-                    if (!store.equals("-1")) {
+                String[] alg = algorithm.split("/", 3);
+                byte[] input;
+                if ("-1".equals(path)) {
+                    if (!"-1".equals(store)) {
                         JSONObject prefsJSON = getPrefsJSON(context, alias);
                         input = Base64.decode(prefsJSON.getString(store), Base64.NO_WRAP);
                     } else {
@@ -566,16 +554,9 @@ public class KeystoreAPI {
                     input = readFile(path);
                 }
 
-                String[] alg = algorithm.split("/", 3);
                 Cipher cipher = Cipher.getInstance(algorithm);
-
-                if (input[0] == 0) {
-                    cipher.init(Cipher.DECRYPT_MODE,
-                            getKey(alias, alg[0], false));
-                } else {
-                    cipher.init(Cipher.DECRYPT_MODE,
-                            getKey(alias, alg[0], false), getIVSpec(input, alg[1]));
-                }
+                cipherCall(context, intent, alias, cipher, Cipher.DECRYPT_MODE,
+                           input[0] == 0 ? null : getIVSpec(input, alg[1]));
 
                 byte[] decryptedData = cipher.doFinal(input,
                         input[0]+1, input.length-input[0]-1);
@@ -585,32 +566,49 @@ public class KeystoreAPI {
                 // we are not allowed to output bytes in this function
                 // one option is to encode using base64 which is a plain string
                 if (!quiet) out.write(Base64.encodeToString(
-                                decrypted.toByteArray(), Base64.NO_WRAP));
+                                                decrypted.toByteArray(), Base64.NO_WRAP));
                 decrypted.reset();
             }
         });
     }
 
     /**
-     * Get Shared Preferences in JSON for given key alias.
+     * Tries to initialize cipher and prompts for authentication if timed-out.
      */
-    private static JSONObject getPrefsJSON(Context context, String alias) throws JSONException {
-        SharedPreferences preferences = TermuxAPIAppSharedPreferences.build(context)
-                                                                     .getSharedPreferences();
-        return new JSONObject(SharedPreferenceUtils.getString(preferences,
-                                         String.join("__", PREFERENCES_PREFIX, alias),
-                                         "{}", true));
-    }
-
-    /**
-     * Set Shared Preferences in JSON for given key alias.
-     */
-    private static void setPrefsJSON(Context context, String alias, JSONObject value) {
-        SharedPreferences preferences = TermuxAPIAppSharedPreferences.build(context)
-                                                                     .getSharedPreferences();
-        SharedPreferenceUtils.setString(preferences,
-                                        String.join("__", PREFERENCES_PREFIX, alias),
-                                        value.toString(), true);
+    private static void cipherCall(Context context, Intent intent, String alias, Cipher cipher,
+                                   int mode, AlgorithmParameterSpec spec)
+            throws GeneralSecurityException, IOException {
+        int count = 0;
+        boolean[] auths = {true, true};
+        Key key = getKey(alias, (mode == Cipher.ENCRYPT_MODE));
+        do {
+            try {
+                if (spec == null) cipher.init(mode, key);
+                else cipher.init(mode, key, spec);
+                break;
+            } catch (UserNotAuthenticatedException e) {
+                if (count == 0) {
+                    KeyInfo keyInfo = getKeyInfo(key);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                       ArrayList<Integer> authList = decomposeBinary(keyInfo
+                                                                     .getUserAuthenticationType());
+                       auths[0] = authList.contains(KeyProperties.AUTH_DEVICE_CREDENTIAL);
+                       auths[1] = authList.contains(KeyProperties.AUTH_BIOMETRIC_STRONG);
+                    }
+                    intent.putExtra("auths", auths);
+                    intent.putExtra("title", " ");
+                    intent.putExtra("subtitle", "Authentication required for key");
+                    intent.putExtra("description", "");
+                    intent.putExtra(FingerprintAPI.EXTRA_LOCK_ACTION, true);
+                }
+                if (count <= MAX_AUTH_RETRIES) {
+                    FingerprintAPI.onReceive(context, intent);
+                } else {
+                    Logger.logError(LOG_TAG, String.valueOf(e));
+                    throw e;
+                }
+            }
+        } while (count++ <= MAX_AUTH_RETRIES);
     }
 
     /**
@@ -625,31 +623,42 @@ public class KeystoreAPI {
             case "GCM": {
                 return new GCMParameterSpec(128, input, 1, input[0]);
             }
-            default: throw new IllegalArgumentException(
-                        "Invalid Cipher Block. See: Android keystore#SupportedCiphers");
+            default: {
+                String e = "Invalid Cipher Block. See: Android keystore#SupportedCiphers";
+                Logger.logError(LOG_TAG, e);
+                throw new IllegalArgumentException(e);
+            }
         }
     }
 
     /**
      * Get Key.
      */
-    private static Key getKey(String alias, String algorithm, boolean encrypt)
+    private static Key getKey(String alias, boolean encrypt)
             throws GeneralSecurityException, IOException {
-        switch(algorithm) {
-            case "RSA": {
-                PrivateKeyEntry entry =
-                        (PrivateKeyEntry) getKeyStore().getEntry(alias, null);
-                return encrypt ? entry.getCertificate().getPublicKey() : entry.getPrivateKey();
-            }
-            case "AES": {
-                SecretKeyEntry entry =
-                        (SecretKeyEntry) getKeyStore().getEntry(alias, null);
-                return entry.getSecretKey();
-            }
-            default:
-                throw new IllegalArgumentException(
-                        "Invalid Cipher Algorithm. See: Android keystore#SupportedCiphers");
+        Entry entry = getKeyStore().getEntry(alias, null);
+        if (entry instanceof PrivateKeyEntry) {
+            return encrypt ? ((PrivateKeyEntry) entry).getCertificate().getPublicKey()
+                    : ((PrivateKeyEntry) entry).getPrivateKey();
+        } else if (entry instanceof SecretKeyEntry) {
+            return ((SecretKeyEntry) entry).getSecretKey();
+        } else {
+            String e = "Invalid Cipher Algorithm. See: Android keystore#SupportedCiphers";
+            Logger.logError(LOG_TAG, e);
+            throw new IllegalArgumentException(e);
         }
+    }
+
+    /**
+     * Get KeyInfo
+     */
+    private static KeyInfo getKeyInfo(Key key)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        String algorithm = key.getAlgorithm();
+        return (key instanceof PrivateKey) ?
+                KeyFactory.getInstance(algorithm).getKeySpec(key, KeyInfo.class)
+                : (KeyInfo) SecretKeyFactory.getInstance(algorithm)
+                .getKeySpec((SecretKey) key, KeyInfo.class);
     }
 
     /**
@@ -659,6 +668,28 @@ public class KeystoreAPI {
         KeyStore keyStore = KeyStore.getInstance(PROVIDER);
         keyStore.load(null);
         return keyStore;
+    }
+
+    /**
+     * Set Shared Preferences in JSON for given key alias.
+     */
+    private static void setPrefsJSON(Context context, String alias, JSONObject value) {
+        SharedPreferences preferences = TermuxAPIAppSharedPreferences.build(context)
+                                                                     .getSharedPreferences();
+        SharedPreferenceUtils.setString(preferences,
+                String.join("__", PREFERENCES_PREFIX, alias),
+                value.toString(), true);
+    }
+
+    /**
+     * Get Shared Preferences in JSON for given key alias.
+     */
+    private static JSONObject getPrefsJSON(Context context, String alias) throws JSONException {
+        SharedPreferences preferences = TermuxAPIAppSharedPreferences.build(context)
+                                                                     .getSharedPreferences();
+        return new JSONObject(SharedPreferenceUtils.getString(preferences,
+                String.join("__", PREFERENCES_PREFIX, alias),
+                "{}", true));
     }
 
     /**

@@ -76,7 +76,8 @@ public class FingerprintAPI {
      */
     public static void onReceive(final Context context, final Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");
-        SENSOR_TIMEOUT = intent.getIntExtra("authenticationTimeout", 10)*1000;
+        SENSOR_TIMEOUT = intent.getIntExtra("authenticationTimeout", 10);
+        if (SENSOR_TIMEOUT != -1) SENSOR_TIMEOUT *= 1000;
 
         resetFingerprintResult();
 
@@ -91,9 +92,10 @@ public class FingerprintAPI {
             if (intent.getBooleanExtra(EXTRA_LOCK_ACTION, false)) {
                 lock.lock();
                 try {
-                    if (SENSOR_TIMEOUT >= 0) {
-                        if (!condition.await(SENSOR_TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    if (SENSOR_TIMEOUT != -1) {
+                        if (!condition.await(SENSOR_TIMEOUT+5000, TimeUnit.MILLISECONDS)) {
                             timedOut = true;
+                            Logger.logDebug(LOG_TAG, "Lock timed out");
                         }
                     } else condition.await();
                 } catch (InterruptedException e) {
@@ -234,17 +236,21 @@ public class FingerprintAPI {
                 builder.setSubtitle(intent.getStringExtra("subtitle"));
             }
 
-            if (auths == null || !auths[0]) {
+            if (auths == null || !auths[0] || Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
                 builder.setNegativeButtonText(intent.hasExtra("cancel") ?
                         intent.getStringExtra("cancel") : "Cancel");
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !auths[1]) {
+                builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG);
+            } else if (!auths[1]) {
                 builder.setAllowedAuthenticators(BiometricManager.Authenticators.DEVICE_CREDENTIAL); //Can't test yet
-            } else builder.setDeviceCredentialAllowed(true);
+            } else {
+                builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG |
+                                                 BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+            }
 
             // listen to fingerprint sensor
             biometricPrompt.authenticate(builder.build());
 
-            if (!intent.getBooleanExtra(EXTRA_LOCK_ACTION, false)) {
+            if (SENSOR_TIMEOUT != -1) {
                 addSensorTimeout(context, intent, biometricPrompt);
             }
         }
@@ -259,7 +265,9 @@ public class FingerprintAPI {
                 if (!postedResult) {
                     appendFingerprintError(ERROR_TIMEOUT);
                     biometricPrompt.cancelAuthentication();
-                    postFingerprintResult(context, intent, fingerprintResult);
+                    if (!intent.getBooleanExtra(EXTRA_LOCK_ACTION, false)) {
+                        postFingerprintResult(context, intent, fingerprintResult);
+                    }
                 }
             }, SENSOR_TIMEOUT);
         }

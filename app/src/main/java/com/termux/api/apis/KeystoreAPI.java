@@ -477,11 +477,10 @@ public class KeystoreAPI {
                 boolean quiet = (intent.getIntExtra("quiet", 0) == 1);
 
                 ByteArrayOutputStream encrypted = new ByteArrayOutputStream();
-                String[] alg = algorithm.split("/", 3);
                 byte[] input = "-1".equals(path) ? readStream(in) : readFile(path);
 
-                Cipher cipher = Cipher.getInstance(algorithm);
-                cipherCall(context, intent, alias, cipher, Cipher.ENCRYPT_MODE, null);
+                Cipher cipher = cipherCall(context, intent, Cipher.ENCRYPT_MODE,
+                                           alias, algorithm, null);
 
                 byte[] encryptedData = cipher.doFinal(input); Arrays.fill(input, (byte) 0);
                 byte[] iv = cipher.getIV();
@@ -541,7 +540,6 @@ public class KeystoreAPI {
                 boolean quiet = (intent.getIntExtra("quiet", 0) == 1);
 
                 ByteArrayOutputStream decrypted = new ByteArrayOutputStream();
-                String[] alg = algorithm.split("/", 3);
                 byte[] input;
                 if ("-1".equals(path)) {
                     if (!"-1".equals(store)) {
@@ -554,9 +552,8 @@ public class KeystoreAPI {
                     input = readFile(path);
                 }
 
-                Cipher cipher = Cipher.getInstance(algorithm);
-                cipherCall(context, intent, alias, cipher, Cipher.DECRYPT_MODE,
-                           input[0] == 0 ? null : getIVSpec(input, alg[1]));
+                Cipher cipher = cipherCall(context, intent, Cipher.DECRYPT_MODE, alias, algorithm,
+                                           input[0] == 0 ? null : input);
 
                 byte[] decryptedData = cipher.doFinal(input,
                         input[0]+1, input.length-input[0]-1);
@@ -575,20 +572,31 @@ public class KeystoreAPI {
     /**
      * Tries to initialize cipher and prompts for authentication if timed-out.
      */
-    private static void cipherCall(Context context, Intent intent, String alias, Cipher cipher,
-                                   int mode, AlgorithmParameterSpec spec)
+    private static Cipher cipherCall(Context context, Intent intent, int mode, String alias,
+                                     String algorithm, byte[] input)
             throws GeneralSecurityException, IOException {
         int count = 0;
         boolean[] auths = {true, true};
         Key key = getKey(alias, (mode == Cipher.ENCRYPT_MODE));
+        KeyInfo keyInfo = getKeyInfo(key);
+        if ("-1".equals(algorithm)) {
+            algorithm = String.join("/",
+                                    key.getAlgorithm(),
+                                    keyInfo.getBlockModes()[0],
+                                    keyInfo.getEncryptionPaddings()[0]);
+            Logger.logDebug(LOG_TAG, "Cipher algorithm not specified, using: " + algorithm);
+        }
+        Cipher cipher = Cipher.getInstance(algorithm);
+
         do {
             try {
-                if (spec == null) cipher.init(mode, key);
-                else cipher.init(mode, key, spec);
-                break;
+                if (input == null) cipher.init(mode, key);
+                else {
+                    cipher.init(mode, key, getIVSpec(input, algorithm.split("/", 3)[1]));
+                }
+                return cipher;
             } catch (UserNotAuthenticatedException e) {
                 if (count == 0) {
-                    KeyInfo keyInfo = getKeyInfo(key);
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                        ArrayList<Integer> authList = decomposeBinary(keyInfo
                                                                      .getUserAuthenticationType());
@@ -609,6 +617,8 @@ public class KeystoreAPI {
                 }
             }
         } while (count++ <= MAX_AUTH_RETRIES);
+
+        return null;
     }
 
     /**

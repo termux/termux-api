@@ -119,6 +119,7 @@ public class FingerprintAPI {
                 condition.signalAll();
             } finally {
                 lock.unlock();
+                if (context instanceof Activity) ((Activity) context).finish();
             }
         } else {
             ResultReturner.returnData(context, intent, new ResultReturner.ResultJsonWriter() {

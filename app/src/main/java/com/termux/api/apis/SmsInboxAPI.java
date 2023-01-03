@@ -41,6 +41,8 @@ public class SmsInboxAPI {
 
         final int offset = intent.getIntExtra("offset", 0);
         final int limit = intent.getIntExtra("limit", 10);
+        final boolean date_asc = intent.getBooleanExtra("date-asc", false);
+        final String sortPrefix = date_asc ? "date" : "date DESC";
         final String number = intent.hasExtra("from") ? intent.getStringExtra("from"):"";
         final boolean conversation_list = intent.getBooleanExtra("conversation-list", false);
         final Uri contentURI = conversation_list ? typeToContentURI(0) :
@@ -50,16 +52,16 @@ public class SmsInboxAPI {
         ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
-                if (conversation_list) getConversations(context, out, offset, limit);
-                else getAllSms(context, out, offset, limit, number, contentURI);
+                if (conversation_list) getConversations(context, out, offset, limit, sortPrefix);
+                else getAllSms(context, out, offset, limit, number, contentURI, sortPrefix);
             }
         });
     }
 
     @SuppressLint("SimpleDateFormat")
-    public static void getConversations(Context context, JsonWriter out, int offset, int limit) throws IOException {
+    public static void getConversations(Context context, JsonWriter out, int offset, int limit, String sortPrefix) throws IOException {
         ContentResolver cr = context.getContentResolver();
-        String sortOrder = "date DESC";
+        String sortOrder = sortPrefix;
         try (Cursor c = cr.query(Conversations.CONTENT_URI, null, null, null , sortOrder)) {
             c.moveToLast();
 
@@ -71,7 +73,7 @@ public class SmsInboxAPI {
 
                 Cursor cc = cr.query(Sms.CONTENT_URI, null,
                         THREAD_ID + " == '" + id +"'",
-                        null, "date DESC");
+                        null, sortPrefix);
                 if (cc.getCount() == 0) {
                     c.moveToNext();
                     continue;
@@ -129,9 +131,9 @@ public class SmsInboxAPI {
 
 
     @SuppressLint("SimpleDateFormat")
-    public static void getAllSms(Context context, JsonWriter out, int offset, int limit, String number, Uri contentURI) throws IOException {
+    public static void getAllSms(Context context, JsonWriter out, int offset, int limit, String number, Uri contentURI, String sortPrefix) throws IOException {
         ContentResolver cr = context.getContentResolver();
-        String sortOrder = "date DESC LIMIT + " + limit + " OFFSET " + offset;
+        String sortOrder = sortPrefix + " LIMIT + " + limit + " OFFSET " + offset;
         try (Cursor c = cr.query(contentURI, null,
                 ADDRESS + " LIKE '%" + number + "%'", null, sortOrder)) {
             c.moveToLast();

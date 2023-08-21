@@ -20,7 +20,7 @@ page.
 
 Signature keys of all offered builds are different. Before you switch the
 installation source, you will have to uninstall the Termux application and
-all currently installed plugins.
+all currently installed plugins. Check https://github.com/termux/termux-app#Installation for more info.
 
 ## License
 

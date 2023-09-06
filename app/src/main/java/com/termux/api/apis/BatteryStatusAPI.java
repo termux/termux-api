@@ -79,6 +79,8 @@ public class BatteryStatusAPI {
 
                 double batteryTemperature = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) / 10.f;
 
+                int voltage = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+                
                 String batteryStatusString;
                 int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
                 switch (status) {
@@ -110,6 +112,7 @@ public class BatteryStatusAPI {
                 out.name("plugged").value(batteryPlugged);
                 out.name("status").value(batteryStatusString);
                 out.name("temperature").value(batteryTemperature);
+                out.name("voltage").value(voltage); // Add voltage information to JSON output
                 out.name("current").value(batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW));
                 out.endObject();
             }

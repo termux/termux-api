@@ -147,7 +147,7 @@
             android:exported="false" />
 
         <receiver
-            android:name=".shared.activities.ReportActivity$ReportActivityBroadcastReceiver"
+            android:name="${TERMUX_PACKAGE_NAME}.shared.activities.ReportActivity$ReportActivityBroadcastReceiver"
             android:exported="false"
             tools:ignore="MissingClass" />
 

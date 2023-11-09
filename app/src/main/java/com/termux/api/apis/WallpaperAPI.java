@@ -117,7 +117,7 @@ public class WallpaperAPI {
         }
 
         protected void onWallpaperResult(final Intent intent, WallpaperResult result) {
-            WallpaperManager wallpaperManager = WallpaperManager.getInstance(context);
+            WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext()).setSource(wallpaperSource);
 
             if (result.wallpaper != null) {
                 try {

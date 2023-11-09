@@ -1,16 +1,20 @@
 package com.termux.api.apis;
-
 import android.app.Service;
 import android.app.WallpaperManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.os.IBinder;
-
+import android.util.DisplayMetrics;
+import android.view.WindowManager;
+import androidx.annotation.NonNull;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -25,7 +29,7 @@ public class WallpaperAPI {
 
     private static final String LOG_TAG = "WallpaperAPI";
 
-    public static void onReceive(final Context context, final Intent intent) {
+    public static void onReceive(final Context context, @NonNull final Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");
 
         Intent wallpaperService = new Intent(context, WallpaperService.class);
@@ -117,19 +121,71 @@ public class WallpaperAPI {
         }
 
         protected void onWallpaperResult(final Intent intent, WallpaperResult result) {
-            WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext()).setSource(wallpaperSource);
-
-            if (result.wallpaper != null) {
-                try {
-                    int flag = intent.hasExtra("lockscreen") ? WallpaperManager.FLAG_LOCK : WallpaperManager.FLAG_SYSTEM;
-                    wallpaperManager.setBitmap(result.wallpaper, null, true, flag);
-                    result.message = "Wallpaper set successfully!";
-                } catch (IOException e) {
-                    result.error = "Error setting wallpaper: " + e.getMessage();
+            Bitmap originalImage = result.wallpaper;
+            Context context = getApplicationContext();
+            WallpaperManager wallpaperManager = WallpaperManager.getInstance(context);
+            int flag = intent.hasExtra("lockscreen") ? WallpaperManager.FLAG_LOCK : WallpaperManager.FLAG_SYSTEM;
+            if (originalImage != null) {
+                if (intent.hasExtra("nocrop") || intent.hasExtra("center")) {
+                    Bitmap resizedImage = resizeImage(intent, originalImage);
+                    try {
+                        wallpaperManager.setBitmap(resizedImage, null, true, flag);
+                    }
+                    catch(IOException e) {
+                        result.error = "Error setting wallpaper: " + e.getMessage();
+                    }
                 }
-            }
+                else {
+                    try {
+                        wallpaperManager.setBitmap(originalImage, null, true, flag);
+                    }
+                    catch(IOException e) {
+                        result.error = "Error setting wallpaper: " + e.getMessage();
+                    }
+                }
+                result.message = "Wallpaper set successfully!";
+                }
             postWallpaperResult(context, intent, result);
         }
+
+        private Bitmap resizeImage(final Intent intent, Bitmap originalImage) {
+            DisplayMetrics metrics = new DisplayMetrics();
+            WindowManager windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+            windowManager.getDefaultDisplay().getRealMetrics(metrics);
+            int height = metrics.heightPixels;
+            int width = metrics.widthPixels;
+            Bitmap newImage = Bitmap.createBitmap(width, height, originalImage.getConfig());
+            Canvas canvas = new Canvas(newImage);
+            float imageWidth = originalImage.getWidth();
+            float imageHeight = originalImage.getHeight();
+            float scaleX = width / imageWidth;
+            float scaleY = height / imageHeight;
+            if (intent.hasExtra("center")) {
+                float scale = Math.max(scaleY, scaleX);
+                float scaledWidth = scale * imageWidth;
+                float scaledHeight = scale * imageHeight;
+                float left = (width - scaledWidth) / 2;
+                float top = (height - scaledHeight) / 2;
+                RectF targetRect = new RectF(left, top, left + scaledWidth, top + scaledHeight);
+                Paint paint = new Paint();
+                paint.setFilterBitmap(true);
+                paint.setAntiAlias(true);
+                canvas.drawBitmap(originalImage, null, targetRect, paint);
+            } else {
+                float scale = Math.min(scaleY, scaleX);
+                float xTranslation = (width - imageWidth * scale) / 2.0f;
+                float yTranslation = (height - imageHeight * scale) / 2.0f;
+                Matrix matrix = new Matrix();
+                matrix.postTranslate(xTranslation, yTranslation);
+                matrix.preScale(scale, scale);
+                Paint paint = new Paint();
+                paint.setFilterBitmap(true);
+                paint.setAntiAlias(true);
+                canvas.drawBitmap(originalImage, matrix, paint);
+            }
+            return (newImage);
+        }
+
 
         protected void postWallpaperResult(final Context context, final Intent intent, final WallpaperResult result) {
             ResultReturner.returnData(context, intent, out -> {

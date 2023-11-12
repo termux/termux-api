@@ -183,7 +183,7 @@ public class WallpaperAPI {
                 paint.setAntiAlias(true);
                 canvas.drawBitmap(originalImage, matrix, paint);
             }
-            return newImage;
+            return (newImage);
         }
 
 

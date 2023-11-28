@@ -33,7 +33,7 @@ client binary in the `termux-api` package generates two linux anonymous namespac
 sockets, and passes their address to the [TermuxApiReceiver broadcast receiver](https://github.com/termux/termux-api/blob/master/app/src/main/java/com/termux/api/TermuxApiReceiver.java)
 as in:
 
-```
+```bash
 /system/bin/am broadcast ${BROADCAST_RECEIVER} --es socket_input ${INPUT_SOCKET} --es socket_output ${OUTPUT_SOCKET}
 ```
 

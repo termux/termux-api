@@ -57,7 +57,7 @@ jobs:
           fi
 
       - name: Attach files
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}
           path: |

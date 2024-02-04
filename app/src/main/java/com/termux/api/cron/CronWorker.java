@@ -55,7 +55,7 @@ public class CronWorker extends Worker {
                 doneSignal.await();
                 hasFinished = true;
             } else {
-                hasFinished = doneSignal.await(maxRuntime, TimeUnit.SECONDS);
+                hasFinished = doneSignal.await(maxRuntime, TimeUnit.MILLISECONDS);
             }
 
             if (isStopped()) {

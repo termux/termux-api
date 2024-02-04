@@ -167,10 +167,10 @@ public class CronEntry {
                 ? NetworkType.NOT_REQUIRED
                 : NetworkType.valueOf(networkTypeString.toUpperCase());
 
-        long constraintTimeout = intent.getIntExtra("constraint_timeout", 60) * 1_000L;
+        long constraintTimeout = intent.getIntExtra("constraint_timeout", 300) * 1_000L;
         int gracePeriod = intent.getIntExtra("grace_period", 5_000);
         boolean continueOnConstraints = intent.getBooleanExtra("constraint_continue", false);
-        long maxRuntime = intent.getIntExtra("max_runtime", 60) * 1_000L;
+        long maxRuntime = intent.getIntExtra("max_runtime", 3600) * 1_000L;
 
         return new CronEntry(id, cronExpression, scriptPath, exact, networkType, batteryNotLow, charging,
                 deviceIdle, storageNotLow, constraintTimeout, gracePeriod, continueOnConstraints, maxRuntime);

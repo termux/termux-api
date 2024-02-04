@@ -44,9 +44,10 @@ public class CronAPI {
             CronScheduler.scheduleAlarmForJob(context, entry);
             ResultReturner.returnData(apiReceiver, intent, out -> out.println(entry.describe()));
         } catch (Exception e) {
-            Logger.logError(LOG_TAG, e.getMessage());
+            String message = getExceptionMessage(e);
+            Logger.logError(LOG_TAG, message);
             Logger.logStackTrace(LOG_TAG, e);
-            ResultReturner.returnData(apiReceiver, intent, out -> out.println(e.getMessage()));
+            ResultReturner.returnData(apiReceiver, intent, out -> out.println(message));
         }
     }
 
@@ -88,6 +89,15 @@ public class CronAPI {
         } else {
             ResultReturner.returnData(apiReceiver, intent, out ->
                     out.println(String.format(Locale.getDefault(), "Cron job with id %d not found?", id)));
+        }
+    }
+
+    private static String getExceptionMessage(Exception e) {
+        String message = e.getMessage();
+        if (message != null) {
+            return message;
+        } else {
+            return String.format(Locale.getDefault(), "%s without message", e.getClass().getSimpleName());
         }
     }
 }

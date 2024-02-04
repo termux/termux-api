@@ -11,6 +11,7 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringJoiner;
@@ -102,7 +103,7 @@ public class CronTab {
         try {
             File file = new File(CRON_TAB_JSON_FILE);
             if (!file.exists()) {
-                return Collections.emptyList();
+                return new ArrayList<>();
             }
 
             String json = getTextFileContents(file);

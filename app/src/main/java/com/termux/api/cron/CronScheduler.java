@@ -143,7 +143,7 @@ public class CronScheduler {
         if (exact) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
         } else {
-            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+            alarmManager.setWindow(AlarmManager.RTC_WAKEUP, triggerAtMillis, 10*60*1000L, pendingIntent);
         }
         Logger.logDebug(LOG_TAG, logMessage);
     }

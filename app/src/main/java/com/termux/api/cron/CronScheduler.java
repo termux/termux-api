@@ -73,7 +73,7 @@ public class CronScheduler {
 
         WorkManager
                 .getInstance(context)
-                .enqueueUniqueWork(getUniqueWorkName(entry.getId()), ExistingWorkPolicy.KEEP, builder.build());
+                .enqueueUniqueWork(getUniqueWorkName(entry.getId()), ExistingWorkPolicy.REPLACE, builder.build());
 
         Logger.logDebug(LOG_TAG, String.format(Locale.getDefault(),
                 "CronWorker enqueued for job id %d", entry.getId()));

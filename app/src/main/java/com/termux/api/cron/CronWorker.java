@@ -14,6 +14,9 @@ import com.termux.shared.logger.Logger;
 import com.termux.shared.shell.command.ExecutionCommand;
 import com.termux.shared.termux.TermuxConstants;
 
+import java.security.SecureRandom;
+import java.util.Locale;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +32,7 @@ public class CronWorker extends Worker {
     private long maxRuntime;
     private boolean continueOnConstraints;
     private int gracePeriod;
+    private String appShellName;
 
     public CronWorker(@NonNull Context appContext, @NonNull WorkerParameters workerParams) {
         super(appContext, workerParams);
@@ -95,6 +99,8 @@ public class CronWorker extends Worker {
         maxRuntime = inputData.getLong(WORKER_INPUT_MAX_RUNTIME, 3600);
         continueOnConstraints = inputData.getBoolean(WORKER_INPUT_CONTINUE, false);
         gracePeriod = inputData.getInt(WORKER_INPUT_DELAY, 5000);
+        appShellName = createAppShellName(jobId, executableUri);
+        Logger.logDebug(LOG_TAG, getId() + " - " + appShellName);
     }
 
     @Override
@@ -135,6 +141,7 @@ public class CronWorker extends Worker {
         intent.setClassName(TermuxConstants.TERMUX_PACKAGE_NAME, TermuxConstants.TERMUX_APP.TERMUX_SERVICE_NAME);
         intent.putExtra(TermuxConstants.TERMUX_APP.TERMUX_SERVICE.EXTRA_RUNNER, executionCommand.runner);
         intent.putExtra(TermuxConstants.TERMUX_APP.TERMUX_SERVICE.EXTRA_BACKGROUND, true); // Also pass in case user using termux-app version < 0.119.0
+        intent.putExtra(TermuxConstants.TERMUX_APP.TERMUX_SERVICE.EXTRA_SHELL_NAME, appShellName);
         intent.putExtra(TermuxConstants.TERMUX_APP.TERMUX_SERVICE.EXTRA_PENDING_INTENT, pi);
 
         Context context = getApplicationContext();
@@ -151,6 +158,7 @@ public class CronWorker extends Worker {
         // needs to be replaced with TermuxConstants.ACTION_SERVICE_STOP
         Intent intent = new Intent("com.termux.service_execution_stop", executableUri);
         intent.setClassName(TermuxConstants.TERMUX_PACKAGE_NAME, TermuxConstants.TERMUX_APP.TERMUX_SERVICE_NAME);
+        intent.putExtra(TermuxConstants.TERMUX_APP.TERMUX_SERVICE.EXTRA_SHELL_NAME, appShellName);
         // needs to be replaced with TermuxConstants.EXTRA_TERMINATE_GRACE_PERIOD
         intent.putExtra("com.termux.execute.stop.delay", gracePeriod);
 
@@ -165,5 +173,17 @@ public class CronWorker extends Worker {
 
     private void scheduleNextExecution() {
         CronScheduler.scheduleAlarmForJob(getApplicationContext(), jobId);
+    }
+
+    private static String createAppShellName(int jobId, Uri executableUri) {
+        char[] allowedCharsArray = ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789").toCharArray();
+        char[] randomId = new char[6];
+        Random random = new SecureRandom();
+        for (int i = 0; i < randomId.length; i++) {
+            randomId[i] = allowedCharsArray[random.nextInt(allowedCharsArray.length)];
+        }
+
+        return String.format(Locale.getDefault(),
+                "%s-%d-%s", executableUri.getLastPathSegment(), jobId, String.copyValueOf(randomId));
     }
 }

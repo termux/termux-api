@@ -10,12 +10,15 @@ import androidx.annotation.NonNull;
 import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
+import com.termux.shared.file.FileUtils;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.net.uri.UriUtils;
 import com.termux.shared.shell.command.ExecutionCommand;
 import com.termux.shared.termux.TermuxConstants;
 
 import java.security.SecureRandom;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -183,7 +186,11 @@ public class CronWorker extends Worker {
             randomId[i] = allowedCharsArray[random.nextInt(allowedCharsArray.length)];
         }
 
+        String executable = Optional.ofNullable(FileUtils.getFileBasename(UriUtils
+                        .getUriFilePathWithFragment(executableUri)))
+                .orElse("unknown-executable");
+
         return String.format(Locale.getDefault(),
-                "%s-%d-%s", executableUri.getLastPathSegment(), jobId, String.copyValueOf(randomId));
+                "%s-%d-%s", executable, jobId, String.copyValueOf(randomId));
     }
 }

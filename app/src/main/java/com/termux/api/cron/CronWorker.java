@@ -163,7 +163,7 @@ public class CronWorker extends Worker {
         intent.setClassName(TermuxConstants.TERMUX_PACKAGE_NAME, TermuxConstants.TERMUX_APP.TERMUX_SERVICE_NAME);
         intent.putExtra(TermuxConstants.TERMUX_APP.TERMUX_SERVICE.EXTRA_SHELL_NAME, appShellName);
         // needs to be replaced with TermuxConstants.EXTRA_TERMINATE_GRACE_PERIOD
-        intent.putExtra("com.termux.execute.stop.delay", gracePeriod);
+        intent.putExtra("com.termux.execute.stop_delay", gracePeriod);
 
         Context context = getApplicationContext();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

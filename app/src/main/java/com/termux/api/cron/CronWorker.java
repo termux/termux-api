@@ -162,8 +162,8 @@ public class CronWorker extends Worker {
         Intent intent = new Intent("com.termux.service_execution_stop", executableUri);
         intent.setClassName(TermuxConstants.TERMUX_PACKAGE_NAME, TermuxConstants.TERMUX_APP.TERMUX_SERVICE_NAME);
         intent.putExtra(TermuxConstants.TERMUX_APP.TERMUX_SERVICE.EXTRA_SHELL_NAME, appShellName);
-        // needs to be replaced with TermuxConstants.EXTRA_TERMINATE_GRACE_PERIOD
-        intent.putExtra("com.termux.execute.stop_delay", gracePeriod);
+        // needs to be replaced with TermuxConstants.EXTRA_SIGKILL_DELAY_ON_STOP
+        intent.putExtra("com.termux.execute.sigkill_delay_on_stop", gracePeriod);
 
         Context context = getApplicationContext();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

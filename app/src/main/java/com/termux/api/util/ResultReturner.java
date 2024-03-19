@@ -144,9 +144,9 @@ public abstract class ResultReturner {
      * Run in a separate thread, unless the context is an IntentService.
      */
     public static void returnData(Object context, final Intent intent, final ResultWriter resultWriter) {
-        final PendingResult asyncResult = (context instanceof BroadcastReceiver) ? ((BroadcastReceiver) context)
-                .goAsync() : null;
+        final BroadcastReceiver receiver = (BroadcastReceiver) ((context instanceof BroadcastReceiver) ? context : null);
         final Activity activity = (Activity) ((context instanceof Activity) ? context : null);
+        final PendingResult asyncResult = receiver != null ? receiver.goAsync() : null;
 
         final Runnable runnable = () -> {
             PrintWriter writer = null;
@@ -192,7 +192,7 @@ public abstract class ResultReturner {
                     pfds[0].close();
                 }
 
-                if (asyncResult != null) {
+                if (asyncResult != null && receiver.isOrderedBroadcast()) {
                     asyncResult.setResultCode(0);
                 } else if (activity != null) {
                     activity.setResult(0);
@@ -204,7 +204,7 @@ public abstract class ResultReturner {
                 TermuxPluginUtils.sendPluginCommandErrorNotification(ResultReturner.context, LOG_TAG,
                         TermuxConstants.TERMUX_API_APP_NAME + " Error", message, t);
 
-                if (asyncResult != null) {
+                if (asyncResult != null && receiver != null && receiver.isOrderedBroadcast()) {
                     asyncResult.setResultCode(1);
                 } else if (activity != null) {
                     activity.setResult(1);

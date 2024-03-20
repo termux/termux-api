@@ -16,6 +16,7 @@ import com.termux.shared.data.IntentUtils;
 import com.termux.shared.logger.Logger;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.Locale;
@@ -36,6 +37,9 @@ public class TextToSpeechAPI {
     public static class TextToSpeechService extends IntentService {
         TextToSpeech mTts;
         final CountDownLatch mTtsLatch = new CountDownLatch(1);
+
+        // file we're recording to
+        protected static File file;
 
         private static final String LOG_TAG = "TextToSpeechService";
 
@@ -67,6 +71,7 @@ public class TextToSpeechAPI {
             final String speechRegion = intent.getStringExtra("region");
             final String speechVariant = intent.getStringExtra("variant");
             final String speechEngine = intent.getStringExtra("engine");
+            final String speechFile = intent.getStringExtra("file");
             final float speechPitch = intent.getFloatExtra("pitch", 1.0f);
 
             // STREAM_MUSIC is the default audio stream for TTS, see:
@@ -96,6 +101,14 @@ public class TextToSpeechAPI {
                 }
             }
             final int streamToUse = streamToUseInt;
+
+            if (speechFile != null) {
+                file = new File(speechFile);
+                if (!file.canWrite()) {
+                    Logger.logError(LOG_TAG, "Can't write to file: " + file.getName());
+                    return;
+                }
+            }
 
             mTts = new TextToSpeech(this, status -> {
                 if (status == TextToSpeech.SUCCESS) {
@@ -187,7 +200,12 @@ public class TextToSpeechAPI {
                             while ((line = reader.readLine()) != null) {
                                 if (!line.isEmpty()) {
                                     submittedUtterances++;
-                                    mTts.speak(line, TextToSpeech.QUEUE_ADD, params, utteranceId);
+                                    if (speechFile != null) {
+                                        mTts.synthesizeToFile(line, params, file, utteranceId);
+                                        break;
+                                    } else {
+                                        mTts.speak(line, TextToSpeech.QUEUE_ADD, params, utteranceId);
+                                    }
                                 }
                             }
                         }

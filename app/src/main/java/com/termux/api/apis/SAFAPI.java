@@ -282,7 +282,7 @@ public class SAFAPI {
             if (! DocumentsContract.Document.MIME_TYPE_DIR.equals(mime)) {
                 out.name("length");
                 out.value(c.getInt(c.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)));
-                Integer lastModified = c.getInt(c.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED));
+                Long lastModified = c.getLong(c.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED));
                 if (lastModified != null) {
                     out.name("last_modified");
                     out.value(lastModified);

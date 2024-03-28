@@ -288,8 +288,14 @@ public class SAFAPI {
             }
 
             out.name("uri");
-
             out.value(uri.toString());
+
+            index = c.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED);
+            if (index >= 0) {
+                out.name("last_modified");
+                out.value(c.getLong(index));
+            }
+
             if (mime != null && !DocumentsContract.Document.MIME_TYPE_DIR.equals(mime)) {
                 index = c.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE);
                 if (index >= 0) {

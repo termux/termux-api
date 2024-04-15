@@ -38,7 +38,7 @@ jobs:
           APK_BASENAME_PREFIX="termux-api_$APK_VERSION_TAG"
 
           echo "Building APK for '$RELEASE_VERSION_NAME' release"
-          export TERMUX_API_APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
+          export TERMUX_API_APP_BUILD__APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
           if ! ./gradlew assembleDebug; then
             exit_on_error "Build failed for '$RELEASE_VERSION_NAME' release."
           fi

@@ -51,10 +51,11 @@ jobs:
             exit_on_error "Failed to find built APK at '$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk'. Files found: "$'\n'"$files_found"
           fi
 
-          echo "Generating sha25sums file"
-          if ! (cd "$APK_DIR_PATH"; sha256sum "${APK_BASENAME_PREFIX}.apk" > sha256sums); then
-            exit_on_error "Generate sha25sums failed for '$RELEASE_VERSION_NAME' release."
+          echo "Generating checksums-sha256.txt file"
+          if ! (cd "$APK_DIR_PATH"; sha256sum "${APK_BASENAME_PREFIX}.apk" > checksums-sha256.txt); then
+            exit_on_error "Generate checksums-sha256.txt file failed for '$RELEASE_VERSION_NAME' release."
           fi
+          echo "checksums-sha256.txt:"$'\n```\n'"$(cat "$APK_DIR_PATH/checksums-sha256.txt")"$'\n```'
 
       - name: Attach files
         uses: actions/upload-artifact@v4
@@ -62,5 +63,5 @@ jobs:
           name: ${{ env.APK_BASENAME_PREFIX }}
           path: |
             ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}.apk
-            ${{ env.APK_DIR_PATH }}/sha256sums
+            ${{ env.APK_DIR_PATH }}/checksums-sha256.txt
             ${{ env.APK_DIR_PATH }}/output-metadata.json

@@ -56,10 +56,9 @@ jobs:
           echo "checksums-sha256.txt:"$'\n```\n'"$(cat "$APK_DIR_PATH/checksums-sha256.txt")"$'\n```'
 
           echo "Uploading files to release"
-          if ! hub release edit \
-          -m "" \
-          -a "$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk" \
-          -a "$APK_DIR_PATH/checksums-sha256.txt" \
-          "$RELEASE_VERSION_NAME"; then
+          if ! gh release upload "$RELEASE_VERSION_NAME" \
+            "$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk" \
+            "$APK_DIR_PATH/checksums-sha256.txt" \
+          ; then
             exit_on_error "Upload files to release failed for '$RELEASE_VERSION_NAME' release."
           fi

@@ -35,7 +35,7 @@ jobs:
           fi
 
           APK_DIR_PATH="./app/build/outputs/apk/debug"
-          APK_VERSION_TAG="$RELEASE_VERSION_NAME-github-debug" # Note the "-", GITHUB_SHA will already have "+" before it
+          APK_VERSION_TAG="$RELEASE_VERSION_NAME.github.debug" # Note the ".", GITHUB_SHA will already have "+" before it
           APK_BASENAME_PREFIX="termux-api_$APK_VERSION_TAG"
 
           # Used by upload step later

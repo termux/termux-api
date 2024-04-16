@@ -17,7 +17,7 @@ Termux:API application can be obtained from [F-Droid](https://f-droid.org/en/pac
 
 Additionally we provide per-commit debug builds for those who want to try
 out the latest features or test their pull request. This build can be obtained
-from one of the workflow runs listed on [Github Actions](https://github.com/termux/termux-api/actions)
+from one of the workflow runs listed on [Github Actions](https://github.com/termux/termux-api/actions/workflows/github_action_build.yml?query=branch%3Amaster+event%3Apush)
 page.
 
 Signature keys of all offered builds are different. Before you switch the

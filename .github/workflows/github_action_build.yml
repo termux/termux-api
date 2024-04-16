@@ -1,4 +1,4 @@
-name: Build
+name: GitHub Action Build
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
       - name: Clone repository
         uses: actions/checkout@v4
 
-      - name: Build APK
+      - name: Build
         shell: bash {0}
         run: |
           exit_on_error() { echo "$1"; exit 1; }
@@ -31,29 +31,29 @@ jobs:
           CURRENT_VERSION_NAME="$(grep -m 1 -E "$CURRENT_VERSION_NAME_REGEX" ./app/build.gradle | sed -r "s/$CURRENT_VERSION_NAME_REGEX/\1/")"
           RELEASE_VERSION_NAME="v$CURRENT_VERSION_NAME+${GITHUB_SHA:0:7}" # The "+" is necessary so that versioning precedence is not affected
           if ! printf "%s" "${RELEASE_VERSION_NAME/v/}" | grep -qP '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'; then
-            exit_on_error "The versionName '${RELEASE_VERSION_NAME/v/}' is not a valid version as per semantic version '2.0.0' spec in the format 'major.minor.patch(-prerelease)(+buildmetadata)'. https://semver.org/spec/v2.0.0.html."
+            exit_on_error "The release version '${RELEASE_VERSION_NAME/v/}' generated from current version '$CURRENT_VERSION_NAME' is not a valid version as per semantic version '2.0.0' spec in the format 'major.minor.patch(-prerelease)(+buildmetadata)'. https://semver.org/spec/v2.0.0.html."
           fi
 
           APK_DIR_PATH="./app/build/outputs/apk/debug"
           APK_VERSION_TAG="$RELEASE_VERSION_NAME-github-debug" # Note the "-", GITHUB_SHA will already have "+" before it
           APK_BASENAME_PREFIX="termux-api_$APK_VERSION_TAG"
 
-          # Used by attachment steps later
+          # Used by upload step later
           echo "APK_DIR_PATH=$APK_DIR_PATH" >> $GITHUB_ENV
           echo "APK_VERSION_TAG=$APK_VERSION_TAG" >> $GITHUB_ENV
           echo "APK_BASENAME_PREFIX=$APK_BASENAME_PREFIX" >> $GITHUB_ENV
 
-          echo "Building APK for '$RELEASE_VERSION_NAME' build"
+          echo "Building APK file for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag"
           export TERMUX_API_APP_BUILD__APP_VERSION_NAME="${RELEASE_VERSION_NAME/v/}" # Used by app/build.gradle
           export TERMUX_API_APP_BUILD__APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
           if ! ./gradlew assembleDebug; then
-            exit_on_error "Build failed for '$RELEASE_VERSION_NAME' build."
+            exit_on_error "Build failed for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag."
           fi
 
-          echo "Validating APK"
+          echo "Validating APK file"
           if ! test -f "$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk"; then
             files_found="$(ls "$APK_DIR_PATH")"
-            exit_on_error "Failed to find built APK at '$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk'. Files found: "$'\n'"$files_found"
+            exit_on_error "Failed to find built APK file at '$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk'. Files found: "$'\n'"$files_found"
           fi
 
           echo "Generating checksums-sha256.txt file"
@@ -62,7 +62,7 @@ jobs:
           fi
           echo "checksums-sha256.txt:"$'\n```\n'"$(cat "$APK_DIR_PATH/checksums-sha256.txt")"$'\n```'
 
-      - name: Attach files
+      - name: Upload files to action
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}

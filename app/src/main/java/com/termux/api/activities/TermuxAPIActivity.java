@@ -47,8 +47,8 @@ public class TermuxAPIActivity extends AppCompatActivity {
         TermuxThemeUtils.setAppNightMode(this);
         AppCompatActivityUtils.setNightMode(this, NightMode.getAppNightMode().getName(), true);
 
-        AppCompatActivityUtils.setToolbar(this, R.id.toolbar);
-        AppCompatActivityUtils.setToolbarTitle(this, R.id.toolbar, TermuxConstants.TERMUX_API_APP_NAME, 0);
+        AppCompatActivityUtils.setToolbar(this, com.termux.shared.R.id.toolbar);
+        AppCompatActivityUtils.setToolbarTitle(this, com.termux.shared.R.id.toolbar, TermuxConstants.TERMUX_API_APP_NAME, 0);
 
         TextView pluginInfo = findViewById(R.id.textview_plugin_info);
         pluginInfo.setText(getString(R.string.plugin_info, TermuxConstants.TERMUX_GITHUB_REPO_URL,

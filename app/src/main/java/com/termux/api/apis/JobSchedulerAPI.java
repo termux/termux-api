@@ -1,5 +1,6 @@
 package com.termux.api.apis;
 
+import android.annotation.SuppressLint;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
@@ -208,6 +209,7 @@ public class JobSchedulerAPI {
 
 
 
+    @SuppressLint("SpecifyJobSchedulerIdRange")
     public static class JobSchedulerService extends JobService {
 
         public static final String SCRIPT_FILE_PATH = TermuxConstants.TERMUX_API_PACKAGE_NAME + ".jobscheduler_script_path";

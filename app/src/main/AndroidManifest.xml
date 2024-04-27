@@ -141,7 +141,28 @@
             android:grantUriPermissions="true"
             android:exported="true" />
 
+        <provider
+                android:name="androidx.startup.InitializationProvider"
+                android:authorities="${applicationId}.androidx-startup"
+                android:exported="false"
+                tools:node="merge">
+            <meta-data
+                    android:name="androidx.work.WorkManagerInitializer"
+                    android:value="androidx.startup"
+                    tools:node="remove" />
+        </provider>
 
+
+        <receiver android:name=".cron.CronReceiver"
+                  android:exported="false">
+        </receiver>
+
+        <receiver android:name=".cron.CronBootReceiver"
+                  android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <receiver android:name=".TermuxApiReceiver"
             android:exported="false" />

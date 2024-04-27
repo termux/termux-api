@@ -44,6 +44,8 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+
+        coreLibraryDesugaringEnabled true
     }
 
     applicationVariants.all { variant ->
@@ -64,9 +66,17 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.3'
+
     implementation 'com.google.android.material:material:1.4.0'
     implementation 'androidx.biometric:biometric:1.2.0-alpha03'
+    implementation "androidx.work:work-runtime:2.6.0"
+    implementation "androidx.concurrent:concurrent-futures:1.1.0"
     implementation 'androidx.media:media:1.4.3'
+    implementation 'com.cronutils:cron-utils:9.2.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation "com.google.guava:guava:24.1-android"
+    implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
 
     implementation 'com.termux.termux-app:termux-shared:8c1749ef96'
     // Use if below libraries are published locally by termux-app with `./gradlew publishReleasePublicationToMavenLocal` and used with `mavenLocal()`.

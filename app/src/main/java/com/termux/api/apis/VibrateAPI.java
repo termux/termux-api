@@ -2,6 +2,7 @@ package com.termux.api.apis;
 
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.VibrationEffect;
@@ -30,11 +31,16 @@ public class VibrateAPI {
                     Logger.logError(LOG_TAG, "Audio service null");
                     return;
                 }
-                // Do not vibrate if in silent mode and -f/--force option is not used.
+
+                // Do not vibrate if "Silent" ringer mode or "Do Not Disturb" is enabled and -f/--force option is not used.
                 if (am.getRingerMode() != AudioManager.RINGER_MODE_SILENT || force) {
                     try {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE));
+                            vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE),
+                                new AudioAttributes.Builder()
+                                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                    .setUsage(AudioAttributes.USAGE_ALARM)
+                                    .build());
                         } else {
                             vibrator.vibrate(milliseconds);
                         }

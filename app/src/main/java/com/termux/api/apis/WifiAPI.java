@@ -105,6 +105,9 @@ public class WifiAPI {
                             // centerFreq0 says "Not used if the AP bandwidth is 20 MHz".
                             out.name("center_frequency_mhz").value(scan.centerFreq0);
                         }
+                        if (!TextUtils.isEmpty(scan.capabilities)) {
+                            out.name("capabilities").value(scan.capabilities);
+                        }
                         if (!TextUtils.isEmpty(scan.operatorFriendlyName)) {
                             out.name("operator_name").value(scan.operatorFriendlyName.toString());
                         }

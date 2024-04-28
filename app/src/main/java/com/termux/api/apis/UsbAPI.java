@@ -66,8 +66,7 @@ public class UsbAPI {
                                         if (result < 0) {
                                             out.append("Failed to open device\n");
                                         } else {
-                                            this.setFd(result);
-                                            out.append("@"); // has to be non-empty
+                                            this.sendFd(out, result);
                                         }
                                     } else out.append("No permission\n");
                                 }

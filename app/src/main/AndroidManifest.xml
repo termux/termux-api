@@ -209,6 +209,9 @@
         <service android:name=".apis.WallpaperAPI$WallpaperService"
             android:exported="false" />
 
+        <service android:name=".apis.UsbAPI$UsbService"
+            android:exported="false" />
+
     </application>
 
 </manifest>

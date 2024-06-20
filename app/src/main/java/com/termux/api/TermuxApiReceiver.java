@@ -242,7 +242,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 TorchAPI.onReceive(this, context, intent);
                 break;
             case "Usb":
-                UsbAPI.onReceive(this, context, intent);
+                UsbAPI.onReceive(context, intent);
                 break;
             case "Vibrate":
                 VibrateAPI.onReceive(this, context, intent);

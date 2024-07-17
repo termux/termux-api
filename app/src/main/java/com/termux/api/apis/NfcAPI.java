@@ -19,6 +19,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
 
+import java.nio.charset.StandardCharsets;
+
 public class NfcAPI {
 
     private static final String LOG_TAG = "NfcAPI";
@@ -165,6 +167,9 @@ public class NfcAPI {
                                     case "full":
                                         readFullNDEFTag(intent,out);
                                         break;
+                                    case "id":
+                                        readNDEFID(intent,out);
+                                        break;
                                     case "noData":
                                         readNDEFTag(intent,out);
                                         break;
@@ -243,6 +248,18 @@ public class NfcAPI {
                 }
                 out.endObject();
             }
+        }
+
+        public void readNDEFID(Intent intent, JsonWriter out) throws Exception {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
+            byte[] tag_id = intent.getByteArrayExtra(NfcAdapter.EXTRA_ID);
+            out.beginObject();
+            StringBuilder sb = new StringBuilder();
+            for (byte b : tag_id) {
+                sb.append(String.format("%02X", b));
+            }
+            out.name("card_id").value(sb.toString());
+            out.endObject();
         }
 
         public void readFullNDEFTag(Intent intent, JsonWriter out) throws Exception {

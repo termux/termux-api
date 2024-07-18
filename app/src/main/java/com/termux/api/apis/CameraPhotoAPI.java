@@ -20,12 +20,12 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.StreamConfigurationMap;
+
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
 import android.os.Looper;
-import android.util.Size;
+
 import android.view.Surface;
 import android.view.WindowManager;
 
@@ -42,9 +42,7 @@ import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -57,10 +55,10 @@ public class CameraPhotoAPI {
     private static float focus_distance=0;
     private static Integer iso=0;
     private static Integer exposure=0;
-
     private static Integer ev_steps=0;
-
     private static String flash;
+
+    private static Integer preview_time;
 
     private static String no_processing;
 
@@ -68,7 +66,7 @@ public class CameraPhotoAPI {
         Logger.logDebug(LOG_TAG, "onReceive");
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS", Locale.US);
-        //String filePath = intent.getStringExtra("file");
+
         final String filePath = Objects.toString(intent.getStringExtra("file"), "/data/data/com.termux/files/home/Photos/" + sdf.format(new Date()) + ".jpg");
         final String cameraId = Objects.toString(intent.getStringExtra("camera"), "0");
         flash = Objects.toString(intent.getStringExtra("flash"), "off");
@@ -76,6 +74,8 @@ public class CameraPhotoAPI {
         iso=Integer.parseInt(Objects.toString(intent.getStringExtra("iso"), "0"));
         exposure=Integer.parseInt(Objects.toString(intent.getStringExtra("exposure"), "0"));
         ev_steps=Integer.parseInt(Objects.toString(intent.getStringExtra("ev_steps"), "0"));
+        preview_time=Integer.parseInt(Objects.toString(intent.getStringExtra("preview_time"), "500"));
+
         focus_distance=parseFloat(Objects.toString(intent.getStringExtra("focus"), "0"));
 
         ResultReturner.returnData(apiReceiver, intent, stdout -> {
@@ -162,8 +162,6 @@ public class CameraPhotoAPI {
 
         final CameraCharacteristics characteristics = manager.getCameraCharacteristics(camera.getId());
 
-        //final int autoExposureModeFinal = CameraMetadata.CONTROL_AE_MODE_ON;
-
         Rect sensor_size;
         sensor_size = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
         stdout.println("Resolution is " + sensor_size.width() + "x" + sensor_size.height());
@@ -202,7 +200,7 @@ public class CameraPhotoAPI {
             public void onConfigured(final CameraCaptureSession session) {
                 try {
                     //no need for a preview if we don't need auto focus/exposure
-                    //if(iso==0 || exposure==0 || focus_distance<0.01)
+                    if(preview_time>0)
                     {
                         // create preview Request
                         CaptureRequest.Builder previewReq = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -237,7 +235,7 @@ public class CameraPhotoAPI {
                         // continous preview-capture for 1/2 second
                         session.setRepeatingRequest(previewReq.build(), null, null);
                         Logger.logInfo(LOG_TAG, "preview started");
-                        Thread.sleep(400);
+                        Thread.sleep(preview_time);
                         session.stopRepeating();
                         Logger.logInfo(LOG_TAG, "preview stoppend");
                     }

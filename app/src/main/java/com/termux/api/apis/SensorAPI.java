@@ -287,16 +287,24 @@ public class SensorAPI {
             } else {
 
                 // try to find matching sensors that were sent in request
-                for (String sensorName : requestedSensors) {
+                for (String requestedSensor : requestedSensors) {
                     // ignore case
-                    sensorName = sensorName.toUpperCase();
+                    requestedSensor = requestedSensor.toUpperCase();
 
-                    for (Sensor sensor : availableSensors) {
-                        if (sensor.getName().toUpperCase().contains(sensorName)) {
-                            sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
-                            sensorsToListenTo.add(sensor);
-                            break;
+                    Sensor shortestMatchSensor = null;
+                    int shortestMatchSensorLength = Integer.MAX_VALUE;
+
+                    for (Sensor availableSensor : availableSensors) {
+                        String sensorName = availableSensor.getName().toUpperCase();
+                        if (sensorName.contains(requestedSensor) && sensorName.length() < shortestMatchSensorLength) {
+                            shortestMatchSensor = availableSensor;
+                            shortestMatchSensorLength = sensorName.length();
                         }
+                    }
+
+                    if (shortestMatchSensor != null) {
+                        sensorManager.registerListener(sensorEventListener, shortestMatchSensor, SensorManager.SENSOR_DELAY_UI);
+                        sensorsToListenTo.add(shortestMatchSensor);
                     }
                 }
             }

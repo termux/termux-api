@@ -87,7 +87,30 @@ public class SocketListener {
                         
                                 m = EXTRA_BOOLEAN.matcher(cmdline);
                                 while (m.find()) {
-                                    booleanExtras.put(m.group(1), Boolean.parseBoolean(m.group(2)));
+                                    String value = m.group(2);
+                                    value = value != null ? value.toLowerCase() : null;
+                                    Boolean arg = null;
+
+                                    if ("true".equals(value) || "t".equals(value)) {
+                                        arg = true;
+                                    } else if ("false".equals(value) || "f".equals(value)) {
+                                        arg = false;
+                                    } else {
+                                        try {
+                                            if (value != null)
+                                                arg = Integer.decode(value) != 0;
+                                        } catch (NumberFormatException ex) {
+                                            // Ignore
+                                        }
+                                    }
+                                    if (arg == null) {
+                                        String msg = "Invalid boolean extra: " + m.group(0) + "\n";
+                                        Logger.logInfo(LOG_TAG, msg);
+                                        out.write(msg);
+                                        err = true;
+                                        break;
+                                    }
+                                    booleanExtras.put(m.group(1), arg);
                                 }
                                 cmdline = m.replaceAll("");
                         

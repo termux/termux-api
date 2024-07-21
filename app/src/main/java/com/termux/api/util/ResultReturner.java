@@ -103,14 +103,53 @@ public abstract class ResultReturner {
     }
 
     public static abstract class WithAncillaryFd implements ResultWriter {
-        private int fd = -1;
+        private LocalSocket outputSocket = null;
+        private final ParcelFileDescriptor[] pfds = { null };
 
-        public final void setFd(int newFd) {
-            fd = newFd;
+        public final void setOutputSocketForFds(LocalSocket outputSocket) {
+            this.outputSocket = outputSocket;
         }
 
-        public final int getFd() {
-            return fd;
+        public final void sendFd(PrintWriter out, int fd) {
+            // If fd already sent, then error out as we only support sending one currently.
+            if (this.pfds[0] != null) {
+                Logger.logStackTraceWithMessage(LOG_TAG, "File descriptor already sent", new Exception());
+                return;
+            }
+
+            this.pfds[0] = ParcelFileDescriptor.adoptFd(fd);
+            FileDescriptor[] fds = { pfds[0].getFileDescriptor() };
+
+            // Set fd to be sent
+            outputSocket.setFileDescriptorsForSend(fds);
+
+            // As per the docs:
+            // > The file descriptors will be sent with the next write of normal data, and will be
+            //   delivered in a single ancillary message.
+            // - https://developer.android.com/reference/android/net/LocalSocket#setFileDescriptorsForSend(java.io.FileDescriptor[])
+            // So we write the `@` character. It is not special, it is just the chosen character
+            // expected as the message by the native `termux-api` command when a fd is sent.
+            // - https://github.com/termux/termux-api-package/blob/e62bdadea3f26b60430bb85248f300fee68ecdcc/termux-api.c#L358
+            out.print("@");
+
+            // Actually send the by fd by flushing the data previously written (`@`) as PrintWriter is buffered.
+            out.flush();
+
+            // Clear existing fd after it has been sent, otherwise it will get sent for every data write,
+            // even though we are currently not writing anything else. Android will not clear it automatically.
+            // - https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/core/java/android/net/LocalSocketImpl.java;l=523?q=setFileDescriptorsForSend
+            // - https://cs.android.com/android/_/android/platform/frameworks/base/+/refs/tags/android-14.0.0_r1:core/jni/android_net_LocalSocketImpl.cpp;l=194
+            outputSocket.setFileDescriptorsForSend(null);
+        }
+
+        public final void cleanupFds() {
+          if (this.pfds[0] != null) {
+            try {
+              this.pfds[0].close();
+            } catch (IOException e) {
+              Logger.logStackTraceWithMessage(LOG_TAG, "Failed to close file descriptor", e);
+            }
+          }
         }
     }
 
@@ -144,15 +183,14 @@ public abstract class ResultReturner {
      * Run in a separate thread, unless the context is an IntentService.
      */
     public static void returnData(Object context, final Intent intent, final ResultWriter resultWriter) {
-        final PendingResult asyncResult = (context instanceof BroadcastReceiver) ? ((BroadcastReceiver) context)
-                .goAsync() : null;
+        final BroadcastReceiver receiver = (BroadcastReceiver) ((context instanceof BroadcastReceiver) ? context : null);
         final Activity activity = (Activity) ((context instanceof Activity) ? context : null);
+        final PendingResult asyncResult = receiver != null ? receiver.goAsync() : null;
 
         final Runnable runnable = () -> {
             PrintWriter writer = null;
             LocalSocket outputSocket = null;
             try {
-                final ParcelFileDescriptor[] pfds = { null };
                 outputSocket = new LocalSocket();
                 String outputSocketAdress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
                 if (outputSocketAdress == null || outputSocketAdress.isEmpty())
@@ -162,6 +200,9 @@ public abstract class ResultReturner {
                 writer = new PrintWriter(outputSocket.getOutputStream());
 
                 if (resultWriter != null) {
+                    if(resultWriter instanceof WithAncillaryFd) {
+                      ((WithAncillaryFd) resultWriter).setOutputSocketForFds(outputSocket);
+                    }
                     if (resultWriter instanceof BinaryOutput) {
                         BinaryOutput bout = (BinaryOutput) resultWriter;
                         bout.setOutput(outputSocket.getOutputStream());
@@ -178,21 +219,13 @@ public abstract class ResultReturner {
                     } else {
                         resultWriter.writeResult(writer);
                     }
-                    if(resultWriter instanceof WithAncillaryFd) {
-                        int fd = ((WithAncillaryFd) resultWriter).getFd();
-                        if (fd >= 0) {
-                            pfds[0] = ParcelFileDescriptor.adoptFd(fd);
-                            FileDescriptor[] fds = { pfds[0].getFileDescriptor() };
-                            outputSocket.setFileDescriptorsForSend(fds);
-                        }
+                    if (resultWriter instanceof WithAncillaryFd) {
+                      ((WithAncillaryFd) resultWriter).cleanupFds();
                     }
                 }
 
-                if(pfds[0] != null) {
-                    pfds[0].close();
-                }
 
-                if (asyncResult != null) {
+                if (asyncResult != null && receiver.isOrderedBroadcast()) {
                     asyncResult.setResultCode(0);
                 } else if (activity != null) {
                     activity.setResult(0);
@@ -204,7 +237,7 @@ public abstract class ResultReturner {
                 TermuxPluginUtils.sendPluginCommandErrorNotification(ResultReturner.context, LOG_TAG,
                         TermuxConstants.TERMUX_API_APP_NAME + " Error", message, t);
 
-                if (asyncResult != null) {
+                if (asyncResult != null && receiver != null && receiver.isOrderedBroadcast()) {
                     asyncResult.setResultCode(1);
                 } else if (activity != null) {
                     activity.setResult(1);

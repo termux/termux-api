@@ -32,6 +32,7 @@ import com.termux.api.apis.NotificationListAPI;
 import com.termux.api.apis.SAFAPI;
 import com.termux.api.apis.SensorAPI;
 import com.termux.api.apis.ShareAPI;
+import com.termux.api.apis.SimAPI;
 import com.termux.api.apis.SmsInboxAPI;
 import com.termux.api.apis.SmsSendAPI;
 import com.termux.api.apis.SpeechToTextAPI;
@@ -198,6 +199,11 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "Share":
                 ShareAPI.onReceive(this, context, intent);
+                break;
+            case "Sim":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_PHONE_STATE)) {
+                      SimAPI.onReceive(this, context, intent);
+                }
                 break;
             case "SmsInbox":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_SMS, Manifest.permission.READ_CONTACTS)) {

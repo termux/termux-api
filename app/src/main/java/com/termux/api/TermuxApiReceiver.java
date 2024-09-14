@@ -17,6 +17,7 @@ import com.termux.api.apis.CameraPhotoAPI;
 import com.termux.api.apis.ClipboardAPI;
 import com.termux.api.apis.ContactListAPI;
 import com.termux.api.apis.DialogAPI;
+import com.termux.api.apis.DisplayInfoAPI;
 import com.termux.api.apis.DownloadAPI;
 import com.termux.api.apis.FingerprintAPI;
 import com.termux.api.apis.InfraredAPI;
@@ -125,6 +126,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "Dialog":
                 DialogAPI.onReceive(context, intent);
+                break;
+            case "DisplayInfo":
+                DisplayInfoAPI.onReceive(this, context, intent);
                 break;
             case "Download":
                 DownloadAPI.onReceive(this, context, intent);

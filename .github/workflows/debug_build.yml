@@ -64,3 +64,46 @@ jobs:
             ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}.apk
             ${{ env.APK_DIR_PATH }}/sha256sums
             ${{ env.APK_DIR_PATH }}/output-metadata.json
+acciones/setup-java@v4.5.0
+  con:
+    # La versión de Java que se va a configurar. Acepta una versión completa o parcial de Java. Consulte ejemplos de sintaxis admitida en el archivo README
+    java-version: # opcional
+    # La ruta al archivo `.java-version`. Vea ejemplos de sintaxis admitida en el archivo README
+    java-version-file: # opcional
+    # Distribución de Java. Consulte la lista de distribuciones compatibles en el archivo README
+    distribución:
+    # El tipo de paquete (jdk, jre, jdk+fx, jre+fx)
+    java-package: # opcional, el valor predeterminado es jdk
+    # La arquitectura del paquete (por defecto la arquitectura del ejecutor de acciones)
+    arquitectura: # opcional
+    # Ruta donde se encuentra el JDK comprimido
+    jdkFile: # opcional
+    # Establezca esta opción si desea que la acción busque la última versión disponible que cumpla con la especificación de la versión.
+    check-latest: # opcional
+    # ID del repositorio de administración de distribución en el archivo pom.xml. El valor predeterminado es `github`
+    server-id: # opcional, el valor predeterminado es github
+    # Nombre de la variable de entorno para el nombre de usuario para la autenticación en el repositorio Apache Maven. El valor predeterminado es $GITHUB_ACTOR
+    nombre-usuario-servidor: # opcional, el valor predeterminado es GITHUB_ACTOR
+    # Nombre de la variable de entorno para la contraseña o el token para la autenticación en el repositorio Apache Maven. El valor predeterminado es $GITHUB_TOKEN
+    contraseña del servidor: # opcional, el valor predeterminado es GITHUB_TOKEN
+    # Ruta donde se escribirá el archivo settings.xml. El valor predeterminado es ~/.m2.
+    ruta de configuración: # opcional
+    # Sobrescriba el archivo settings.xml si existe. El valor predeterminado es "true".
+    overwrite-settings: # opcional, el valor predeterminado es verdadero
+    # Clave privada GPG para importar. El valor predeterminado es una cadena vacía.
+    clave privada gpg: # opcional
+    # Nombre de la variable de entorno para la contraseña de la clave privada GPG. El valor predeterminado es $GPG_PASSPHRASE.
+    frase-contraseña-gpg: # opcional
+    # Nombre de la plataforma de compilación para almacenar en caché las dependencias. Puede ser "maven", "gradle" o "sbt".
+    caché: # opcional
+    # La ruta a un archivo de dependencia: pom.xml, build.gradle, build.sbt, etc. Esta opción se puede usar con la opción `cache`. Si se omite esta opción, la acción busca el archivo de dependencia en todo el repositorio. Esta opción admite comodines y una lista de nombres de archivos para almacenar en caché varias dependencias.
+    ruta de dependencia de caché: # opcional
+    # Solución alternativa para pasar el estado del trabajo al paso posterior al trabajo. Esta variable no está destinada a la configuración manual
+    job-status: # opcional, el valor predeterminado es ${{ job.status }}
+    # El token que se utiliza para autenticar al obtener manifiestos de versiones alojados en github.com, como para Microsoft Build de OpenJDK. Al ejecutar esta acción en github.com, el valor predeterminado es suficiente. Al ejecutar en GHES, puede pasar un token de acceso personal para github.com si experimenta una limitación de velocidad.
+    token: # opcional, el valor predeterminado es ${{ github.server_url == 'https://github.com' && github.token || '' }}
+    # Nombre del ID de la cadena de herramientas de Maven si no se desea el nombre predeterminado "${distribution}_${java-version}". Consulte ejemplos de sintaxis admitida en el archivo de uso avanzado
+    mvn-toolchain-id: # opcional
+    # Nombre del proveedor de la cadena de herramientas de Maven si no se desea el nombre predeterminado "${distribution}". Consulte ejemplos de sintaxis admitida en el archivo de uso avanzado
+    mvn-toolchain-vendor: # opcional
+          

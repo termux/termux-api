@@ -2,8 +2,8 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdk project.properties.compileSdkVersion.toInteger()
-    def appVersionName = System.getenv("TERMUX_API_APP_BUILD__APP_VERSION_NAME") ?: ""
-    def apkVersionTag = System.getenv("TERMUX_API_APP_BUILD__APK_VERSION_TAG") ?: ""
+    def appVersionName = System.getenv("TERMUX_API_APP__BUILD__APP_VERSION_NAME") ?: ""
+    def apkVersionTag = System.getenv("TERMUX_API_APP__BUILD__APK_VERSION_TAG") ?: ""
 
     defaultConfig {
         applicationId "com.termux.api"

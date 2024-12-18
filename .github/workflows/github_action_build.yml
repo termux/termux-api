@@ -47,8 +47,8 @@ jobs:
           echo "APK_BASENAME_PREFIX=$APK_BASENAME_PREFIX" >> $GITHUB_ENV
 
           echo "Building APK file for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag"
-          export TERMUX_API_APP_BUILD__APP_VERSION_NAME="${RELEASE_VERSION_NAME/v/}" # Used by app/build.gradle
-          export TERMUX_API_APP_BUILD__APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
+          export TERMUX_API_APP__BUILD__APP_VERSION_NAME="${RELEASE_VERSION_NAME/v/}" # Used by app/build.gradle
+          export TERMUX_API_APP__BUILD__APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
           if ! ./gradlew assembleDebug; then
             exit_on_error "Build failed for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag."
           fi

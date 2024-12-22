@@ -67,14 +67,20 @@
         tools:ignore="GoogleAppIndexingWarning">
 
         <activity
-            android:name=".activities.TermuxAPIActivity"
-            android:theme="@style/Theme.BaseActivity.DayNight.NoActionBar"
-            android:exported="true">
+            android:name=".activities.TermuxAPIMainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.BaseActivity.DayNight.NoActionBar">
+        </activity>
+
+        <activity-alias
+            android:name=".activities.TermuxAPILauncherActivity"
+            android:exported="true"
+            android:targetActivity=".activities.TermuxAPIMainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-        </activity>
+        </activity-alias>
 
         <activity android:name=".activities.TermuxApiPermissionActivity"
             android:theme="@android:style/Theme.NoDisplay"

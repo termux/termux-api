@@ -30,7 +30,7 @@
 
 
 
-    <!-- TermuxAPIActivity -->
+    <!-- TermuxAPIMainActivity -->
     <string name="msg_battery_optimization_not_disabled_warning">Android battery optimizations
         should be disabled for the &TERMUX_API_APP_NAME; app so that termux-api script can start
         it from the background if its failing to do so. Do not worry, this will not drain battery,
@@ -43,12 +43,24 @@
         Depending on vendor you may need to do things like enable AutoStart, disable DuraSpeed,
         enable `Display pop-up windows while running in the background` for the app.</string>
     <string name="action_disable_battery_optimizations">Disable Battery Optimizations</string>
+
     <string name="msg_display_over_other_apps_permission_not_granted_warning">The display over other
         apps permission should be granted to &TERMUX_API_APP_NAME; app for starting foreground
         activities from background. Check https://developer.android.com/guide/components/activities/background-starts
         for more info.
     </string>
     <string name="action_grant_display_over_other_apps_permission">Grant Draw Over Apps Permission</string>
+
+    <string name="msg_change_launcher_activity_state_info">The &TERMUX_API_APP_NAME; app does not
+        require a require launcher activity/icon to function. You can optionally disable the launcher
+        activity if you want and enable it again from the main activity if required.
+        \n\nThe launcher activity is an alias for the current main activity of the app which can
+        still be opened after disabling the launcher activity. The main activity can be opened
+        from `&TERMUX_APP_NAME; app settings` -> `&TERMUX_API_APP_NAME;` -> `Open App` if the
+        option has been implemented in your installed &TERMUX_APP_NAME; app version. Otherwise,
+        running the `am start "%1$s/%2$s"` command in the &TERMUX_APP_NAME; app should open it.
+        \n\nNote that on some devices the APIs may not function properly if the launcher activity is
+        disabled.</string>
 
     <string name="action_already_granted">Already Granted</string>
     <string name="action_already_disabled">Already Disabled</string>

@@ -15,10 +15,12 @@ import com.termux.shared.activities.ReportActivity;
 import com.termux.shared.activity.ActivityUtils;
 import com.termux.shared.activity.media.AppCompatActivityUtils;
 import com.termux.shared.android.AndroidUtils;
+import com.termux.shared.android.PackageUtils;
 import com.termux.shared.android.PermissionUtils;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.file.FileUtils;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.markdown.MarkdownUtils;
 import com.termux.shared.models.ReportInfo;
 import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.TermuxUtils;
@@ -26,7 +28,7 @@ import com.termux.shared.termux.theme.TermuxThemeUtils;
 import com.termux.shared.theme.NightMode;
 import com.termux.api.R;
 
-public class TermuxAPIActivity extends AppCompatActivity {
+public class TermuxAPIMainActivity extends AppCompatActivity {
 
     private TextView mBatteryOptimizationNotDisabledWarning;
     private TextView mDisplayOverOtherAppsPermissionNotGrantedWarning;
@@ -34,14 +36,14 @@ public class TermuxAPIActivity extends AppCompatActivity {
     private Button mDisableBatteryOptimization;
     private Button mGrantDisplayOverOtherAppsPermission;
 
-    private static final String LOG_TAG = "TermuxAPIActivity";
+    public static final String LOG_TAG = "TermuxAPIMainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Logger.logDebug(LOG_TAG, "onCreate");
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_termux_api);
+        setContentView(R.layout.activity_termux_api_main);
 
         // Set NightMode.APP_NIGHT_MODE
         TermuxThemeUtils.setAppNightMode(this);
@@ -60,7 +62,7 @@ public class TermuxAPIActivity extends AppCompatActivity {
         mDisableBatteryOptimization.setOnClickListener(v -> requestDisableBatteryOptimizations());
 
         mDisplayOverOtherAppsPermissionNotGrantedWarning = findViewById(R.id.textview_display_over_other_apps_not_granted_warning);
-        mGrantDisplayOverOtherAppsPermission = findViewById(R.id.btn_grant_display_over_other_apps_permission);
+        mGrantDisplayOverOtherAppsPermission = findViewById(R.id.button_grant_display_over_other_apps_permission);
         mGrantDisplayOverOtherAppsPermission.setOnClickListener(v -> requestDisplayOverOtherAppsPermission());
     }
 
@@ -68,14 +70,17 @@ public class TermuxAPIActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        Logger.logVerbose(LOG_TAG, "onResume");
+
         checkIfBatteryOptimizationNotDisabled();
         checkIfDisplayOverOtherAppsPermissionNotGranted();
+        setChangeLauncherActivityStateViews();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        getMenuInflater().inflate(R.menu.activity_termux_api, menu);
+        getMenuInflater().inflate(R.menu.activity_termux_api_main, menu);
         return true;
     }
 
@@ -101,18 +106,18 @@ public class TermuxAPIActivity extends AppCompatActivity {
                 String title = "About";
 
                 StringBuilder aboutString = new StringBuilder();
-                aboutString.append(TermuxUtils.getAppInfoMarkdownString(TermuxAPIActivity.this, TermuxUtils.AppInfoMode.TERMUX_AND_PLUGIN_PACKAGE));
-                aboutString.append("\n\n").append(AndroidUtils.getDeviceInfoMarkdownString(TermuxAPIActivity.this));
-                aboutString.append("\n\n").append(TermuxUtils.getImportantLinksMarkdownString(TermuxAPIActivity.this));
+                aboutString.append(TermuxUtils.getAppInfoMarkdownString(TermuxAPIMainActivity.this, TermuxUtils.AppInfoMode.TERMUX_AND_PLUGIN_PACKAGE));
+                aboutString.append("\n\n").append(AndroidUtils.getDeviceInfoMarkdownString(TermuxAPIMainActivity.this));
+                aboutString.append("\n\n").append(TermuxUtils.getImportantLinksMarkdownString(TermuxAPIMainActivity.this));
 
                 ReportInfo reportInfo = new ReportInfo(title,
-                        TermuxConstants.TERMUX_APP.TERMUX_SETTINGS_ACTIVITY_NAME, title);
+                        TermuxConstants.TERMUX_API_APP.TERMUX_API_MAIN_ACTIVITY_NAME, title);
                 reportInfo.setReportString(aboutString.toString());
                 reportInfo.setReportSaveFileLabelAndPath(title,
                         Environment.getExternalStorageDirectory() + "/" +
                                 FileUtils.sanitizeFileName(TermuxConstants.TERMUX_APP_NAME + "-" + title + ".log", true, true));
 
-                ReportActivity.startReportActivity(TermuxAPIActivity.this, reportInfo);
+                ReportActivity.startReportActivity(TermuxAPIMainActivity.this, reportInfo);
             }
         }.start();
     }
@@ -155,6 +160,54 @@ public class TermuxAPIActivity extends AppCompatActivity {
     private void requestDisplayOverOtherAppsPermission() {
         Logger.logDebug(LOG_TAG, "Requesting to grant display over other apps permission");
         PermissionUtils.requestDisplayOverOtherAppsPermission(this, PermissionUtils.REQUEST_GRANT_DISPLAY_OVER_OTHER_APPS_PERMISSION);
+    }
+
+
+
+    private void setChangeLauncherActivityStateViews() {
+        String packageName = TermuxConstants.TERMUX_API_PACKAGE_NAME;
+        String className = TermuxConstants.TERMUX_API_APP.TERMUX_API_LAUNCHER_ACTIVITY_NAME;
+
+        TextView changeLauncherActivityStateTextView = findViewById(R.id.textview_change_launcher_activity_state_details);
+        changeLauncherActivityStateTextView.setText(MarkdownUtils.getSpannedMarkdownText(this,
+                getString(R.string.msg_change_launcher_activity_state_info, packageName, getClass().getName())));
+
+        Button changeLauncherActivityStateButton = findViewById(R.id.button_change_launcher_activity_state);
+        String stateChangeMessage;
+        boolean newState;
+
+        Boolean currentlyDisabled = PackageUtils.isComponentDisabled(this,
+                packageName, className, false);
+        if (currentlyDisabled == null) {
+            Logger.logError(LOG_TAG, "Failed to check if \"" + packageName + "/" + className + "\" launcher activity is disabled");
+            changeLauncherActivityStateButton.setEnabled(false);
+            changeLauncherActivityStateButton.setAlpha(.5f);
+            changeLauncherActivityStateButton.setText(com.termux.shared.R.string.action_disable_launcher_icon);
+            changeLauncherActivityStateButton.setOnClickListener(null);
+            return;
+        }
+
+        changeLauncherActivityStateButton.setEnabled(true);
+        changeLauncherActivityStateButton.setAlpha(1f);
+        if (currentlyDisabled) {
+            changeLauncherActivityStateButton.setText(com.termux.shared.R.string.action_enable_launcher_icon);
+            stateChangeMessage = getString(com.termux.shared.R.string.msg_enabling_launcher_icon, TermuxConstants.TERMUX_API_APP_NAME);
+            newState = true;
+        } else {
+            changeLauncherActivityStateButton.setText(com.termux.shared.R.string.action_disable_launcher_icon);
+            stateChangeMessage = getString(com.termux.shared.R.string.msg_disabling_launcher_icon, TermuxConstants.TERMUX_API_APP_NAME);
+            newState = false;
+        }
+
+        changeLauncherActivityStateButton.setOnClickListener(v -> {
+            Logger.logInfo(LOG_TAG, stateChangeMessage);
+            String errmsg = PackageUtils.setComponentState(this,
+                    packageName, className, newState, stateChangeMessage, true);
+            if (errmsg == null)
+                setChangeLauncherActivityStateViews();
+            else
+                Logger.logError(LOG_TAG, errmsg);
+        });
     }
 
 

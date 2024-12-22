@@ -388,7 +388,8 @@ public class SensorAPI {
 
                 try {
                     try (LocalSocket outputSocket = new LocalSocket()) {
-                        outputSocket.connect(new LocalSocketAddress(this.outputSocketAddress));
+                        outputSocket.connect(ResultReturner.getApiLocalSocketAddress(
+                                ResultReturner.context, "output", this.outputSocketAddress));
 
                         try (PrintWriter writer = new PrintWriter(outputSocket.getOutputStream())) {
 

@@ -7,11 +7,17 @@ import android.content.BroadcastReceiver;
 import android.content.BroadcastReceiver.PendingResult;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
+import android.net.LocalSocketAddress.Namespace;
 import android.os.ParcelFileDescriptor;
 import android.util.JsonWriter;
 
+import androidx.annotation.NonNull;
+
+import com.termux.shared.android.PackageUtils;
+import com.termux.shared.file.FileUtils;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.plugins.TermuxPluginUtils;
@@ -23,22 +29,25 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public abstract class ResultReturner {
 
     @SuppressLint("StaticFieldLeak")
-    private static Context context;
+    public static Context context;
 
     private static final String LOG_TAG = "ResultReturner";
 
     /**
-     * An extra intent parameter which specifies a linux abstract namespace socket address where output from the API
+     * An extra intent parameter which specifies a unix socket address where output from the API
      * call should be written.
      */
     private static final String SOCKET_OUTPUT_EXTRA = "socket_output";
 
     /**
-     * An extra intent parameter which specifies a linux abstract namespace socket address where input to the API call
+     * An extra intent parameter which specifies a unix socket address where input to the API call
      * can be read from.
      */
     private static final String SOCKET_INPUT_EXTRA = "socket_input";
@@ -48,7 +57,7 @@ public abstract class ResultReturner {
     }
 
     /**
-     * Possible subclass of {@link ResultWriter} when input is to be read from stdin.
+     * Possible subclass of {@link ResultWriter} when input is to be read from {@link #SOCKET_INPUT_EXTRA}.
      */
     public static abstract class WithInput implements ResultWriter {
         protected InputStream in;
@@ -80,7 +89,7 @@ public abstract class ResultReturner {
     }
 
     /**
-     * Possible marker interface for a {@link ResultWriter} when input is to be read from stdin.
+     * Possible marker interface for a {@link ResultWriter} when input is to be read from {@link #SOCKET_INPUT_EXTRA}.
      */
     public static abstract class WithStringInput extends WithInput {
         protected String inputString;
@@ -180,6 +189,41 @@ public abstract class ResultReturner {
     }
 
     /**
+     * Get {@link LocalSocketAddress} for a socket address.
+     *
+     * If socket address starts with a path separator `/`, then a {@link Namespace#FILESYSTEM}
+     * {@link LocalSocketAddress} is returned, otherwise an {@link Namespace#ABSTRACT}.
+     *
+     * The `termux-api-package` versions `<= 0.58.0` create a abstract namespace socket and higher
+     * version create filesystem path socket.
+     *
+     * - https://man7.org/linux/man-pages/man7/unix.7.html
+     */
+    @SuppressLint("SdCardPath")
+    public static LocalSocketAddress getApiLocalSocketAddress(@NonNull Context context,
+                                                              @NonNull String socketLabel, @NonNull String socketAddress) {
+        if (socketAddress.startsWith("/")) {
+            ApplicationInfo termuxApplicationInfo = PackageUtils.getApplicationInfoForPackage(context,
+                    TermuxConstants.TERMUX_PACKAGE_NAME);
+            if (termuxApplicationInfo == null) {
+                throw new RuntimeException("Failed to get ApplicationInfo for the Termux app package: " +
+                        TermuxConstants.TERMUX_PACKAGE_NAME);
+            }
+
+            List<String> termuxAppDataDirectories = Arrays.asList(termuxApplicationInfo.dataDir,
+                    "/data/data/" + TermuxConstants.TERMUX_PACKAGE_NAME);
+            if (!FileUtils.isPathInDirPaths(socketAddress, termuxAppDataDirectories, true)) {
+                throw new RuntimeException("The " + socketLabel + " socket address \"" + socketAddress + "\"" +
+                        " is not under Termux app data directories: " + termuxAppDataDirectories);
+            }
+
+            return new LocalSocketAddress(socketAddress, Namespace.FILESYSTEM);
+        } else {
+            return new LocalSocketAddress(socketAddress, Namespace.ABSTRACT);
+        }
+    }
+
+    /**
      * Run in a separate thread, unless the context is an IntentService.
      */
     public static void returnData(Object context, final Intent intent, final ResultWriter resultWriter) {
@@ -192,11 +236,11 @@ public abstract class ResultReturner {
             LocalSocket outputSocket = null;
             try {
                 outputSocket = new LocalSocket();
-                String outputSocketAdress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
-                if (outputSocketAdress == null || outputSocketAdress.isEmpty())
+                String outputSocketAddress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
+                if (outputSocketAddress == null || outputSocketAddress.isEmpty())
                     throw new IOException("Missing '" + SOCKET_OUTPUT_EXTRA + "' extra");
-                Logger.logDebug(LOG_TAG, "Connecting to output socket \"" + outputSocketAdress + "\"");
-                outputSocket.connect(new LocalSocketAddress(outputSocketAdress));
+                Logger.logDebug(LOG_TAG, "Connecting to output socket \"" + outputSocketAddress + "\"");
+                outputSocket.connect(getApiLocalSocketAddress(ResultReturner.context, "output", outputSocketAddress));
                 writer = new PrintWriter(outputSocket.getOutputStream());
 
                 if (resultWriter != null) {
@@ -209,10 +253,10 @@ public abstract class ResultReturner {
                     }
                     if (resultWriter instanceof WithInput) {
                         try (LocalSocket inputSocket = new LocalSocket()) {
-                            String inputSocketAdress = intent.getStringExtra(SOCKET_INPUT_EXTRA);
-                            if (inputSocketAdress == null || inputSocketAdress.isEmpty())
+                            String inputSocketAddress = intent.getStringExtra(SOCKET_INPUT_EXTRA);
+                            if (inputSocketAddress == null || inputSocketAddress.isEmpty())
                                 throw new IOException("Missing '" + SOCKET_INPUT_EXTRA + "' extra");
-                            inputSocket.connect(new LocalSocketAddress(inputSocketAdress));
+                            inputSocket.connect(getApiLocalSocketAddress(ResultReturner.context, "input", inputSocketAddress));
                             ((WithInput) resultWriter).setInput(inputSocket.getInputStream());
                             resultWriter.writeResult(writer);
                         }

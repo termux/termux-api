@@ -67,4 +67,33 @@
     <string name="action_info">Info</string>
     <string name="action_settings">Settings</string>
 
+
+
+    <!-- Termux:API Settings -->
+    <string name="sets__root___val__activity_title">Settings</string>
+
+    <!-- Termux:API App Preferences -->
+    <string name="sets__termux_api_app___val__title">&TERMUX_API_APP_NAME;</string>
+    <string name="sets__termux_api_app___val__summary">Preferences for &TERMUX_API_APP_NAME; app</string>
+
+        <!-- `prefs__app___prefs__debugging` -->
+        <string name="prefs__app___prefs__debugging___val__title">Debugging</string>
+        <string name="prefs__app___prefs__debugging___val__summary">Preferences for debugging</string>
+
+        <!-- Debugging Preferences -->
+        <string name="termux_debugging_preferences_title">Debugging</string>
+        <string name="termux_debugging_preferences_summary">Preferences for debugging</string>
+
+            <!-- `prefs__app___prefs__debugging___cat__logger` -->
+            <string name="prefs__app___prefs__debugging___cat__logger___val__title">Logger</string>
+
+            <!-- `prefs__app___prefs__debugging___key__log_level` -->
+            <string name="prefs__app___prefs__debugging___key__log_level___val__title">Log Level</string>
+
+
+    <!-- About Preference -->
+    <string name="link__about___val__title">About</string>
+
+    <!-- Donate Preference -->
+    <string name="link__donate___val__title">Donate</string>
 </resources>

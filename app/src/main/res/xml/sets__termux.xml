@@ -1,0 +1,21 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <Preference
+        app:key="sets__termux_api_app"
+        app:title="@string/sets__termux_api_app___val__title"
+        app:summary="@string/sets__termux_api_app___val__summary"
+        app:isPreferenceVisible="false"
+        app:fragment="com.termux.api.settings.fragments.termux_api_app.TermuxAPIPreferencesFragment"/>
+
+    <Preference
+        app:key="link__termux_about"
+        app:title="@string/link__about___val__title"
+        app:persistent="false"/>
+
+    <Preference
+        app:key="link__termux_donate"
+        app:title="@string/link__donate___val__title"
+        app:persistent="false"
+        app:isPreferenceVisible="false"/>
+
+</PreferenceScreen>

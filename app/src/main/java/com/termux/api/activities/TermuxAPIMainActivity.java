@@ -2,7 +2,6 @@ package com.termux.api.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
@@ -11,20 +10,16 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.termux.api.TermuxAPIApplication;
+import com.termux.api.settings.activities.TermuxAPISettingsActivity;
 import com.termux.api.util.ViewUtils;
-import com.termux.shared.activities.ReportActivity;
 import com.termux.shared.activity.ActivityUtils;
 import com.termux.shared.activity.media.AppCompatActivityUtils;
-import com.termux.shared.android.AndroidUtils;
 import com.termux.shared.android.PackageUtils;
 import com.termux.shared.android.PermissionUtils;
 import com.termux.shared.data.IntentUtils;
-import com.termux.shared.file.FileUtils;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.markdown.MarkdownUtils;
-import com.termux.shared.models.ReportInfo;
 import com.termux.shared.termux.TermuxConstants;
-import com.termux.shared.termux.TermuxUtils;
 import com.termux.shared.termux.theme.TermuxThemeUtils;
 import com.termux.shared.theme.NightMode;
 import com.termux.api.R;
@@ -92,38 +87,12 @@ public class TermuxAPIMainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.menu_info) {
-            showInfo();
-            return true;
-        } else if (id == R.id.menu_settings) {
+        if (id == R.id.menu_settings) {
             openSettings();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    private void showInfo() {
-        new Thread() {
-            @Override
-            public void run() {
-                String title = "About";
-
-                StringBuilder aboutString = new StringBuilder();
-                aboutString.append(TermuxUtils.getAppInfoMarkdownString(TermuxAPIMainActivity.this, TermuxUtils.AppInfoMode.TERMUX_AND_PLUGIN_PACKAGE));
-                aboutString.append("\n\n").append(AndroidUtils.getDeviceInfoMarkdownString(TermuxAPIMainActivity.this));
-                aboutString.append("\n\n").append(TermuxUtils.getImportantLinksMarkdownString(TermuxAPIMainActivity.this));
-
-                ReportInfo reportInfo = new ReportInfo(title,
-                        TermuxConstants.TERMUX_API_APP.TERMUX_API_MAIN_ACTIVITY_NAME, title);
-                reportInfo.setReportString(aboutString.toString());
-                reportInfo.setReportSaveFileLabelAndPath(title,
-                        Environment.getExternalStorageDirectory() + "/" +
-                                FileUtils.sanitizeFileName(TermuxConstants.TERMUX_APP_NAME + "-" + title + ".log", true, true));
-
-                ReportActivity.startReportActivity(TermuxAPIMainActivity.this, reportInfo);
-            }
-        }.start();
     }
 
 
@@ -242,7 +211,7 @@ public class TermuxAPIMainActivity extends AppCompatActivity {
 
 
     private void openSettings() {
-        ActivityUtils.startActivity(this, new Intent().setClassName(TermuxConstants.TERMUX_PACKAGE_NAME, TermuxConstants.TERMUX_APP.TERMUX_SETTINGS_ACTIVITY_NAME));
+        ActivityUtils.startActivity(this, new Intent().setClass(this, TermuxAPISettingsActivity.class));
     }
 
 }

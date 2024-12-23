@@ -6,12 +6,6 @@ xmlns:app="http://schemas.android.com/apk/res-auto"
 tools:ignore="UnusedResources" >
 
     <item
-        android:id="@+id/menu_info"
-        android:icon="@drawable/ic_info"
-        android:title="@string/action_info"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/menu_settings"
         android:icon="@drawable/ic_settings"
         android:title="@string/action_settings"

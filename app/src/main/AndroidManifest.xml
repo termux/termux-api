@@ -85,6 +85,13 @@
             </intent-filter>
         </activity-alias>
 
+        <activity
+            android:name=".settings.activities.TermuxAPISettingsActivity"
+            android:exported="true"
+            android:label="@string/sets__root___val__activity_title"
+            android:theme="@style/Theme.BaseActivity.DayNight.NoActionBar">
+        </activity>
+
         <activity android:name=".activities.TermuxApiPermissionActivity"
             android:theme="@android:style/Theme.NoDisplay"
             android:noHistory="true"

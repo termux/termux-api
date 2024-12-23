@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.termux.api.TermuxAPIApplication;
 import com.termux.api.util.ViewUtils;
 import com.termux.shared.activities.ReportActivity;
 import com.termux.shared.activity.ActivityUtils;
@@ -69,6 +70,9 @@ public class TermuxAPIMainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        // Set log level for the app
+        TermuxAPIApplication.setLogConfig(this, false);
 
         Logger.logVerbose(LOG_TAG, "onResume");
 

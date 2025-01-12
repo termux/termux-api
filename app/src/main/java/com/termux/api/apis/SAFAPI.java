@@ -42,7 +42,6 @@ public class SAFAPI {
 
             super.onCreate(savedInstanceState);
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-            i.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             startActivityForResult(i, 0);
         }
         

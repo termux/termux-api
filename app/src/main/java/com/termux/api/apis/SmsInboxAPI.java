@@ -113,6 +113,8 @@ public class SmsInboxAPI {
             }
         }
 
+        out.name("address").value(smsAddress);
+        // Deprecated: Address can be a name like service provider instead of a number.
         out.name("number").value(smsAddress);
 
         out.name("received").value(dateFormat.format(new Date(smsReceivedDate)));

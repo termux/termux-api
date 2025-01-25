@@ -292,7 +292,7 @@ public class SmsInboxAPI {
         String[] messageSelectionArgs = null;
         if (messageSelection == null || messageSelection.isEmpty()) {
             if (messageAddress != null && !messageAddress.isEmpty()) {
-                messageSelection = ADDRESS + " LIKE '%?%'";
+                messageSelection = ADDRESS + " LIKE ?";
                 messageSelectionArgs = new String[]{messageAddress};
             }
         }

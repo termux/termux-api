@@ -58,6 +58,7 @@
 
 
 
+
     <application
         android:name=".TermuxAPIApplication"
         android:allowBackup="true"
@@ -150,6 +151,9 @@
             android:name="${TERMUX_PACKAGE_NAME}.shared.activities.ReportActivity$ReportActivityBroadcastReceiver"
             android:exported="false"
             tools:ignore="MissingClass" />
+
+        <receiver android:name=".apis.AlarmAPI$AlarmReceiver" />
+        <receiver android:name=".apis.CameraPhotoAPI$AlarmReceiver" />
 
 
 

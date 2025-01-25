@@ -1,8 +1,19 @@
 package com.termux.api.apis;
 
+import static android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_OFF;
+import static android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_ON;
+import static android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH;
+import static android.hardware.camera2.CameraMetadata.FLASH_MODE_OFF;
+import static android.hardware.camera2.CameraMetadata.FLASH_MODE_SINGLE;
+import static java.lang.Float.parseFloat;
+
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -12,11 +23,15 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.StreamConfigurationMap;
+
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.Looper;
-import android.util.Size;
+
+import android.os.PowerManager;
+import android.os.SystemClock;
+import android.util.Log;
 import android.view.Surface;
 import android.view.WindowManager;
 
@@ -29,33 +44,179 @@ import com.termux.shared.termux.file.TermuxFileUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
+
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 
 public class CameraPhotoAPI {
 
     private static final String LOG_TAG = "CameraPhotoAPI";
 
+    private static AlarmManager alarmManager;
+    private static PendingIntent alarmIntent;
+
+    private static float focus_distance=0;
+    private static Integer iso=0;
+    private static Integer exposure=0;
+    private static Integer ev_steps=0;
+    private static String flash;
+
+    private static Integer preview_time;
+
+    private static String no_processing;
+
+    private static int timelapse_interval;
+
+    static private String filePath;
+    static String photoFilePath;
+
+    static String cameraId;
+
+    static int photo_number=0;
+
+    static int photos_to_take;
+
+    static int focus_start;
+    static int focus_end;
+    static int focus_steps;
+    static int cur_focus_step;
+
+    static CountDownLatch latch;
+
+
+    static public class AlarmReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "termux_api:Wakelock");
+            wl.acquire();
+
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    if(focus_steps>0)
+                    {
+                        do_focus_bracketing(null,context);
+                    }
+                    else
+                        takePicture(null, context, new File(photoFilePath+String.format("%0" + 5 + "d", photo_number) + ".jpg"), cameraId);
+
+                    photos_to_take--;
+                    photo_number++;
+
+                    // Reset the alarm for the next interval
+                    if(photos_to_take>0) {
+                        CameraPhotoAPI mainActivity = new CameraPhotoAPI();
+                        Logger.logInfo(LOG_TAG, "Resetting alarm!");
+                        mainActivity.setAlarm(timelapse_interval * 1000);
+                    }
+                    wl.release();
+                }
+            }).start();
+
+
+
+        }
+
+    }
+
+    private static void initializeAlarmManager(Context context) {
+        alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(context, AlarmReceiver.class);
+        alarmIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+
+    private static void setAlarm(long interval) {
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + interval, alarmIntent);
+    }
+
+    private static void do_focus_bracketing(final PrintWriter stdout,Context context)
+    {
+        int i;
+        float focus_increment=(focus_end-focus_start)/(float)focus_steps;
+
+        focus_distance=focus_start;
+
+        for(i=0;i<focus_steps;i++)
+        {
+            latch= new CountDownLatch(1);
+            cur_focus_step=i;
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+
+                    //if(timelapse_interval!=0)takePicture(stdout, context, new File(photoFilePath+"_f"+String.format("%0" + 3 + "d", cur_focus_step) + ".jpg"), cameraId);
+                    //else
+                        takePicture(stdout, context, new File(photoFilePath+String.format("%0" + 5 + "d", photo_number)+"_f"+String.format("%0" + 3 + "d", cur_focus_step) + ".jpg"), cameraId);
+
+                }
+            }).start();
+
+            focus_distance+=focus_increment;
+
+            Logger.logInfo(LOG_TAG, "Before latch await");
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            Logger.logInfo(LOG_TAG, "After latch await");
+
+
+        }
+    }
+
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");
 
-        final String filePath = intent.getStringExtra("file");
-        final String cameraId = Objects.toString(intent.getStringExtra("camera"), "0");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS", Locale.US);
+
+        filePath = Objects.toString(intent.getStringExtra("file"), "/data/data/com.termux/files/home/Photos/" + sdf.format(new Date()));
+        cameraId = Objects.toString(intent.getStringExtra("camera"), "0");
+        flash = Objects.toString(intent.getStringExtra("flash"), "off");
+        no_processing = Objects.toString(intent.getStringExtra("no_processing"), "off");
+        iso=Integer.parseInt(Objects.toString(intent.getStringExtra("iso"), "0"));
+        exposure=Integer.parseInt(Objects.toString(intent.getStringExtra("exposure"), "0"));
+        ev_steps=Integer.parseInt(Objects.toString(intent.getStringExtra("ev_steps"), "0"));
+        preview_time=Integer.parseInt(Objects.toString(intent.getStringExtra("preview_time"), "500"));
+        timelapse_interval=Integer.parseInt(Objects.toString(intent.getStringExtra("timelapse_interval"), "0"));
+        photos_to_take =Integer.parseInt(Objects.toString(intent.getStringExtra("photos_no"), "99999999"));
+        focus_start =Integer.parseInt(Objects.toString(intent.getStringExtra("focus_start"), "0"));
+        focus_end =Integer.parseInt(Objects.toString(intent.getStringExtra("focus_end"), "0"));
+        focus_steps =Integer.parseInt(Objects.toString(intent.getStringExtra("focus_steps"), "0"));
+
+        focus_distance=parseFloat(Objects.toString(intent.getStringExtra("focus"), "0"));
 
         ResultReturner.returnData(apiReceiver, intent, stdout -> {
             if (filePath == null || filePath.isEmpty()) {
+
                 stdout.println("ERROR: " + "File path not passed");
                 return;
             }
 
+
+            stdout.println("ISO: " + iso);
+            stdout.println("Exposure: " + exposure);
+            stdout.println("Focus: " + focus_distance);
+            stdout.println("EV steps: " + ev_steps);
+            stdout.println("File path: " + filePath);
+            stdout.println("Flash: " + flash);
+
+
             // Get canonical path of photoFilePath
-            String photoFilePath = TermuxFileUtils.getCanonicalPath(filePath, null, true);
+            photoFilePath = TermuxFileUtils.getCanonicalPath(filePath, null, true);
             String photoDirPath = FileUtils.getFileDirname(photoFilePath);
             Logger.logVerbose(LOG_TAG, "photoFilePath=\"" + photoFilePath + "\", photoDirPath=\"" + photoDirPath + "\"");
 
@@ -69,10 +230,32 @@ public class CameraPhotoAPI {
                     false, true);
             if (error != null) {
                 stdout.println("ERROR: " + error.getErrorLogString());
+                stdout.println("Photo dir path: " + photoDirPath);
                 return;
             }
 
-            takePicture(stdout, context, new File(photoFilePath), cameraId);
+            if(focus_steps>0 && timelapse_interval==0)
+            {
+                if(focus_start==0 || focus_end==0)
+                    stdout.println("Can't do focus bracketing without specifying the start and end points");
+                else do_focus_bracketing(stdout,context);
+                return;
+            }
+
+            if(timelapse_interval!=0) {
+                initializeAlarmManager(context);
+                CameraPhotoAPI.setAlarm(timelapse_interval * 1000);
+                if(focus_steps>0)
+                do_focus_bracketing(stdout,context);
+                else
+                    takePicture(stdout, context, new File(photoFilePath+String.format("%0" + 5 + "d", photo_number) + ".jpg"), cameraId);
+
+                photos_to_take--;
+                photo_number++;
+            }
+            else
+                takePicture(stdout, context, new File(photoFilePath+ ".jpg"), cameraId);
+
         });
     }
 
@@ -80,7 +263,10 @@ public class CameraPhotoAPI {
         try {
             final CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
 
-            Looper.prepare();
+
+            if (Looper.myLooper() == null)
+                Looper.prepare();
+
             final Looper looper = Looper.myLooper();
 
             //noinspection MissingPermission
@@ -121,24 +307,11 @@ public class CameraPhotoAPI {
 
         final CameraCharacteristics characteristics = manager.getCameraCharacteristics(camera.getId());
 
-        int autoExposureMode = CameraMetadata.CONTROL_AE_MODE_OFF;
-        for (int supportedMode : characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES)) {
-            if (supportedMode == CameraMetadata.CONTROL_AE_MODE_ON) {
-                autoExposureMode = supportedMode;
-            }
-        }
-        final int autoExposureModeFinal = autoExposureMode;
+        Rect sensor_size;
+        sensor_size = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+        if(stdout!=null)stdout.println("Resolution is " + sensor_size.width() + "x" + sensor_size.height());
 
-        // Use largest available size:
-        StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        Comparator<Size> bySize = (lhs, rhs) -> {
-            // Cast to ensure multiplications won't overflow:
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
-        };
-        List<Size> sizes = Arrays.asList(map.getOutputSizes(ImageFormat.JPEG));
-        Size largest = Collections.max(sizes, bySize);
-
-        final ImageReader mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, 2);
+        final ImageReader mImageReader = ImageReader.newInstance(sensor_size.width(), sensor_size.height(), ImageFormat.JPEG, 2);
         mImageReader.setOnImageAvailableListener(reader -> new Thread() {
             @Override
             public void run() {
@@ -149,7 +322,7 @@ public class CameraPhotoAPI {
                     try (FileOutputStream output = new FileOutputStream(outputFile)) {
                         output.write(bytes);
                     } catch (Exception e) {
-                        stdout.println("Error writing image: " + e.getMessage());
+                        if(stdout!=null)stdout.println("Error writing image: " + e.getMessage());
                         Logger.logStackTraceWithMessage(LOG_TAG, "Error writing image", e);
                     }
                 } finally {
@@ -171,26 +344,95 @@ public class CameraPhotoAPI {
             @Override
             public void onConfigured(final CameraCaptureSession session) {
                 try {
-                    // create preview Request
-                    CaptureRequest.Builder previewReq = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                    previewReq.addTarget(dummySurface);
-                    previewReq.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                    previewReq.set(CaptureRequest.CONTROL_AE_MODE, autoExposureModeFinal);
+                    //no need for a preview if we don't need auto focus/exposure
+                    if(preview_time>0)
+                    {
+                        // create preview Request
+                        CaptureRequest.Builder previewReq = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                        previewReq.addTarget(dummySurface);
+                        //previewReq.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
 
-                    // continous preview-capture for 1/2 second
-                    session.setRepeatingRequest(previewReq.build(), null, null);
-                    Logger.logInfo(LOG_TAG, "preview started");
-                    Thread.sleep(500);
-                    session.stopRepeating();
-                    Logger.logInfo(LOG_TAG, "preview stoppend");
+                        if(focus_distance<0.01f)
+                            previewReq.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                        else
+                        {
+                            float focus_diopters = 1000.0f / focus_distance;
+                            previewReq.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                            previewReq.set(CaptureRequest.LENS_FOCUS_DISTANCE, focus_diopters);
+                        }
+
+                        if(flash.equals("off"))
+                            previewReq.set(CaptureRequest.FLASH_MODE, FLASH_MODE_OFF);
+                        else
+                        if(flash.equals("on"))
+                            previewReq.set(CaptureRequest.FLASH_MODE, FLASH_MODE_SINGLE);
+
+                        if(flash.equals("auto"))
+                            previewReq.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON_AUTO_FLASH);
+                        else
+                            previewReq.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON);
+
+                        if(ev_steps!=0)
+                        {
+                            previewReq.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, ev_steps);
+                        }
+
+                        // continous preview-capture for 1/2 second
+                        session.setRepeatingRequest(previewReq.build(), null, null);
+                        Logger.logInfo(LOG_TAG, "preview started");
+                        Thread.sleep(preview_time);
+                        session.stopRepeating();
+                        Logger.logInfo(LOG_TAG, "preview stoppend");
+                    }
 
                     final CaptureRequest.Builder jpegRequest = camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                     // Render to our image reader:
                     jpegRequest.addTarget(imageReaderSurface);
                     // Configure auto-focus (AF) and auto-exposure (AE) modes:
+
+                    if(focus_distance<0.01f)
                     jpegRequest.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                    jpegRequest.set(CaptureRequest.CONTROL_AE_MODE, autoExposureModeFinal);
+                    else
+                    {
+                        float focus_diopters = 1000.0f / focus_distance;
+                        jpegRequest.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                        jpegRequest.set(CaptureRequest.LENS_FOCUS_DISTANCE, focus_diopters);
+                    }
+
+                    if(flash.equals("off"))
+                        jpegRequest.set(CaptureRequest.FLASH_MODE, FLASH_MODE_OFF);
+                    else
+                    if(flash.equals("on"))
+                        jpegRequest.set(CaptureRequest.FLASH_MODE, FLASH_MODE_SINGLE);
+
+                    if(iso!=0 && exposure!=0)
+                    {
+                        long forced_exposure=exposure*1000;
+                        jpegRequest.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_OFF);
+                        jpegRequest.set(CaptureRequest.SENSOR_SENSITIVITY, iso);
+                        jpegRequest.set(CaptureRequest.SENSOR_EXPOSURE_TIME, forced_exposure);
+                    }
+                    else
+                    {
+                        if(flash.equals("auto"))
+                            jpegRequest.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON_AUTO_FLASH);
+                        else
+                            jpegRequest.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON);
+                    }
+
                     jpegRequest.set(CaptureRequest.JPEG_ORIENTATION, correctOrientation(context, characteristics));
+
+                    if(no_processing.equals("on"))
+                    {
+                        jpegRequest.set(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_OFF);
+                        jpegRequest.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_OFF);
+                        /*
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            jpegRequest.set(CaptureRequest.DISTORTION_CORRECTION_MODE, CaptureRequest.DISTORTION_CORRECTION_MODE_OFF);
+                        }
+                        */
+
+                    }
 
                     saveImage(camera, session, jpegRequest.build());
                 } catch (Exception e) {
@@ -285,7 +527,10 @@ public class CameraPhotoAPI {
         } catch (RuntimeException e) {
             Logger.logInfo(LOG_TAG, "Exception closing camera: " + e.getMessage());
         }
+        //latch.countDown();
+        Logger.logInfo(LOG_TAG, "Latch released by close camera!");
         if (looper != null) looper.quit();
+        if(latch!=null)latch.countDown();
     }
 
 }

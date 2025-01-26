@@ -1,0 +1,12 @@
+Focus stacking:
+
+pkg install git
+pkg install make
+pkg install clang
+apt install x11-repo && apt update && apt install opencv
+pkg install pkg-config
+git clone https://github.com/PetteriAimonen/focus-stack.git
+cd focus-stack/
+make
+cd build
+./focus-stack ~/focus-stack

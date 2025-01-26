@@ -10,3 +10,4 @@ cd focus-stack/
 make
 cd build
 ./focus-stack ~/focus-stack
+pkg install python (needed because for some reason OpenCV is linked with a python lib).

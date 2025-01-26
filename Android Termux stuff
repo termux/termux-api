@@ -11,3 +11,33 @@ make
 cd build
 ./focus-stack ~/focus-stack
 pkg install python (needed because for some reason OpenCV is linked with a python lib).
+
+Disabling various Android things that kill your processes
+(usb debug)
+adb shell "/system/bin/device_config set_sync_disabled_for_tests persistent; /system/bin/device_config put activity_manager max_phantom_processes 2147483647; settings put global settings_enable_monitor_phantom_procs false"
+adb shell "/system/bin/device_config  put activity_manager power_check_max_cpu_1 256; /system/bin/device_config  put activity_manager power_check_max_cpu_2 256; /system/bin/device_config  put activity_manager power_check_max_cpu_3 256; /system/bin/device_config  put activity_manager power_check_max_cpu_4 256;"
+adb shell "settings put global activity_manager_constants power_check_max_cpu_1=256; settings put global activity_manager_constants power_check_max_cpu_2=256; settings put global activity_manager_constants power_check_max_cpu_3=256; settings put global activity_manager_constants power_check_max_cpu_4=256;"
+(root)
+
+sudo device_config set_sync_disabled_for_tests persistent
+
+sudo device_config put activity_manager max_phantom_processes 2147483647
+sudo settings put global settings_enable_monitor_phantom_procs false
+
+(this prevents Android from killing your long running processes after a while. There is a "new" way and an "old" way to set those settings, but at least on some OSes, such as LineageOS22 the old way is used. So I am including both)
+sudo settings put global activity_manager_constants power_check_max_cpu_1=256
+sudo settings put global activity_manager_constants power_check_max_cpu_2=256
+sudo settings put global activity_manager_constants power_check_max_cpu_3=256
+sudo settings put global activity_manager_constants power_check_max_cpu_4=256
+sudo device_config put activity_manager power_check_max_cpu_1 256
+sudo device_config put activity_manager power_check_max_cpu_2 256
+sudo device_config put activity_manager power_check_max_cpu_3 256
+sudo device_config put activity_manager power_check_max_cpu_4 256
+
+Allowing your app to recive alarms more often (every minute)
+(root)
+sudo settings put global alarm_manager_constants min_interval 60000
+sudo device_config put alarm_manager min_interval 60000
+(adb shell)
+adb shell "settings put global alarm_manager_constants min_interval=60000"
+adb shell "/system/bin/device_config  put alarm_manager_constants min_interval 60000"

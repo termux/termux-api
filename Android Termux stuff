@@ -12,6 +12,33 @@ cd build
 ./focus-stack ~/focus-stack
 pkg install python (needed because for some reason OpenCV is linked with a python lib).
 
+Ultralytics
+pkg update
+pkg install make
+pkg install clang
+pkg install patchelf
+pkg install ninja
+pkg install cmake
+pkg install pkg-config
+pkg install python
+apt install x11-repo && apt update && apt install opencv-python
+pkg install python-torch
+pkg i tur-repo
+pkg i python-pandas
+pip install ultralytics (it will fail at OpenCV)
+pip install seaborn
+pip install requests
+pip install py-cpuinfo
+pip install pyyaml
+pkg install python-torchvision
+pip install tqdm
+pip install ultralytics-thop
+pip install psutil
+pkg install python-scipy
+pip install ultralytics --no-deps
+Once all is done, just type: "yolo" and see if it works.
+
+
 Disabling various Android things that kill your processes
 (usb debug)
 adb shell "/system/bin/device_config set_sync_disabled_for_tests persistent; /system/bin/device_config put activity_manager max_phantom_processes 2147483647; settings put global settings_enable_monitor_phantom_procs false"

@@ -73,6 +73,8 @@ public class CameraPhotoAPI {
 
     private static String no_processing;
 
+    private static String no_ois;
+
     private static int timelapse_interval;
 
     static private String filePath;
@@ -80,7 +82,7 @@ public class CameraPhotoAPI {
 
     static String cameraId;
 
-    static int photo_number=0;
+    static int photo_number;
 
     static int photos_to_take;
 
@@ -88,6 +90,9 @@ public class CameraPhotoAPI {
     static int focus_end;
     static int focus_steps;
     static int cur_focus_step;
+
+    static int res_x;
+    static int res_y;
 
     static CountDownLatch latch;
 
@@ -187,6 +192,7 @@ public class CameraPhotoAPI {
         cameraId = Objects.toString(intent.getStringExtra("camera"), "0");
         flash = Objects.toString(intent.getStringExtra("flash"), "off");
         no_processing = Objects.toString(intent.getStringExtra("no_processing"), "off");
+        no_ois = Objects.toString(intent.getStringExtra("no_ois"), "off");
         iso=Integer.parseInt(Objects.toString(intent.getStringExtra("iso"), "0"));
         exposure=Integer.parseInt(Objects.toString(intent.getStringExtra("exposure"), "0"));
         ev_steps=Integer.parseInt(Objects.toString(intent.getStringExtra("ev_steps"), "0"));
@@ -196,6 +202,9 @@ public class CameraPhotoAPI {
         focus_start =Integer.parseInt(Objects.toString(intent.getStringExtra("focus_start"), "0"));
         focus_end =Integer.parseInt(Objects.toString(intent.getStringExtra("focus_end"), "0"));
         focus_steps =Integer.parseInt(Objects.toString(intent.getStringExtra("focus_steps"), "0"));
+        res_x =Integer.parseInt(Objects.toString(intent.getStringExtra("res_x"), "0"));
+        res_y =Integer.parseInt(Objects.toString(intent.getStringExtra("res_y"), "0"));
+        photo_number =Integer.parseInt(Objects.toString(intent.getStringExtra("start_number"), "0"));
 
         focus_distance=parseFloat(Objects.toString(intent.getStringExtra("focus"), "0"));
 
@@ -309,9 +318,16 @@ public class CameraPhotoAPI {
 
         Rect sensor_size;
         sensor_size = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-        if(stdout!=null)stdout.println("Resolution is " + sensor_size.width() + "x" + sensor_size.height());
 
-        final ImageReader mImageReader = ImageReader.newInstance(sensor_size.width(), sensor_size.height(), ImageFormat.JPEG, 2);
+        if(res_x==0 && res_y==0)
+        {
+            res_x=sensor_size.width();
+            res_y=sensor_size.height();
+        }
+
+        if(stdout!=null)stdout.println("Resolution is " + res_x + "x" + res_y);
+
+        final ImageReader mImageReader = ImageReader.newInstance(res_x, res_y, ImageFormat.JPEG, 2);
         mImageReader.setOnImageAvailableListener(reader -> new Thread() {
             @Override
             public void run() {
@@ -377,6 +393,10 @@ public class CameraPhotoAPI {
                             previewReq.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, ev_steps);
                         }
 
+                        //useful when on a tripod
+                        if(no_ois.equals("on"))
+                            previewReq.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF);
+
                         // continous preview-capture for 1/2 second
                         session.setRepeatingRequest(previewReq.build(), null, null);
                         Logger.logInfo(LOG_TAG, "preview started");
@@ -398,6 +418,10 @@ public class CameraPhotoAPI {
                         jpegRequest.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
                         jpegRequest.set(CaptureRequest.LENS_FOCUS_DISTANCE, focus_diopters);
                     }
+
+                    //useful when on a tripod
+                    if(no_ois.equals("on"))
+                        jpegRequest.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF);
 
                     if(flash.equals("off"))
                         jpegRequest.set(CaptureRequest.FLASH_MODE, FLASH_MODE_OFF);
@@ -508,6 +532,9 @@ public class CameraPhotoAPI {
         } else {
             jpegOrientation = sensorOrientation - deviceOrientation;
         }
+
+        jpegOrientation=sensorOrientation;
+
         // Add an extra 360 because (-90 % 360) == -90 and Android won't accept a negative rotation.
         jpegOrientation = (jpegOrientation + 360) % 360;
         Logger.logInfo(LOG_TAG, String.format("Returning JPEG orientation of %d degrees", jpegOrientation));

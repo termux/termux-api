@@ -4,6 +4,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
 import android.util.ArrayMap;
@@ -213,10 +214,12 @@ public class MicRecorderAPI {
                     duration = MIN_RECORDING_LIMIT;
 
                 String sencoder = intent.hasExtra("encoder") ? intent.getStringExtra("encoder") : "";
-                ArrayMap<String, Integer> encoder_map = new ArrayMap<>(3);
+                ArrayMap<String, Integer> encoder_map = new ArrayMap<>(4);
                 encoder_map.put("aac", MediaRecorder.AudioEncoder.AAC);
                 encoder_map.put("amr_nb", MediaRecorder.AudioEncoder.AMR_NB);
                 encoder_map.put("amr_wb", MediaRecorder.AudioEncoder.AMR_WB);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                    encoder_map.put("opus", MediaRecorder.AudioEncoder.OPUS);
 
                 Integer encoder = encoder_map.get(sencoder.toLowerCase());
                 if (encoder == null)
@@ -224,19 +227,23 @@ public class MicRecorderAPI {
 
                 int format = intent.getIntExtra("format", MediaRecorder.OutputFormat.DEFAULT);
                 if (format == MediaRecorder.OutputFormat.DEFAULT) {
-                    SparseIntArray format_map = new SparseIntArray(3);
+                    SparseIntArray format_map = new SparseIntArray(4);
                     format_map.put(MediaRecorder.AudioEncoder.AAC,
                                    MediaRecorder.OutputFormat.MPEG_4);
                     format_map.put(MediaRecorder.AudioEncoder.AMR_NB,
                                    MediaRecorder.OutputFormat.THREE_GPP);
                     format_map.put(MediaRecorder.AudioEncoder.AMR_WB,
                                    MediaRecorder.OutputFormat.THREE_GPP);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                        format_map.put(MediaRecorder.AudioEncoder.OPUS, MediaRecorder.OutputFormat.OGG);
                     format = format_map.get(encoder, MediaRecorder.OutputFormat.DEFAULT);
                 }
 
-                SparseArray<String> extension_map = new SparseArray<>(2);
+                SparseArray<String> extension_map = new SparseArray<>(3);
                 extension_map.put(MediaRecorder.OutputFormat.MPEG_4, ".m4a");
                 extension_map.put(MediaRecorder.OutputFormat.THREE_GPP, ".3gp");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                    extension_map.put(MediaRecorder.OutputFormat.OGG, ".ogg");
                 String extension = extension_map.get(format);
 
                 String filename = intent.hasExtra("file") ? intent.getStringExtra("file") : getDefaultRecordingFilename() + (extension != null ? extension : "");

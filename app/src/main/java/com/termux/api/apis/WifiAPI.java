@@ -7,6 +7,7 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
 import android.net.LinkAddress;
+import android.net.RouteInfo;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -40,6 +41,11 @@ public class WifiAPI {
                 } else {
                     for (LinkAddress address: linkProperties.getLinkAddresses()) {
                         out.name("ip").value(address.getAddress().getHostAddress());
+                    }
+                    for (RouteInfo routeInfo: linkProperties.getRoutes()) {
+                        if (routeInfo.isDefaultRoute() && routeInfo.hasGateway()) {
+                            out.name("gateway").value(routeInfo.getGateway().getHostAddress());
+                        }
                     }
                     out.name("bssid").value(info.getBSSID());
                     out.name("frequency_mhz").value(info.getFrequency());

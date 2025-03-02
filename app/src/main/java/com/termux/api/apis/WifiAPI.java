@@ -4,11 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.LinkProperties;
+import android.net.LinkAddress;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.text.TextUtils;
-import android.text.format.Formatter;
 import android.util.JsonWriter;
 
 import com.termux.api.TermuxApiReceiver;
@@ -30,14 +32,17 @@ public class WifiAPI {
             public void writeJson(JsonWriter out) throws Exception {
                 WifiManager manager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 WifiInfo info = manager.getConnectionInfo();
+                ConnectivityManager connManager = (ConnectivityManager) context.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+                LinkProperties linkProperties = connManager.getLinkProperties(connManager.getActiveNetwork());
                 out.beginObject();
                 if (info == null) {
                     out.name("API_ERROR").value("No current connection");
                 } else {
+                    for (LinkAddress address: linkProperties.getLinkAddresses()) {
+                        out.name("ip").value(address.getAddress().getHostAddress());
+                    }
                     out.name("bssid").value(info.getBSSID());
                     out.name("frequency_mhz").value(info.getFrequency());
-                    //noinspection deprecation - formatIpAddress is deprecated, but we only have a ipv4 address here:
-                    out.name("ip").value(Formatter.formatIpAddress(info.getIpAddress()));
                     out.name("link_speed_mbps").value(info.getLinkSpeed());
                     out.name("mac_address").value(info.getMacAddress());
                     out.name("network_id").value(info.getNetworkId());

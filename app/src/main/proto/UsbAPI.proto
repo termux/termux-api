@@ -5,6 +5,32 @@ package usbapi;
 option java_package = "com.termux.api";
 option java_outer_classname = "UsbAPIProto";
 
+/* Modelled after libusb's struct libusb_endpoint_descriptor */
+message termuxUsbEndpointDescriptor {
+  int32 endpointAddress = 1;
+  int32 attributes      = 2;
+  int32 maxPacketSize   = 3;
+  int32 interval        = 4;
+}
+
+/* Modelled after libusb's struct libusb_interface_descriptor */
+message termuxUsbInterfaceDescriptor {
+  int32  alternateSetting                       = 1;
+  int32  interfaceClass                         = 2;
+  int32  interfaceSubclass                      = 3;
+  int32  interfaceProtocol                      = 4;
+  string interface                              = 5;
+  repeated termuxUsbEndpointDescriptor endpoint = 6;
+}
+
+/* Modelled after libusb's struct libusb_config_descriptor */
+message termuxUsbConfigDescriptor {
+  int32  configurationValue                       = 1;
+  int32  maxPower                                 = 2;
+  string configuration                            = 3;
+  repeated termuxUsbInterfaceDescriptor interface = 4;
+}
+
 /* Modelled after libusb's struct libusb_device_descriptor */
 message termuxUsbDeviceDescriptor {
   int32  configurationCount = 1;

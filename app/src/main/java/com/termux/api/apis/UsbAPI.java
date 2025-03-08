@@ -6,9 +6,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.usb.UsbConfiguration;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbEndpoint;
+import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,8 +24,11 @@ import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
 
 import com.termux.api.UsbAPIProto.termuxUsb;
+import com.termux.api.UsbAPIProto.termuxUsbConfigDescriptor;
 import com.termux.api.UsbAPIProto.termuxUsbDevice;
 import com.termux.api.UsbAPIProto.termuxUsbDeviceDescriptor;
+import com.termux.api.UsbAPIProto.termuxUsbEndpointDescriptor;
+import com.termux.api.UsbAPIProto.termuxUsbInterfaceDescriptor;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -107,6 +113,9 @@ public class UsbAPI {
 		    * stdout */
 		    case "getDevices":
 			runGetDevicesAction(intent);
+			break;
+		    case "getConfigDescriptor":
+			getConfigDescriptorAction(intent);
 			break;
 		    default:
 			Logger.logError(LOG_TAG, "Invalid action: \"" + action + "\"");
@@ -495,6 +504,75 @@ public class UsbAPI {
 		}
 	    });
 	}
+
+	protected void getConfigDescriptorAction(Intent intent) {
+	    ResultReturner.returnData(this, intent, new ResultReturner.BinaryOutput() {
+		@Override
+		public void writeResult(OutputStream out) throws Exception {
+		    String deviceName = intent.getStringExtra("device");
+		    int configIndex = intent.getIntExtra("config", 0);
+		    UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+		    HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
+
+		    if (deviceName == null) {
+			Logger.logError(LOG_TAG, "Missing device argument\n");
+			return;
+		    }
+
+		    UsbDevice device = deviceList.get(deviceName);
+		    if (device == null) {
+			Logger.logError(LOG_TAG, "No such device\n");
+			return;
+		    }
+		    if (device.getConfigurationCount()-1 < configIndex) {
+			Logger.logError(LOG_TAG, "Requested config does not exist\n");
+			return;
+		    }
+		    UsbConfiguration configuration = device.getConfiguration(configIndex);
+		    int numInterfaces = configuration.getInterfaceCount();
+
+		    termuxUsbConfigDescriptor.Builder configBuilder = termuxUsbConfigDescriptor.newBuilder();
+		    configBuilder.setConfigurationValue(configIndex);
+		    configBuilder.setMaxPower(configuration.getMaxPower());
+		    if (configuration.getName() != null) {
+			configBuilder.setConfiguration(configuration.getName());
+		    } else {
+			configBuilder.setConfiguration("");
+		    }
+
+		    for (int i = 0; i < numInterfaces; i++) {
+			UsbInterface intf = configuration.getInterface(i);
+
+			termuxUsbInterfaceDescriptor.Builder intfDescBuilder = termuxUsbInterfaceDescriptor.newBuilder();
+			intfDescBuilder.setAlternateSetting(intf.getAlternateSetting());
+			intfDescBuilder.setInterfaceClass(intf.getInterfaceClass());
+			intfDescBuilder.setInterfaceSubclass(intf.getInterfaceSubclass());
+			intfDescBuilder.setInterfaceProtocol(intf.getInterfaceProtocol());
+			if (intf.getName() != null) {
+			    intfDescBuilder.setInterface(intf.getName());
+			} else {
+			    intfDescBuilder.setInterface("");
+			}
+			int numEndpoints = intf.getEndpointCount();
+
+			for (int j = 0; j < numEndpoints; j++) {
+			    UsbEndpoint endpoint = intf.getEndpoint(j);
+
+			    termuxUsbEndpointDescriptor.Builder endpointDescBuilder = termuxUsbEndpointDescriptor.newBuilder();
+			    endpointDescBuilder.setEndpointAddress(endpoint.getAddress());
+			    endpointDescBuilder.setAttributes(endpoint.getAttributes());
+			    endpointDescBuilder.setMaxPacketSize(endpoint.getMaxPacketSize());
+			    endpointDescBuilder.setInterval(endpoint.getInterval());
+
+			    intfDescBuilder.addEndpoint(endpointDescBuilder.build());
+			}
+
+			configBuilder.addInterface(intfDescBuilder.build());
+		    }
+
+		    termuxUsbConfigDescriptor config = configBuilder.build();
+		    Logger.logDebug(LOG_TAG, config.toString());
+		    config.writeTo(out);
 		}
 	    });
 	}

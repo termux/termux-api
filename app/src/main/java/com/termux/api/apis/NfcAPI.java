@@ -12,6 +12,8 @@ import android.nfc.tech.Ndef;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.JsonWriter;
+import android.net.Uri;
+import android.util.Base64;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,7 +32,6 @@ public class NfcAPI {
     }
 
 
-
     public static class NfcActivity extends AppCompatActivity {
 
         private NfcAdapter adapter;
@@ -39,7 +40,7 @@ public class NfcAPI {
         String mode;
         String param;
         String value;
-
+        String mime;
         private static final String LOG_TAG = "NfcActivity";
 
         //Check for NFC
@@ -52,7 +53,7 @@ public class NfcAPI {
                     if (error.length() > 0)
                         out.name("error").value(error);
                     out.name("nfcPresent").value(null != adapter);
-                    if(null!=adapter)
+                    if (null != adapter)
                         out.name("nfcActive").value(adapter.isEnabled());
                     out.endObject();
                 }
@@ -69,21 +70,32 @@ public class NfcAPI {
                 mode = intent.getStringExtra("mode");
                 if (null == mode)
                     mode = "noData";
-                param =intent.getStringExtra("param");
+                param = intent.getStringExtra("param");
                 if (null == param)
                     param = "noData";
-                value=intent.getStringExtra("value");
+                value = intent.getStringExtra("value");
                 if (null == socket_input) socket_input = intent.getStringExtra("socket_input");
                 if (null == socket_output) socket_output = intent.getStringExtra("socket_output");
+                // this is being jankily hacked on because
+                // - i'm stupid
+                // - i'm lazy
+                // - the person who wrote this was stupid
+                // sorry that was mean
+                // -doskel, 2024
+                if (mode.equals("mimeWrite")) {
+                    mime = intent.getStringExtra("mime");
+                    mode = "write";
+                }
+
                 if (mode.equals("noData")) {
-                    errorNfc(this, intent,"");
+                    errorNfc(this, intent, "");
                     finish();
                 }
             }
 
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
-            if((null==adapter)||(!adapter.isEnabled())){
-                errorNfc(this,intent,"");
+            if ((null == adapter) || (!adapter.isEnabled())) {
+                errorNfc(this, intent, "");
                 finish();
             }
         }
@@ -114,7 +126,7 @@ public class NfcAPI {
                 try {
                     postResult(this, intent);
                 } catch (Exception e) {
-                    Logger.logStackTraceWithMessage(LOG_TAG, "Error posting result" ,e);
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Error posting result", e);
                 }
                 finish();
             }
@@ -149,7 +161,7 @@ public class NfcAPI {
                                 switch (param) {
                                     case "text":
                                         Logger.logVerbose(LOG_TAG, "Write start");
-                                        onReceiveNfcWrite(context, intent);
+                                        onReceiveNfcWrite(context, intent, out);
                                         Logger.logVerbose(LOG_TAG, "Write end");
                                         break;
                                     default:
@@ -158,15 +170,15 @@ public class NfcAPI {
                                 }
                                 break;
                             case "read":
-                                switch (param){
+                                switch (param) {
                                     case "short":
-                                        readNDEFTag(intent,out);
+                                        readNDEFTag(intent, out);
                                         break;
                                     case "full":
-                                        readFullNDEFTag(intent,out);
+                                        readFullNDEFTag(intent, out);
                                         break;
                                     case "noData":
-                                        readNDEFTag(intent,out);
+                                        readNDEFTag(intent, out);
                                         break;
                                     default:
                                         onUnexpectedAction(out, "Wrong Params", "Should be correct param value");
@@ -177,20 +189,42 @@ public class NfcAPI {
                                 onUnexpectedAction(out, "Wrong Params", "Should be correct mode value ");
                                 break;
                         }
-                    } catch (Exception e){
+                    } catch (Exception e) {
                         onUnexpectedAction(out, "exception", e.getMessage());
                     }
                 }
             });
         }
 
-        public void onReceiveNfcWrite( final Context context, Intent intent) throws Exception {
+        public void onReceiveNfcWrite(final Context context, Intent intent, JsonWriter out) throws Exception {
             Logger.logVerbose(LOG_TAG, "onReceiveNfcWrite");
 
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(context);
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-            NdefRecord record = NdefRecord.createTextRecord("en", value);
-            NdefMessage msg = new NdefMessage(new NdefRecord[]{record});
+            NdefMessage msg;
+            if (mime == null) {
+                NdefRecord record = NdefRecord.createTextRecord("en", value);
+                msg = new NdefMessage(new NdefRecord[]{record});
+            } else if (mime.equals("uri")) {
+                Uri uri;
+                try {
+                    uri = Uri.parse(value);
+                } catch (Exception e) {
+                    onUnexpectedAction(out, "Bad URI", "Should be a valid URI");
+                    return;
+                }
+                NdefRecord record = NdefRecord.createUri(uri);
+                msg = new NdefMessage(new NdefRecord[]{record});
+            } else {
+                try {
+                    byte[] data = Base64.decode(value, Base64.DEFAULT);
+                    NdefRecord record = NdefRecord.createMime(mime, data);
+                    msg = new NdefMessage(new NdefRecord[]{record});
+                } catch (Exception e) {
+                    onUnexpectedAction(out, "Other error", "Unknown error");
+                    return;
+                }
+            }
             Ndef ndef = Ndef.get(tag);
             ndef.connect();
             ndef.writeNdefMessage(msg);
@@ -207,14 +241,14 @@ public class NfcAPI {
             Ndef ndefTag = Ndef.get(tag);
             boolean bNdefPresent = false;
             String[] strs = tag.getTechList();
-            for (String s: strs){
+            for (String s : strs) {
                 if (s.equals("android.nfc.tech.Ndef")) {
                     bNdefPresent = true;
                     break;
                 }
             }
-            if (!bNdefPresent){
-                onUnexpectedAction(out, "Wrong Technology","termux API support only NFEF Tag");
+            if (!bNdefPresent) {
+                onUnexpectedAction(out, "Wrong Technology", "termux API support only NDEF Tag");
                 return;
             }
             NdefMessage[] nmsgs = new NdefMessage[msgs.length];
@@ -222,15 +256,15 @@ public class NfcAPI {
                 nmsgs[0] = (NdefMessage) msgs[0];
                 NdefRecord[] records = nmsgs[0].getRecords();
                 out.beginObject();
-                if (records.length >0 ) {
+                if (records.length > 0) {
                     {
                         out.name("Record");
                         if (records.length > 1)
                             out.beginArray();
-                        for (NdefRecord record: records){
+                        for (NdefRecord record : records) {
                             out.beginObject();
                             int pos = 1 + record.getPayload()[0];
-                            pos = (NdefRecord.TNF_WELL_KNOWN==record.getTnf())?(int)record.getPayload()[0]+1:0;
+                            pos = (NdefRecord.TNF_WELL_KNOWN == record.getTnf()) ? (int) record.getPayload()[0] + 1 : 0;
                             int len = record.getPayload().length - pos;
                             byte[] msg = new byte[len];
                             System.arraycopy(record.getPayload(), pos, msg, 0, len);
@@ -255,14 +289,14 @@ public class NfcAPI {
 
             String[] strs = tag.getTechList();
             boolean bNdefPresent = false;
-            for (String s: strs){
+            for (String s : strs) {
                 if (s.equals("android.nfc.tech.Ndef")) {
                     bNdefPresent = true;
                     break;
                 }
             }
-            if (!bNdefPresent){
-                onUnexpectedAction(out, "Wrong Technology","termux API support only NFEF Tag");
+            if (!bNdefPresent) {
+                onUnexpectedAction(out, "Wrong Technology", "termux API support only NFEF Tag");
                 return;
             }
             NdefMessage[] nmsgs = new NdefMessage[msgs.length];
@@ -270,7 +304,9 @@ public class NfcAPI {
             {
                 byte[] tagID = tag.getId();
                 StringBuilder sp = new StringBuilder();
-                for (byte tagIDpart : tagID) { sp.append(String.format("%02x", tagIDpart)); }
+                for (byte tagIDpart : tagID) {
+                    sp.append(String.format("%02x", tagIDpart));
+                }
                 out.name("id").value(sp.toString());
                 out.name("typeTag").value(ndefTag.getType());
                 out.name("maxSize").value(ndefTag.getMaxSize());
@@ -295,10 +331,11 @@ public class NfcAPI {
                             out.beginObject();
                             out.name("type").value(new String(record.getType()));
                             out.name("tnf").value(record.getTnf());
-                            if (records[0].toUri() != null) out.name("URI").value(record.toUri().toString());
+                            if (records[0].toUri() != null)
+                                out.name("URI").value(record.toUri().toString());
                             out.name("mime").value(record.toMimeType());
                             int pos = 1 + record.getPayload()[0];
-                            pos = (NdefRecord.TNF_WELL_KNOWN==record.getTnf())?(int)record.getPayload()[0]+1:0;
+                            pos = (NdefRecord.TNF_WELL_KNOWN == record.getTnf()) ? (int) record.getPayload()[0] + 1 : 0;
                             int len = record.getPayload().length - pos;
                             byte[] msg = new byte[len];
                             System.arraycopy(record.getPayload(), pos, msg, 0, len);
@@ -313,7 +350,7 @@ public class NfcAPI {
             out.endObject();
         }
 
-        protected void onUnexpectedAction(JsonWriter out,String error, String description) throws Exception {
+        protected void onUnexpectedAction(JsonWriter out, String error, String description) throws Exception {
             out.beginObject();
             out.name("error").value(error);
             out.name("description").value(description);

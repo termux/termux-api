@@ -73,7 +73,7 @@ dependencies {
     implementation "androidx.media:media:1.7.0"
     implementation "androidx.preference:preference:1.2.1"
 
-    implementation "com.termux.termux-app:termux-shared:b0e1dbc3da"
+    implementation "com.termux.termux-app:termux-shared:9ee1c9d5ad"
     // Use if below libraries are published locally by termux-app with `./gradlew publishReleasePublicationToMavenLocal` and used with `mavenLocal()`.
     // If updates are done, republish there and sync project with gradle files here
     // https://github.com/termux/termux-app/wiki/Termux-Libraries

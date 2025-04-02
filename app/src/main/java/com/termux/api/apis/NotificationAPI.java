@@ -31,6 +31,7 @@ import com.termux.shared.termux.TermuxConstants.TERMUX_APP.TERMUX_SERVICE;
 import java.io.File;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -406,8 +407,8 @@ public class NotificationAPI {
 
     static Intent createExecuteIntent(String action){
         ExecutionCommand executionCommand = new ExecutionCommand();
-        executionCommand.executableUri = new Uri.Builder().scheme(TERMUX_SERVICE.URI_SCHEME_SERVICE_EXECUTE).path(BIN_SH).build();
         executionCommand.arguments = new String[]{"-c", action};
+        executionCommand.executableUri = new Uri.Builder().scheme(TERMUX_SERVICE.URI_SCHEME_SERVICE_EXECUTE).path(BIN_SH).appendQueryParameter("arguments", Arrays.toString(executionCommand.arguments)).build();
         executionCommand.runner = ExecutionCommand.Runner.APP_SHELL.getName();
 
         // Create execution intent with the action TERMUX_SERVICE#ACTION_SERVICE_EXECUTE to be sent to the TERMUX_SERVICE

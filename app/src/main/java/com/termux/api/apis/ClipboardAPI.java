@@ -5,6 +5,7 @@ import android.content.ClipData.Item;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.os.PersistableBundle;
 import android.text.TextUtils;
 
 import com.termux.api.TermuxApiReceiver;
@@ -26,6 +27,7 @@ public class ClipboardAPI {
         boolean version2 = "2".equals(intent.getStringExtra("api_version"));
         if (version2) {
             boolean set = intent.getBooleanExtra("set", false);
+            boolean sensitive = intent.getBooleanExtra("sensitive", false);
             if (set) {
                 ResultReturner.returnData(apiReceiver, intent, new ResultReturner.WithStringInput() {
                     @Override
@@ -35,7 +37,14 @@ public class ClipboardAPI {
 
                     @Override
                     public void writeResult(PrintWriter out) {
-                        clipboard.setPrimaryClip(ClipData.newPlainText("", inputString));
+                        var clipData = ClipData.newPlainText("", inputString);
+                        if (sensitive) {
+                            var extras = new PersistableBundle();
+                            // extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
+                            extras.putBoolean("android.content.extra.IS_SENSITIVE", true);
+                            clipData.getDescription().setExtras(extras);
+                        }
+                        clipboard.setPrimaryClip(clipData);
                     }
                 });
             } else {

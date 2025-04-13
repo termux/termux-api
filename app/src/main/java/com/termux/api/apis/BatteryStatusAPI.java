@@ -87,7 +87,11 @@ public class BatteryStatusAPI {
                         batteryPlugged = "PLUGGED_" + pluggedInt;
                 }
 
-                double batteryTemperature = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) / 10.f;
+                // Android returns battery temperature as int in tenths of degrees Celsius, like 255, so convert it to a decimal like 25.5°C.
+                // - https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:hardware/interfaces/health/aidl/android/hardware/health/HealthInfo.aidl;l=77-80
+                double batteryTemperature = ((double) batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Integer.MIN_VALUE)) / 10f;
+                // Round the value to 1 decimal place.
+                batteryTemperature = (double) Math.round(batteryTemperature * 10.0f) / 10.0f;
 
                 String batteryStatusString;
                 int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
@@ -145,7 +149,7 @@ public class BatteryStatusAPI {
                 out.name("health").value(batteryHealth);
                 out.name("plugged").value(batteryPlugged);
                 out.name("status").value(batteryStatusString);
-                out.name("temperature").value(String.format("%.1f", batteryTemperature));
+                out.name("temperature").value(batteryTemperature);
                 out.name("voltage").value(batteryVoltage);
                 out.name("current").value(batteryCurrentNow);
                 out.name("current_average").value(getIntProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE));

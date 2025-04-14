@@ -146,7 +146,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 JobSchedulerAPI.onReceive(this, context, intent);
                 break;
             case "Keystore":
-                KeystoreAPI.onReceive(this, intent);
+                KeystoreAPI.onReceive(this, context, intent);
                 break;
             case "Location":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.ACCESS_FINE_LOCATION)) {

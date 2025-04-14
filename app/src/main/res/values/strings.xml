@@ -52,7 +52,7 @@
     <string name="action_grant_display_over_other_apps_permission">Grant Draw Over Apps Permission</string>
 
     <string name="msg_change_launcher_activity_state_info">The &TERMUX_API_APP_NAME; app does not
-        require a require launcher activity/icon to function. You can optionally disable the launcher
+        require a launcher activity/icon to function. You can optionally disable the launcher
         activity if you want and enable it again from the main activity if required.
         \n\nThe launcher activity is an alias for the current main activity of the app which can
         still be opened after disabling the launcher activity. The main activity can be opened

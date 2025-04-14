@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package usbapi;
+
+option java_package = "com.termux.api";
+option java_outer_classname = "UsbAPIProto";
+
+/* Modelled after libusb's struct libusb_endpoint_descriptor */
+message termuxUsbEndpointDescriptor {
+  int32 endpointAddress = 1;
+  int32 attributes      = 2;
+  int32 maxPacketSize   = 3;
+  int32 interval        = 4;
+}
+
+/* Modelled after libusb's struct libusb_interface_descriptor */
+message termuxUsbInterfaceDescriptor {
+  int32  alternateSetting                       = 1;
+  int32  interfaceClass                         = 2;
+  int32  interfaceSubclass                      = 3;
+  int32  interfaceProtocol                      = 4;
+  string interface                              = 5;
+  repeated termuxUsbEndpointDescriptor endpoint = 6;
+}
+
+/* Modelled after libusb's struct libusb_config_descriptor */
+message termuxUsbConfigDescriptor {
+  int32  configurationValue                       = 1;
+  int32  maxPower                                 = 2;
+  string configuration                            = 3;
+  repeated termuxUsbInterfaceDescriptor interface = 4;
+}
+
+/* Modelled after libusb's struct libusb_device_descriptor */
+message termuxUsbDeviceDescriptor {
+  int32  configurationCount = 1;
+  int32  deviceClass        = 2;
+  int32  deviceProtocol     = 3;
+  int32  deviceSubclass     = 4;
+  int32  productId          = 5;
+  int32  vendorId           = 6;
+  string manufacturerName   = 7;
+  string productName        = 8;
+  string serialNumber       = 9;
+}
+
+/* Loosely modelled after libusb's internal struct libusb_device */
+message termuxUsbDevice {
+  int32  busNumber                           = 1;
+  int32  portNumber                          = 2;
+  string deviceAddress                       = 3;
+  termuxUsbDeviceDescriptor device           = 4;
+}
+
+message termuxUsb {
+  repeated termuxUsbDevice device = 1;
+}

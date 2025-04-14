@@ -127,7 +127,12 @@
             <meta-data android:name="android.nfc.action.TECH_DISCOVERED"
                 android:resource="@xml/nfc_tech_filter" />
 
-        </activity>
+    	</activity>
+
+	<activity android:name=".apis.PasswordAPI$PasswordActivity"
+	    android:theme="@style/TransparentTheme"
+	    android:excludeFromRecents="true"
+            android:exported="false" />
 
         <activity android:name=".apis.SAFAPI$SAFActivity"
             android:theme="@style/TransparentTheme"

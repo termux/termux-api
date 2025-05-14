@@ -15,6 +15,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.NFC"/>
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
@@ -185,6 +186,10 @@
 
         <service android:name=".apis.MicRecorderAPI$MicRecorderService"
             android:exported="false" />
+
+        <service android:name=".apis.NsdApi$NsdService"
+            android:exported="false" />
+
 
         <service
             android:name=".apis.NotificationListAPI$NotificationService"

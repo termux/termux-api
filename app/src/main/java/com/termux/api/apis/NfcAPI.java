@@ -16,6 +16,7 @@ import android.util.JsonWriter;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.termux.api.util.PendingIntentUtils;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
 
@@ -104,8 +105,11 @@ public class NfcAPI {
                 finish();
                 return;
             }
+
+            // - https://developer.android.com/develop/connectivity/nfc/advanced-nfc#foreground-dispatch
             Intent intentNew = new Intent(this, NfcActivity.class).addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intentNew, 0);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intentNew,
+                    PendingIntentUtils.getPendingIntentMutableFlag());
             IntentFilter[] intentFilter = new IntentFilter[]{
                     new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED),
                     new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED),

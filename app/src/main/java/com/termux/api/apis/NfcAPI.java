@@ -33,7 +33,8 @@ public class NfcAPI {
 
     public static class NfcActivity extends AppCompatActivity {
 
-        private NfcAdapter adapter;
+        private Intent mIntent;
+        private NfcAdapter mAdapter;
         static String socket_input;
         static String socket_output;
         String mode;
@@ -66,6 +67,7 @@ public class NfcAPI {
             super.onCreate(savedInstanceState);
             Intent intent = this.getIntent();
             if (intent != null) {
+                mIntent = intent;
                 mode = intent.getStringExtra("mode");
                 if (null == mode)
                     mode = "noData";
@@ -94,14 +96,21 @@ public class NfcAPI {
             Logger.logVerbose(LOG_TAG, "onResume");
 
             super.onResume();
-            adapter = NfcAdapter.getDefaultAdapter(this);
+
+            mAdapter = NfcAdapter.getDefaultAdapter(this);
+            if (mAdapter == null || !mAdapter.isEnabled()) {
+                if (mIntent != null)
+                    errorNfc(this, mIntent,"");
+                finish();
+                return;
+            }
             Intent intentNew = new Intent(this, NfcActivity.class).addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intentNew, 0);
             IntentFilter[] intentFilter = new IntentFilter[]{
                     new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED),
                     new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED),
                     new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED)};
-            adapter.enableForegroundDispatch(this, pendingIntent, intentFilter, null);
+            mAdapter.enableForegroundDispatch(this, pendingIntent, intentFilter, null);
         }
 
         @Override
@@ -126,7 +135,7 @@ public class NfcAPI {
         protected void onPause() {
             Logger.logDebug(LOG_TAG, "onPause");
 
-            adapter.disableForegroundDispatch(this);
+            mAdapter.disableForegroundDispatch(this);
             super.onPause();
         }
 

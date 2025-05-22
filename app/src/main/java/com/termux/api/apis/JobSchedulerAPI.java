@@ -163,6 +163,9 @@ public class JobSchedulerAPI {
         }
 
         if (periodicMillis > 0) {
+            // For Android `>= 7`, the minimum period is 900000ms (15 minutes).
+            // - https://developer.android.com/reference/android/app/job/JobInfo#getMinPeriodMillis()
+            // - https://cs.android.com/android/_/android/platform/frameworks/base/+/10be4e90
             builder = builder.setPeriodic(periodicMillis);
         }
 

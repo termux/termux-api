@@ -223,6 +223,10 @@ public abstract class ResultReturner {
         }
     }
 
+    public static boolean shouldRunThreadForResultRunnable(Object context) {
+        return !(context instanceof IntentService);
+    }
+
     /**
      * Run in a separate thread, unless the context is an IntentService.
      */
@@ -230,6 +234,10 @@ public abstract class ResultReturner {
         final BroadcastReceiver receiver = (BroadcastReceiver) ((context instanceof BroadcastReceiver) ? context : null);
         final Activity activity = (Activity) ((context instanceof Activity) ? context : null);
         final PendingResult asyncResult = receiver != null ? receiver.goAsync() : null;
+
+        // Store caller function stack trace to add to exception messages thrown inside `Runnable`
+        // lambda in case its run in a thread as it will not be included by default.
+        final Throwable callerStackTrace = shouldRunThreadForResultRunnable(context) ? new Exception("Called by:") : null;
 
         final Runnable runnable = () -> {
             PrintWriter writer = null;
@@ -276,6 +284,8 @@ public abstract class ResultReturner {
                 }
             } catch (Throwable t) {
                 String message = "Error in " + LOG_TAG;
+                if (callerStackTrace != null)
+                    t.addSuppressed(callerStackTrace);
                 Logger.logStackTraceWithMessage(LOG_TAG, message, t);
 
                 TermuxPluginUtils.sendPluginCommandErrorNotification(ResultReturner.context, LOG_TAG,
@@ -308,11 +318,11 @@ public abstract class ResultReturner {
             }
         };
 
-        if (context instanceof IntentService) {
-            runnable.run();
-        } else {
+        if (shouldRunThreadForResultRunnable(context)) {
             new Thread(runnable).start();
-        }
+        } else {
+            runnable.run();
+       }
     }
 
     public static void setContext(Context context) {

@@ -21,6 +21,7 @@ import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.TermuxConstants.TERMUX_APP.TERMUX_SERVICE;
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -56,29 +57,52 @@ public class JobSchedulerAPI {
             description.add(String.format(Locale.ENGLISH, "(network: %s)", jobInfo.getRequiredNetwork().toString()));
         }
 
-        return String.format(Locale.ENGLISH, "Job %d: %s\t%s", jobInfo.getId(), path,
+        return String.format(Locale.ENGLISH, "Job %d: %s    %s", jobInfo.getId(), path,
                 TextUtils.join(" ", description));
     }
 
     public static void onReceive(TermuxApiReceiver apiReceiver, Context context, Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");
 
-        final String scriptPath = intent.getStringExtra("script");
-
-        final int jobId = intent.getIntExtra("job_id", 0);
-
         final boolean pending = intent.getBooleanExtra("pending", false);
-
         final boolean cancel = intent.getBooleanExtra("cancel", false);
         final boolean cancelAll = intent.getBooleanExtra("cancel_all", false);
 
-        final int periodicMillis = intent.getIntExtra("period_ms", 0);
+        if (pending) {
+            ResultReturner.returnData(apiReceiver, intent, out -> {
+                runDisplayPendingJobsAction(context, out);
+            });
+        } else if (cancelAll) {
+            ResultReturner.returnData(apiReceiver, intent, out -> {
+                runCancelAllJobsAction(context, out);
+            });
+        } else if (cancel) {
+            ResultReturner.returnData(apiReceiver, intent, out -> {
+                runCancelJobAction(context, intent, out);
+            });
+        } else {
+            ResultReturner.returnData(apiReceiver, intent, out -> {
+                runScheduleJobAction(context, intent, out);
+            });
+        }
+    }
+
+    private static void runScheduleJobAction(Context context, Intent intent, PrintWriter out) {
+        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+
+        int jobId = intent.getIntExtra("job_id", 0);
+
+        Logger.logVerbose(LOG_TAG, "schedule_job: Running action for job " + jobId);
+
+        String scriptPath = intent.getStringExtra("script");
         String networkType = intent.getStringExtra("network");
-        final boolean batteryNotLow = intent.getBooleanExtra("battery_not_low", true);
-        final boolean charging = intent.getBooleanExtra("charging", false);
-        final boolean persisted = intent.getBooleanExtra("persisted", false);
-        final boolean idle = intent.getBooleanExtra("idle", false);
-        final boolean storageNotLow = intent.getBooleanExtra("storage_not_low", false);
+        int periodicMillis = intent.getIntExtra("period_ms", 0);
+        boolean batteryNotLow = intent.getBooleanExtra("battery_not_low", true);
+        boolean charging = intent.getBooleanExtra("charging", false);
+        boolean persisted = intent.getBooleanExtra("persisted", false);
+        boolean idle = intent.getBooleanExtra("idle", false);
+        boolean storageNotLow = intent.getBooleanExtra("storage_not_low", false);
+
 
         int networkTypeCode;
         if (networkType != null) {
@@ -108,29 +132,14 @@ public class JobSchedulerAPI {
         }
 
 
-        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-
-        if (pending) {
-            displayPendingJobs(apiReceiver, intent, jobScheduler);
-            return;
-        }
-        if (cancelAll) {
-            displayPendingJobs(apiReceiver, intent, jobScheduler);
-            ResultReturner.returnData(apiReceiver, intent, out -> out.println("Cancelling all jobs"));
-            jobScheduler.cancelAll();
-            return;
-        } else if (cancel) {
-            cancelJob(apiReceiver, intent, jobScheduler, jobId);
-            return;
-        }
-
-        // Schedule new job
         if (scriptPath == null) {
-            ResultReturner.returnData(apiReceiver, intent, out -> out.println("No script path given"));
+            Logger.logErrorPrivate(LOG_TAG, "schedule_job: " + "Script path not passed");
+            out.println("No script path given");
             return;
         }
-        final File file = new File(scriptPath);
-        final String fileCheckMsg;
+
+        File file = new File(scriptPath);
+        String fileCheckMsg;
         if (!file.isFile()) {
             fileCheckMsg = "No such file: %s";
         } else if (!file.canRead()) {
@@ -142,9 +151,11 @@ public class JobSchedulerAPI {
         }
 
         if (!fileCheckMsg.isEmpty()) {
-            ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(fileCheckMsg, scriptPath)));
+            Logger.logErrorPrivate(LOG_TAG, "schedule_job: " + String.format(fileCheckMsg, scriptPath));
+            out.println(String.format(fileCheckMsg, scriptPath));
             return;
         }
+
 
         PersistableBundle extras = new PersistableBundle();
         extras.putString(JobSchedulerService.SCRIPT_FILE_PATH, file.getAbsolutePath());
@@ -169,44 +180,89 @@ public class JobSchedulerAPI {
             builder = builder.setPeriodic(periodicMillis);
         }
 
-        JobInfo job = builder.build();
+        JobInfo jobInfo = builder.build();
+        final int scheduleResponse = jobScheduler.schedule(jobInfo);
+        String message = String.format(Locale.ENGLISH, "Scheduling %s - response %d", formatJobInfo(jobInfo), scheduleResponse);
+        printMessage(out, "schedule_job", message);
 
-        final int scheduleResponse = jobScheduler.schedule(job);
-
-        final String message = String.format(Locale.ENGLISH, "Scheduling %s - response %d", formatJobInfo(job), scheduleResponse);
-        Logger.logInfo(LOG_TAG, message);
-        ResultReturner.returnData(apiReceiver, intent, out -> out.println(message));
-
-
-        displayPendingJobs(apiReceiver, intent, jobScheduler);
-
+        displayPendingJob(out, jobScheduler, "schedule_job", "Pending", jobId);
     }
 
-    private static void displayPendingJobs(TermuxApiReceiver apiReceiver, Intent intent, JobScheduler jobScheduler) {
-        // Display pending jobs
-        final List<JobInfo> jobs = jobScheduler.getAllPendingJobs();
-        if (jobs.isEmpty()) {
-            ResultReturner.returnData(apiReceiver, intent, out -> out.println("No pending jobs"));
-            return;
-        }
+    private static void runDisplayPendingJobsAction(Context context, PrintWriter out) {
+        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
 
-        StringBuilder stringBuilder = new StringBuilder();
-        for (JobInfo job : jobs) {
-            stringBuilder.append(String.format(Locale.ENGLISH, "Pending %s\n", formatJobInfo(job)));
+        Logger.logVerbose(LOG_TAG, "display_pending_jobs: Running action");
+        displayPendingJobs(out, jobScheduler, "display_pending_jobs", "Pending");
+    }
+
+    private static void runCancelAllJobsAction(Context context, PrintWriter out) {
+        Logger.logVerbose(LOG_TAG, "cancel_all_jobs: Running action");
+        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        int jobsCount = displayPendingJobs(out, jobScheduler, "cancel_all_jobs", "Cancelling");
+        if (jobsCount >= 0) {
+            Logger.logVerbose(LOG_TAG, "cancel_all_jobs: Cancelling " + jobsCount + " jobs");
+            jobScheduler.cancelAll();
         }
-        ResultReturner.returnData(apiReceiver, intent, out -> out.println(stringBuilder.toString()));
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private static void cancelJob(TermuxApiReceiver apiReceiver, Intent intent, JobScheduler jobScheduler, int jobId) {
-        final JobInfo jobInfo = jobScheduler.getPendingJob(jobId);
-        if (jobInfo == null) {
-            ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH, "No job %d found", jobId)));
+    private static void runCancelJobAction(Context context, Intent intent, PrintWriter out) {
+        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+
+        if (!intent.hasExtra("job_id")) {
+            Logger.logErrorPrivate(LOG_TAG, "cancel_job: Job id not passed");
+            out.println("Job id not passed");
             return;
         }
-        ResultReturner.returnData(apiReceiver, intent, out -> out.println(String.format(Locale.ENGLISH, "Cancelling %s", formatJobInfo(jobInfo))));
-        jobScheduler.cancel(jobId);
 
+        int jobId = intent.getIntExtra("job_id", 0);
+        Logger.logVerbose(LOG_TAG, "cancel_job: Running action for job " + jobId);
+
+        if (displayPendingJob(out, jobScheduler, "cancel_job", "Cancelling", jobId)) {
+            Logger.logVerbose(LOG_TAG, "cancel_job: Cancelling job " + jobId);
+            jobScheduler.cancel(jobId);
+        }
+    }
+
+
+
+    private static boolean displayPendingJob(PrintWriter out, JobScheduler jobScheduler,
+                                             String actionTag, String actionLabel, int jobId) {
+        JobInfo jobInfo = jobScheduler.getPendingJob(jobId);
+        if (jobInfo == null) {
+            printMessage(out, actionTag, String.format(Locale.ENGLISH, "No job %d found", jobId));
+            return false;
+        }
+
+        printMessage(out, actionTag, String.format(Locale.ENGLISH, actionLabel + " %s", formatJobInfo(jobInfo)));
+        return true;
+    }
+
+
+    private static int displayPendingJobs(PrintWriter out, JobScheduler jobScheduler, String actionTag, String actionLabel) {
+        List<JobInfo> jobs = jobScheduler.getAllPendingJobs();
+        if (jobs.isEmpty()) {
+            printMessage(out, actionTag, "No jobs found");
+            return 0;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        boolean jobAdded = false;
+        for (JobInfo job : jobs) {
+            if (jobAdded) stringBuilder.append("\n");
+            stringBuilder.append(String.format(Locale.ENGLISH, actionLabel + " %s", formatJobInfo(job)));
+            jobAdded = true;
+        }
+        printMessage(out, actionTag, stringBuilder.toString());
+
+        return jobs.size();
+    }
+
+
+
+    private static void printMessage(PrintWriter out, String actionTag, String message) {
+        Logger.logVerbose(LOG_TAG, actionTag + ": " + message);
+        out.println(message);
     }
 
 

@@ -22,6 +22,8 @@ import androidx.core.util.Pair;
 import com.termux.api.R;
 import com.termux.api.TermuxAPIConstants;
 import com.termux.api.TermuxApiReceiver;
+import com.termux.api.util.PendingIntentUtils;
+import com.termux.api.util.PluginUtils;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.shell.command.ExecutionCommand;
@@ -421,6 +423,10 @@ public class NotificationAPI {
 
     static PendingIntent createAction(final Context context, String action){
         Intent executeIntent = createExecuteIntent(action);
-        return PendingIntent.getService(context, 0, executeIntent, 0);
+        // Use unique request code for each action created so that pending intent extras are updated
+        // and do not conflict when same action is recreated or between actions of different notifications.
+        return PendingIntent.getService(context,
+                PluginUtils.getLastPendingIntentRequestCode(context), executeIntent,
+                PendingIntentUtils.getPendingIntentImmutableFlag());
     }
 }

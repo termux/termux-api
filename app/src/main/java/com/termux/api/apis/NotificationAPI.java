@@ -202,27 +202,35 @@ public class NotificationAPI {
         notification.setWhen(System.currentTimeMillis());
         notification.setShowWhen(true);
 
-        String SmallIcon = intent.getStringExtra("icon");
 
-        if (SmallIcon != null) {
-            final Class<?> clz = R.drawable.class;
-            final Field[] fields = clz.getDeclaredFields();
-            for (Field field : fields) {
-                String name = field.getName();
-                if (name.equals("ic_" + SmallIcon + "_black_24dp")) {
-                    try {
-                        notification.setSmallIcon(field.getInt(clz));
-                    } catch (Exception e) {
-                        break;
-                    }
+        String smallIconName = intent.getStringExtra("icon");
+        if (smallIconName != null) {
+            // TODO: Add prefix to all icons used by `NotificationAPI` to force keep only those icons when providing termux-api-app as a library.
+            // TODO: Add new icons from https://fonts.google.com/icons | https://github.com/google/material-design-icons
+            // Use `String.format()` so that resource shrinker does not remove icons used by `NotificationAPI` for release builds.
+            // - https://web.archive.org/web/20250516083801/https://developer.android.com/build/shrink-code#keep-resources
+            String smallIconResourceName = String.format("ic_%1s_black_24dp", smallIconName);
+            Integer smallIconResourceId = null;
+            try {
+                //noinspection DiscouragedApi
+                smallIconResourceId = context.getResources().getIdentifier(smallIconResourceName, "drawable", context.getPackageName());
+                if (smallIconResourceId == 0) {
+                    smallIconResourceId = null;
+                    Logger.logError(LOG_TAG, "Failed to find \"" + smallIconResourceName + "\" icon");
                 }
+            } catch (Exception e) {
+                Logger.logError(LOG_TAG, "Failed to find \"" + smallIconResourceName + "\" icon: " + e.getMessage());
+            }
+
+            if (smallIconResourceId != null) {
+                notification.setSmallIcon(smallIconResourceId);
             }
         }
 
-        String ImagePath = intent.getStringExtra("image-path");
 
-        if (ImagePath != null) {
-            File imgFile = new File(ImagePath);
+        String imagePath = intent.getStringExtra("image-path");
+        if (imagePath != null) {
+            File imgFile = new File(imagePath);
             if (imgFile.exists()) {
                 Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
 
@@ -240,7 +248,7 @@ public class NotificationAPI {
             String mediaNext = intent.getStringExtra("media-next");
 
             if (mediaPrevious != null && mediaPause != null && mediaPlay != null && mediaNext != null) {
-                if (SmallIcon == null) {
+                if (smallIconName == null) {
                     notification.setSmallIcon(android.R.drawable.ic_media_play);
                 }
 

@@ -69,21 +69,22 @@ public class NfcAPI {
                 mode = intent.getStringExtra("mode");
                 if (null == mode)
                     mode = "noData";
-                param =intent.getStringExtra("param");
+                param = intent.getStringExtra("param");
                 if (null == param)
                     param = "noData";
-                value=intent.getStringExtra("value");
+                value = intent.getStringExtra("value");
                 if (null == socket_input) socket_input = intent.getStringExtra("socket_input");
                 if (null == socket_output) socket_output = intent.getStringExtra("socket_output");
                 if (mode.equals("noData")) {
                     errorNfc(this, intent,"");
                     finish();
+                    return;
                 }
             }
 
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
-            if((null==adapter)||(!adapter.isEnabled())){
-                errorNfc(this,intent,"");
+            if (adapter == null || !adapter.isEnabled()) {
+                errorNfc(this, intent,"");
                 finish();
             }
         }

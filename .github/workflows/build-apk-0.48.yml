@@ -3,7 +3,7 @@ name: 编译 Termux-API v0.48 APK (未签名, ARMv7)
 on:
   push:
     branches:
-      - build-0.48 # 确保只在这个分支上触发，它包含了 v0.48 的代码
+      - build-0.48
 
 jobs:
   build:

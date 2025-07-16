@@ -1,0 +1,33 @@
+name: 编译 Termux-API v0.48 APK (未签名, ARMv7)
+
+on:
+  push:
+    branches:
+      - build-0.48 # 确保只在这个分支上触发，它包含了 v0.48 的代码
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 步骤 1: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 步骤 2: 设置 Java 开发环境 (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: 步骤 3: 授予 gradlew 执行权限
+        run: chmod +x gradlew
+
+      - name: 步骤 4: 构建针对 ARMv7 架构的发布版 APK (未签名)
+        run: ./gradlew assembleRelease
+
+      - name: 步骤 5: 上传构建产物 (APK 文件)
+        uses: actions/upload-artifact@v4
+        with:
+          name: termux-api-v0.48-unsigned-apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk

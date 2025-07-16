@@ -1,18 +1,46 @@
-name: Build
+# 工作流的名称，会在 GitHub Actions 页面显示
+name: 编译 Termux-API v0.48 APK (未签名, ARMv7)
 
-on: push
+# 何时触发此工作流：当有代码推送到 'build-0.48' 分支时触发
+on:
+  push:
+    branches:
+      - build-0.48 # 确保只在这个分支上触发，它包含了 v0.48 的代码
 
 jobs:
   build:
+    # 定义作业运行的环境。ubuntu-latest 包含了 Android 开发所需的大多数工具。
     runs-on: ubuntu-latest
+
     steps:
-    - name: Clone repository
-      uses: actions/checkout@v2
-    - name: Build
-      run: |
-        ./gradlew assembleDebug
-    - name: Store generated APK file
-      uses: actions/upload-artifact@v1
-      with:
-        name: termux-api
-        path: ./app/build/outputs/apk/debug/app-debug.apk
+      - name: 步骤 1: 检出代码
+        # 使用 actions/checkout@v4 来下载你的 GitHub 仓库代码到虚拟机中
+        uses: actions/checkout@v4
+
+      - name: 步骤 2: 设置 Java 开发环境 (JDK 17)
+        # Android 项目需要 Java 来编译。这里我们设置 Java 17。
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17' # 使用 Java 17 版本
+          distribution: 'temurin' # 一种流行的 Java 发行版
+          cache: 'gradle' # 缓存 Gradle 依赖，提高后续构建速度
+
+      - name: 步骤 3: 授予 gradlew 执行权限
+        # gradlew 是 Gradle Wrapper 脚本，它需要执行权限才能运行。
+        run: chmod +x gradlew
+
+      - name: 步骤 4: 构建针对 ARMv7 架构的发布版 APK (未签名)
+        # 这就是编译 APK 的核心命令。
+        # assembleRelease 会编译出未签名的发布版 APK。
+        run: ./gradlew assembleRelease
+
+      - name: 步骤 5: 上传构建产物 (APK 文件)
+        # 这一步将编译好的 APK 文件打包成一个 ZIP 文件，作为 GitHub Actions 的“构建产物”上传。
+        # 你可以在工作流运行结束后，在 GitHub Actions 页面下载这个 ZIP 文件。
+        # 使用 actions/upload-artifact@v4，这是目前最新的稳定版本，以避免弃用错误。
+        uses: actions/upload-artifact@v4
+        with:
+          name: termux-api-v0.48-unsigned-apk # 构建产物的名称，下载时会看到这个名字
+          # 这里指定了未签名 APK 的常见路径。
+          # 'app-release-unsigned.apk' 是 Gradle 默认生成的未签名发布版文件名。
+          path: app/build/outputs/apk/release/app-release-unsigned.apk

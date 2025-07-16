@@ -1,22 +1,22 @@
 # .github/workflows/debug_build.yml
-name: 编译 Termux‑API v0.48 APK (未签名, ARMv7)
+name: 编译 Termux‑API v0.48 APK (未签名, ARMv7)
 
 on:
   push:
     branches:
-      - build-0.48          # 仅在这个分支推送时触发
+      - build-0.48            # 仅在此分支推送时触发
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # GitHub 提供的 Ubuntu Runner
+    runs-on: ubuntu-latest
 
     steps:
       # 1. 检出代码
-      - name: 检出代码
+      - name: '步骤 1 - 检出代码'
         uses: actions/checkout@v4
 
       # 2. 安装并缓存 JDK 17
-      - name: 设置 JDK 17
+      - name: '步骤 2 - 设置 JDK 17'
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -24,15 +24,15 @@ jobs:
           cache: gradle
 
       # 3. 赋予 gradlew 执行权限
-      - name: 赋予 gradlew 执行权限
+      - name: '步骤 3 - 授权 gradlew'
         run: chmod +x gradlew
 
       # 4. 编译 Release APK（未签名）
-      - name: 编译 APK
+      - name: '步骤 4 - 编译 APK'
         run: ./gradlew assembleRelease
 
       # 5. 上传 APK 构建产物
-      - name: 上传 APK
+      - name: '步骤 5 - 上传 APK'
         uses: actions/upload-artifact@v4
         with:
           name: termux-api-v0.48-unsigned-apk

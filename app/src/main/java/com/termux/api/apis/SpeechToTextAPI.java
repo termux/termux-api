@@ -3,6 +3,8 @@ package com.termux.api.apis;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.IntentService;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -12,18 +14,22 @@ import android.os.Bundle;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.widget.Toast;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.logger.Logger;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class SpeechToTextAPI {
 
     private static final String LOG_TAG = "SpeechToTextAPI";
+    private static String language;
 
     public static class SpeechToTextService extends IntentService {
 
@@ -145,7 +151,7 @@ public class SpeechToTextAPI {
             recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Enter shell command");
             recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
             recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10);
-            recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
+            recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language);
             recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
             mSpeechRecognizer.startListening(recognizerIntent);
         }
@@ -181,6 +187,16 @@ public class SpeechToTextAPI {
 
     public static void onReceive(final Context context, Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");
+
+        if (intent.hasExtra("language")) {
+            language = intent.getStringExtra("language");
+            //Toast.makeText(context,"using language [from parameter]: " + language, Toast.LENGTH_SHORT).show();
+            Logger.logDebug(LOG_TAG, "using language [from parameter]: " + language);
+        } else {
+            language = String.valueOf(Locale.getDefault());
+            //Toast.makeText(context,"using language [from locale default]: " + language, Toast.LENGTH_SHORT).show();
+            Logger.logDebug(LOG_TAG, "using language [from locale default]: " + language);
+        }
 
         context.startService(new Intent(context, SpeechToTextService.class).putExtras(intent.getExtras()));
     }

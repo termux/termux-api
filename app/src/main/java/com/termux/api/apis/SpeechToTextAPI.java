@@ -3,8 +3,6 @@ package com.termux.api.apis;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.IntentService;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -14,14 +12,12 @@ import android.os.Bundle;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
-import android.widget.Toast;
 
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.logger.Logger;
 
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.LinkedBlockingQueue;

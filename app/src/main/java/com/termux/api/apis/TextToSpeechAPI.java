@@ -67,7 +67,8 @@ public class TextToSpeechAPI {
             final String speechRegion = intent.getStringExtra("region");
             final String speechVariant = intent.getStringExtra("variant");
             final String speechEngine = intent.getStringExtra("engine");
-            final float speechPitch = intent.getFloatExtra("pitch", 1.0f);
+            final float speechPitch = intent.getFloatExtra("pitch", 0.0f);
+            final float speechRate = intent.getFloatExtra("rate", 0.0f);
 
             // STREAM_MUSIC is the default audio stream for TTS, see:
             // http://stackoverflow.com/questions/6877272/what-is-the-default-audio-stream-of-tts/6979025#6979025
@@ -172,8 +173,13 @@ public class TextToSpeechAPI {
                             }
                         }
 
-                        mTts.setPitch(speechPitch);
-                        mTts.setSpeechRate(intent.getFloatExtra("rate", 1.0f));
+                        if (speechPitch != 0f) {
+                            mTts.setPitch(speechPitch);
+                        }
+
+                        if (speechRate != 0f) {
+                            mTts.setSpeechRate(speechRate);
+                        }
 
                         String utteranceId = "utterance_id";
                         Bundle params = new Bundle();

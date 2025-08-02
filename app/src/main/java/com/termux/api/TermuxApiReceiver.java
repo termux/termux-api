@@ -29,6 +29,7 @@ import com.termux.api.apis.MicRecorderAPI;
 import com.termux.api.apis.NfcAPI;
 import com.termux.api.apis.NotificationAPI;
 import com.termux.api.apis.NotificationListAPI;
+import com.termux.api.apis.PackageManagerAPI;
 import com.termux.api.apis.SAFAPI;
 import com.termux.api.apis.SensorAPI;
 import com.termux.api.apis.ShareAPI;
@@ -177,6 +178,19 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 } else {
                     NotificationListAPI.onReceive(this, context, intent);
                 }
+                break;
+            case "PackageGet":
+                PackageManagerAPI.onReceivePMGetApplicationInfo(this, context, intent);
+            case "PackageList":
+                PackageManagerAPI.onReceivePMListPackages(this, context, intent);
+                break;
+            case "PackageInstall":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                    PackageManagerAPI.onReceivePMInstallPackage(this, context, intent);
+                }
+                break;
+            case "PackageUninstall":
+                PackageManagerAPI.onReceivePMUninstallPackage(this, context, intent);
                 break;
             case "Notification":
                 NotificationAPI.onReceiveShowNotification(this, context, intent);

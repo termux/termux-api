@@ -20,9 +20,17 @@ out the latest features or test their pull request. This build can be obtained
 from one of the workflow runs listed on [Github Actions](https://github.com/termux/termux-api/actions/workflows/github_action_build.yml?query=branch%3Amaster+event%3Apush)
 page.
 
+> [!warning]
+> It should go without saying that **PR build artifacts are totally unofficial** until merged. For security and privacy, you shouldn't download them if you haven't read (and understood) the full PR diff (not the workflow-run diff).
+>
+> Official build artifacts come from `master` (without username)
+
 Signature keys of all offered builds are different. Before you switch the
 installation source, you will have to uninstall the Termux application and
 all currently installed plugins. Check https://github.com/termux/termux-app#Installation for more info.
+
+> [!warning]
+> Pull-Request builds are signed with the **same key** as the official builds. For more info, read the "Security warning" from [the app `README`](https://github.com/termux/termux-app/blob/master/README.md#github)
 
 ## License
 

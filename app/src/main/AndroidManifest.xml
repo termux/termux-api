@@ -140,11 +140,12 @@
             android:exported="false" />
 
         <!-- If you see "Unresolved package" errors for ReportActivity with manifest placeholder,
-        ignore it. Android Studio linter is broken and correct package name will be used at build time." -->
+             ignore it. Android Studio linter is broken and correct package name will be used at build time. -->
         <activity
             android:name="${TERMUX_PACKAGE_NAME}.shared.activities.ReportActivity"
-            android:theme="@style/Theme.MarkdownViewActivity.DayNight"
+            android:exported="false"
             android:documentLaunchMode="intoExisting"
+            android:theme="@style/Theme.MarkdownViewActivity.DayNight"
             tools:ignore="MissingClass" />
 
 

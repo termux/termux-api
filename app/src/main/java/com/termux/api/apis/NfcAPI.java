@@ -1,9 +1,12 @@
 package com.termux.api.apis;
 
+import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.nfc.FormatException;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
@@ -20,21 +23,28 @@ import android.nfc.tech.NfcF;
 import android.nfc.tech.NfcV;
 import android.nfc.tech.TagTechnology;
 import android.os.Bundle;
-import android.util.JsonWriter;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.util.Function;
 
+import com.termux.api.R;
 import com.termux.api.util.PendingIntentUtils;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.logger.Logger;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.util.concurrent.Semaphore;
 
 class NfcException extends RuntimeException {
     NfcException() {
@@ -46,16 +56,20 @@ class NfcException extends RuntimeException {
     }
 }
 
-class UnsupportedTechnology extends NfcException {}
-class NoConnectionException extends NfcException {}
+class UnsupportedTechnology extends NfcException {
+}
+
+class NoConnectionException extends NfcException {
+}
+
 class WrongTechnologyException extends NfcException {
     WrongTechnologyException(@NonNull String expected, @NonNull String found) {
         super(String.format("%s expected, but %s found", expected, found));
     }
 }
-class NfcUnavailableException extends NfcException {}
-class ActivityFinishingException extends NfcException {}
-class TagNullException extends NfcException {}
+
+class TagNullException extends NfcException {
+}
 
 class ArgumentException extends NfcException {
     ArgumentException() {
@@ -66,20 +80,51 @@ class ArgumentException extends NfcException {
         super(message);
     }
 }
+
 class ArgNumberException extends ArgumentException {
     ArgNumberException(int expected, int found) {
         super(String.format("%d expected, found %d", expected, found));
     }
 }
+
 class InvalidHexException extends ArgumentException {
     InvalidHexException(char c) {
         super(String.format("%c", c));
     }
 }
-class InvalidHexLengthException extends ArgumentException {}
-class InvalidCommandException extends ArgumentException {}
+
+class InvalidHexLengthException extends ArgumentException {
+}
+
+class InvalidCommandException extends ArgumentException {
+}
 
 class Utils {
+
+    static void printLnFlush(PrintWriter out, @NonNull String s) {
+        out.println(s);
+        out.flush();
+    }
+
+    static JSONObject exceptionToJson(@NonNull Exception e) {
+        JSONObject obj = new JSONObject();
+        try {
+            obj.put("exceptionType", e.getClass().getName());
+            obj.put("exceptionMessage", e.getMessage());
+        } catch (JSONException ex) {
+            assert false : ex.getMessage();
+        }
+        return obj;
+    }
+
+    static String[] jsonArrayToStringArray(@NonNull JSONArray jsonArray) throws JSONException {
+        String[] result = new String[jsonArray.length()];
+        for (int i = 0; i < jsonArray.length(); ++i) {
+            result[i] = jsonArray.getString(i);
+        }
+        return result;
+    }
+
     static void checkTechnologyNonNull(@Nullable TagTechnology technology) throws NoConnectionException {
         if (technology == null) {
             throw new NoConnectionException();
@@ -93,16 +138,14 @@ class Utils {
     }
 
     static <T extends TagTechnology> @NonNull T liftTagTechnology(@Nullable TagTechnology technology, @NonNull Class<T> tClass)
-            throws NoConnectionException, WrongTechnologyException
-    {
+            throws NoConnectionException, WrongTechnologyException {
         checkTechnologyNonNull(technology);
 
         try {
             T techLifted = tClass.cast(technology);
             assert techLifted != null;
             return techLifted;
-        }
-        catch (ClassCastException e) {
+        } catch (ClassCastException e) {
             throw new WrongTechnologyException(tClass.getSimpleName(), technology.getClass().getSimpleName());
         }
     }
@@ -115,32 +158,33 @@ class Utils {
 
     static byte parseHexOne(char c) throws ArgumentException {
         if ('0' <= c && c <= '9')
-            return (byte)((byte)c - '0');
+            return (byte) ((byte) c - '0');
         if ('a' <= c && c <= 'f')
-            return (byte)((byte)c - 'a' + 10);
+            return (byte) ((byte) c - 'a' + 10);
         if ('A' <= c && c <= 'F')
-            return (byte)((byte)c - 'A' + 10);
+            return (byte) ((byte) c - 'A' + 10);
         throw new InvalidHexException(c);
     }
 
     static byte parseHexTwo(char high, char low) throws ArgumentException {
-        return (byte)((parseHexOne(high) << 4) | parseHexOne(low));
+        return (byte) ((parseHexOne(high) << 4) | parseHexOne(low));
     }
 
     /**
      * Parse hex representation of byte[] array.
+     *
      * @param hex the hex representation, e.g. "DEADBEEF"
      * @return the byte[] array, e.g. {0xde, 0xad, 0xbe, 0xef}.
      * @throws ArgumentException if it fails to parse.
      */
     static byte[] parseHex(@NonNull String hex) throws ArgumentException {
-        if (hex.length()%2 != 0 || hex.isEmpty()) {
+        if (hex.length() % 2 != 0 || hex.isEmpty()) {
             throw new InvalidHexLengthException();
         }
 
-        byte[] result = new byte[hex.length()/2];
-        for (int i=0; i<hex.length(); i+=2) {
-            result[i/2] = parseHexTwo(hex.charAt(i), hex.charAt(i+1));
+        byte[] result = new byte[hex.length() / 2];
+        for (int i = 0; i < hex.length(); i += 2) {
+            result[i / 2] = parseHexTwo(hex.charAt(i), hex.charAt(i + 1));
         }
 
         return result;
@@ -149,8 +193,7 @@ class Utils {
     static int parseInt(String number) throws ArgumentException {
         try {
             return Integer.parseInt(number);
-        }
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             throw new ArgumentException(e.getMessage());
         }
     }
@@ -161,40 +204,16 @@ class Utils {
 
     /**
      * Format byte array into hex string, e.g. {0xde, 0xad, 0xbe, 0xef} -> "DEADBEEF"
+     *
      * @param data the byte array to be formatted
      * @return the formatted hex representation
      */
     static String formatHex(@NonNull byte[] data) {
         StringBuilder sb = new StringBuilder();
-        for (byte b: data) {
+        for (byte b : data) {
             sb.append(Utils.formatHexOne(b));
         }
         return sb.toString();
-    }
-
-
-    /**
-     * Collect "arg1" "arg2" "arg3" ... from intent extras,
-     * where the prefix "arg" can be specified.
-     *
-     * @param intent the intent
-     * @param argPrefix the prefix, usually "arg"
-     *
-     * @return collected arguments
-     */
-    static String[] collectNumberedArgs(Intent intent, @NonNull String argPrefix) {
-        List<String> result = new ArrayList<>();
-
-        for (int index=1; true; ++index) {
-            String argName = argPrefix + index;
-            String argValue = intent.getStringExtra(argName);
-            if (argValue == null) {
-                break;
-            }
-            result.add(argValue);
-        }
-
-        return result.toArray(new String[0]);
     }
 }
 
@@ -202,7 +221,8 @@ class Utils {
  * Return value of wrapped NFC API call.
  */
 class CallResult {
-    @Nullable Object mData;
+    @Nullable
+    Object mData;
 
     CallResult(@Nullable Object data) {
         mData = data;
@@ -227,13 +247,25 @@ class CallResult {
     static CallResult success() {
         return new CallResult(null);
     }
+
+    @NonNull
+    JSONObject toJson() {
+        JSONObject obj = new JSONObject();
+        assert mData == null || mData instanceof String || mData instanceof Integer || mData instanceof Boolean;
+        try {
+            obj.put("result", mData == null ? JSONObject.NULL : mData);
+        } catch (JSONException e) {
+            assert false : e.getMessage();
+        }
+        return obj;
+    }
 }
 
 /**
  * Single abstract method for NFC API invocation.
  */
 interface TagTechnologyClosure {
-    CallResult call() throws IOException, android.nfc.FormatException, NfcException;
+    CallResult call() throws IOException, InterruptedException, android.nfc.FormatException, NfcException;
 }
 
 public class NfcAPI {
@@ -252,34 +284,17 @@ public class NfcAPI {
         context.startActivity(newIntent);
     }
 
-
-    public static class NfcActivity extends AppCompatActivity {
-        // Closure for the first API call that is delayed after the discovery of tag.
-        private TagTechnologyClosure mDelayedClosure;
-
+    static class NfcManager {
         // The result of connect()
         private @Nullable TagTechnology mTechnology;
 
         // The last discovered tag
         private Tag mTag;
+        private final Semaphore mTagSemaphore;
 
-        private NfcAdapter mAdapter;
+        private final Activity mActivity;
 
-        private static final String LOG_TAG = "NfcActivity";
-
-        // start of wrapper for quit
-        private final static String METHOD_NAME_QUIT = "quit";
-
-        private TagTechnologyClosure parseArgsQuit(final @NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(1, args.length);
-            return this::callQuit;
-        }
-
-        private CallResult callQuit() {
-            finish();
-            return CallResult.success();
-        }
-        // end of wrapper for quit
+        private final Intent mIntent;
 
         // start of wrappers for abstract class TagTechnology
         // doc: https://developer.android.com/reference/android/nfc/tech/TagTechnology
@@ -289,7 +304,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_TAG_TECHNOLOGY_IS_CONNECTED = "isConnected";
 
         private TagTechnologyClosure parseArgsTagTechnologyIsConnected(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callTagTechnologyIsConnected;
         }
 
@@ -304,7 +319,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_TAG_TECHNOLOGY_CLOSE = "close";
 
         private TagTechnologyClosure parseArgsTagTechnologyClose(final @NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callTagTechnologyClose;
         }
 
@@ -319,7 +334,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_TAG_TECHNOLOGY_GET_TAG = "getTag";
 
         private TagTechnologyClosure parseArgsTagTechnologyGetTag(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callTagTechnologyGetTag;
         }
 
@@ -338,7 +353,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_A_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsNfcAConnect(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcAConnect;
         }
 
@@ -351,7 +366,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_A_GET_ATQA = "getAtqa";
 
         private TagTechnologyClosure parseArgsNfcAGetAtqa(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcAGetAtqa;
         }
 
@@ -366,7 +381,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_A_GET_MAX_TRANSCEIVE_LENGTH = "getMaxTransceiveLength";
 
         private TagTechnologyClosure parseArgsNfcAGetMaxTransceiveLength(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcAGetMaxTransceiveLength;
         }
 
@@ -381,7 +396,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_A_GET_SAK = "getSak";
 
         private TagTechnologyClosure parseArgsNfcAGetSak(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcAGetSak;
         }
 
@@ -396,7 +411,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_A_GET_TIMEOUT = "getTimeout";
 
         private TagTechnologyClosure parseArgsNfcAGetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcAGetTimeout;
         }
 
@@ -411,8 +426,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_A_SET_TIMEOUT = "setTimeout";
 
         private TagTechnologyClosure parseArgsNfcASetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int timeout = Utils.parseInt(args[args.length-1]);
+            Utils.checkIntEqual(1, args.length);
+            int timeout = Utils.parseInt(args[0]);
             return () -> callNfcASetTimeout(timeout);
         }
 
@@ -427,8 +442,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_A_TRANSCEIVE = "transceive";
 
         private TagTechnologyClosure parseArgsNfcATransceive(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            @NonNull byte[] data = Utils.parseHex(args[args.length-1]);
+            Utils.checkIntEqual(1, args.length);
+            @NonNull byte[] data = Utils.parseHex(args[0]);
             return () -> callNfcATransceive(data);
         }
 
@@ -448,7 +463,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_B_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsNfcBConnect(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcBConnect;
         }
 
@@ -461,7 +476,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_B_GET_APPLICATION_DATA = "getApplicationData";
 
         private TagTechnologyClosure parseArgsNfcBGetApplicationData(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcBGetApplicationData;
         }
 
@@ -476,7 +491,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_B_GET_MAX_TRANSCEIVE_LENGTH = "getMaxTransceiveLength";
 
         private TagTechnologyClosure parseArgsNfcBGetMaxTransceiveLength(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcBGetMaxTransceiveLength;
         }
 
@@ -491,7 +506,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_B_GET_PROTOCOL_INFO = "getProtocolInfo";
 
         private TagTechnologyClosure parseArgsNfcBGetProtocolInfo(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcBGetProtocolInfo;
         }
 
@@ -506,8 +521,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_B_TRANSCEIVE = "transceive";
 
         private TagTechnologyClosure parseArgsNfcBTransceive(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            @NonNull byte[] data = Utils.parseHex(args[args.length-1]);
+            Utils.checkIntEqual(1, args.length);
+            @NonNull byte[] data = Utils.parseHex(args[0]);
             return () -> callNfcBTransceive(data);
         }
 
@@ -527,7 +542,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_F_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsNfcFConnect(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcFConnect;
         }
 
@@ -540,7 +555,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_F_GET_MANUFACTURER = "getManufacturer";
 
         private TagTechnologyClosure parseArgsNfcFGetManufacturer(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcFGetManufacturer;
         }
 
@@ -555,7 +570,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_F_GET_MAX_TRANSCEIVE_LENGTH = "getMaxTransceiveLength";
 
         private TagTechnologyClosure parseArgsNfcFGetMaxTransceiveLength(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcFGetMaxTransceiveLength;
         }
 
@@ -570,7 +585,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_F_GET_SYSTEM_CODE = "getSystemCode";
 
         private TagTechnologyClosure parseArgsNfcFGetSystemCode(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcFGetSystemCode;
         }
 
@@ -585,7 +600,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_F_GET_TIMEOUT = "getTimeout";
 
         private TagTechnologyClosure parseArgsNfcFGetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcFGetTimeout;
         }
 
@@ -600,8 +615,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_F_SET_TIMEOUT = "setTimeout";
 
         private TagTechnologyClosure parseArgsNfcFSetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int timeout = Utils.parseInt(args[args.length-1]);
+            Utils.checkIntEqual(1, args.length);
+            int timeout = Utils.parseInt(args[0]);
             return () -> callNfcFSetTimeout(timeout);
         }
 
@@ -616,8 +631,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_F_TRANSCEIVE = "transceive";
 
         private TagTechnologyClosure parseArgsNfcFTransceive(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            @NonNull byte[] data = Utils.parseHex(args[args.length-1]);
+            Utils.checkIntEqual(1, args.length);
+            @NonNull byte[] data = Utils.parseHex(args[0]);
             return () -> callNfcFTransceive(data);
         }
 
@@ -637,7 +652,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_V_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsNfcVConnect(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcVConnect;
         }
 
@@ -650,7 +665,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_V_GET_DSF_ID = "getDsfId";
 
         private TagTechnologyClosure parseArgsNfcVGetDsfId(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcVGetDsfId;
         }
 
@@ -665,7 +680,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_V_GET_MAX_TRANSCEIVE_LENGTH = "getMaxTransceiveLength";
 
         private TagTechnologyClosure parseArgsNfcVGetMaxTransceiveLength(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcVGetMaxTransceiveLength;
         }
 
@@ -680,7 +695,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_V_GET_RESPONSE_FLAGS = "getResponseFlags";
 
         private TagTechnologyClosure parseArgsNfcVGetResponseFlags(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcVGetResponseFlags;
         }
 
@@ -695,8 +710,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_V_TRANSCEIVE = "transceive";
 
         private TagTechnologyClosure parseArgsNfcVTransceive(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            @NonNull byte[] data = Utils.parseHex(args[args.length-1]);
+            Utils.checkIntEqual(1, args.length);
+            @NonNull byte[] data = Utils.parseHex(args[0]);
             return () -> callNfcVTransceive(data);
         }
 
@@ -716,7 +731,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_ISO_DEP_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsIsoDepConnect(final @NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callIsoDepConnect;
         }
 
@@ -729,7 +744,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_ISO_DEP_GET_HI_LAYER_RESPONSE = "getHiLayerResponse";
 
         private TagTechnologyClosure parseArgsIsoDepGetHiLayerResponse(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callIsoDepGetHiLayerResponse;
         }
 
@@ -744,7 +759,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_ISO_DEP_GET_HISTORICAL_BYTES = "getHistoricalBytes";
 
         private TagTechnologyClosure parseArgsIsoDepGetHistoricalBytes(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callGetHistoricalBytes;
         }
 
@@ -759,7 +774,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_ISO_DEP_GET_MAX_TRANSCEIVE_LENGTH = "getMaxTransceiveLength";
 
         private TagTechnologyClosure parseArgsIsoDepGetMaxTransceiveLength(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callGetMaxTransceiveLength;
         }
 
@@ -775,7 +790,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_ISO_DEP_GET_TIMEOUT = "getTimeout";
 
         private TagTechnologyClosure parseArgsIsoDepGetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callGetTimeout;
         }
 
@@ -790,7 +805,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_ISO_DEP_IS_EXTENDED_LENGTH_APDU_SUPPORTED = "isExtendedLengthApduSupported";
 
         private TagTechnologyClosure parseArgsIsoDepIsExtendedLengthApduSupported(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callIsExtendedLengthApduSupported;
         }
 
@@ -805,8 +820,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_ISO_DEP_SET_TIMEOUT = "setTimeout";
 
         private TagTechnologyClosure parseArgsIsoDepSetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int timeout = Utils.parseInt(args[args.length-1]);
+            Utils.checkIntEqual(1, args.length);
+            int timeout = Utils.parseInt(args[0]);
             return () -> callSetTimeout(timeout);
         }
 
@@ -821,9 +836,9 @@ public class NfcAPI {
         private final static String METHOD_NAME_ISO_DEP_TRANSCEIVE = "transceive";
 
         private TagTechnologyClosure parseArgsIsoDepTransceive(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
+            Utils.checkIntEqual(1, args.length);
 
-            @NonNull byte[] requestData = Utils.parseHex(args[args.length-1]);
+            @NonNull byte[] requestData = Utils.parseHex(args[0]);
             return () -> callIsoDepTransceive(requestData);
         }
 
@@ -843,7 +858,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsNdefConnect(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNdefConnect;
         }
 
@@ -856,7 +871,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_CAN_MAKE_READ_ONLY = "canMakeReadOnly";
 
         private TagTechnologyClosure parseArgsNdefCanMakeReadOnly(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNdefCanMakeReadOnly;
         }
 
@@ -871,7 +886,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_GET_CACHED_NDEF_MESSAGE = "getCachedNdefMessage";
 
         private TagTechnologyClosure parseArgsNdefGetCachedNdefMessage(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNdefGetCachedNdefMessage;
         }
 
@@ -886,7 +901,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_GET_MAX_SIZE = "getMaxSize";
 
         private TagTechnologyClosure parseArgsNdefGetMaxSize(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNdefGetMaxSize;
         }
 
@@ -901,7 +916,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_GET_NDEF_MESSAGE = "getNdefMessage";
 
         private TagTechnologyClosure parseArgsNdefGetNdefMessage(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNdefGetNdefMessage;
         }
 
@@ -916,7 +931,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_GET_TYPE = "getType";
 
         private TagTechnologyClosure parseArgsNdefGetType(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNdefGetType;
         }
 
@@ -931,7 +946,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_IS_WRITABLE = "isWritable";
 
         private TagTechnologyClosure parseArgsNdefIsWritable(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNdefIsWritable;
         }
 
@@ -946,7 +961,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_MAKE_READ_ONLY = "makeReadOnly";
 
         private TagTechnologyClosure parseArgsNdefMakeReadOnly(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNdefMakeReadOnly;
         }
 
@@ -961,8 +976,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_WRITE_NDEF_MESSAGE = "writeNdefMessage";
 
         private TagTechnologyClosure parseArgsNdefWriteNdefMessage(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            @NonNull byte[] msgHex = Utils.parseHex(args[args.length-1]);
+            Utils.checkIntEqual(1, args.length);
+            @NonNull byte[] msgHex = Utils.parseHex(args[0]);
             return () -> callNdefWriteNdefMessage(msgHex);
         }
 
@@ -982,9 +997,9 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_AUTHENTICATE_SECTOR_WITH_KEY_A = "authenticateSectorWithKeyA";
 
         private TagTechnologyClosure parseArgsMifareClassicAuthenticateSectorWithKeyA(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 2, args.length);
-            int sectorIndex = Utils.parseInt(args[args.length - 2]);
-            @NonNull byte[] key = Utils.parseHex(args[args.length - 1]);
+            Utils.checkIntEqual(2, args.length);
+            int sectorIndex = Utils.parseInt(args[0]);
+            @NonNull byte[] key = Utils.parseHex(args[1]);
             return () -> callMifareClassicAuthenticateSectorWithKeyA(sectorIndex, key);
         }
 
@@ -999,9 +1014,9 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_AUTHENTICATE_SECTOR_WITH_KEY_B = "authenticateSectorWithKeyB";
 
         private TagTechnologyClosure parseArgsMifareClassicAuthenticateSectorWithKeyB(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 2, args.length);
-            int sectorIndex = Utils.parseInt(args[args.length - 2]);
-            @NonNull byte[] key = Utils.parseHex(args[args.length - 1]);
+            Utils.checkIntEqual(2, args.length);
+            int sectorIndex = Utils.parseInt(args[0]);
+            @NonNull byte[] key = Utils.parseHex(args[1]);
             return () -> callMifareClassicAuthenticateSectorWithKeyB(sectorIndex, key);
         }
 
@@ -1016,8 +1031,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_BLOCK_TO_SECTOR = "blockToSector";
 
         private TagTechnologyClosure parseArgsMifareClassicBlockToSector(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int blockIndex = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            int blockIndex = Utils.parseInt(args[0]);
             return () -> callMifareClassicBlockToSector(blockIndex);
         }
 
@@ -1032,7 +1047,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsMifareClassicConnect(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareClassicConnect;
         }
 
@@ -1045,9 +1060,9 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_DECREMENT = "decrement";
 
         private TagTechnologyClosure parseArgsMifareClassicDecrement(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 2, args.length);
-            int blockIndex = Utils.parseInt(args[args.length - 2]);
-            int value = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(2, args.length);
+            int blockIndex = Utils.parseInt(args[0]);
+            int value = Utils.parseInt(args[1]);
             return () -> callMifareClassicDecrement(blockIndex, value);
         }
 
@@ -1062,7 +1077,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_GET_BLOCK_COUNT = "getBlockCount";
 
         private TagTechnologyClosure parseArgsMifareClassicGetBlockCount(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareClassicGetBlockCount;
         }
 
@@ -1077,8 +1092,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_GET_BLOCK_COUNT_IN_SECTOR = "getBlockCountInSector";
 
         private TagTechnologyClosure parseArgsMifareClassicGetBlockCountInSector(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int sectorIndex = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            int sectorIndex = Utils.parseInt(args[0]);
             return () -> callMifareClassicGetBlockCountInSector(sectorIndex);
         }
 
@@ -1093,7 +1108,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_GET_MAX_TRANSCEIVE_LENGTH = "getMaxTransceiveLength";
 
         private TagTechnologyClosure parseArgsMifareClassicGetMaxTransceiveLength(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareClassicGetMaxTransceiveLength;
         }
 
@@ -1108,7 +1123,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_GET_SECTOR_COUNT = "getSectorCount";
 
         private TagTechnologyClosure parseArgsMifareClassicGetSectorCount(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareClassicGetSectorCount;
         }
 
@@ -1123,7 +1138,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_GET_SIZE = "getSize";
 
         private TagTechnologyClosure parseArgsMifareClassicGetSize(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareClassicGetSize;
         }
 
@@ -1138,7 +1153,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_GET_TIMEOUT = "getTimeout";
 
         private TagTechnologyClosure parseArgsMifareClassicGetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareClassicGetTimeout;
         }
 
@@ -1153,7 +1168,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_GET_TYPE = "getType";
 
         private TagTechnologyClosure parseArgsMifareClassicGetType(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareClassicGetType;
         }
 
@@ -1168,9 +1183,9 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_INCREMENT = "increment";
 
         private TagTechnologyClosure parseArgsMifareClassicIncrement(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 2, args.length);
-            int blockIndex = Utils.parseInt(args[args.length - 2]);
-            int value = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(2, args.length);
+            int blockIndex = Utils.parseInt(args[0]);
+            int value = Utils.parseInt(args[1]);
             return () -> callMifareClassicIncrement(blockIndex, value);
         }
 
@@ -1185,8 +1200,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_READ_BLOCK = "readBlock";
 
         private TagTechnologyClosure parseArgsMifareClassicReadBlock(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int blockIndex = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            int blockIndex = Utils.parseInt(args[0]);
             return () -> callMifareClassicReadBlock(blockIndex);
         }
 
@@ -1201,8 +1216,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_RESTORE = "restore";
 
         private TagTechnologyClosure parseArgsMifareClassicRestore(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int blockIndex = Utils.parseInt(args[args.length-1]);
+            Utils.checkIntEqual(1, args.length);
+            int blockIndex = Utils.parseInt(args[0]);
             return () -> callMifareClassicRestore(blockIndex);
         }
 
@@ -1217,8 +1232,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_SECTOR_TO_BLOCK = "sectorToBlock";
 
         private TagTechnologyClosure parseArgsMifareClassicSectorToBlock(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int sectorIndex = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            int sectorIndex = Utils.parseInt(args[0]);
             return () -> callMifareClassicSectorToBlock(sectorIndex);
         }
 
@@ -1233,8 +1248,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_SET_TIMEOUT = "setTimeout";
 
         private TagTechnologyClosure parseArgsMifareClassicSetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int timeout = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            int timeout = Utils.parseInt(args[0]);
             return () -> callMifareClassicSetTimeout(timeout);
         }
 
@@ -1249,8 +1264,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_TRANSCEIVE = "transceive";
 
         private TagTechnologyClosure parseArgsMifareClassicTransceive(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            @NonNull byte[] data = Utils.parseHex(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            @NonNull byte[] data = Utils.parseHex(args[0]);
             return () -> callMifareClassicTransceive(data);
         }
 
@@ -1266,8 +1281,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_TRANSFER = "transfer";
 
         private TagTechnologyClosure parseArgsMifareClassicTransfer(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int blockIndex = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            int blockIndex = Utils.parseInt(args[0]);
             return () -> callMifareClassicTransfer(blockIndex);
         }
 
@@ -1282,9 +1297,9 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_CLASSIC_WRITE_BLOCK = "writeBlock";
 
         private TagTechnologyClosure parseArgsMifareClassicWriteBlock(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 2, args.length);
-            int blockIndex = Utils.parseInt(args[args.length - 2]);
-            @NonNull byte[] data = Utils.parseHex(args[args.length - 1]);
+            Utils.checkIntEqual(2, args.length);
+            int blockIndex = Utils.parseInt(args[0]);
+            @NonNull byte[] data = Utils.parseHex(args[1]);
             return () -> callMifareClassicWriteBlock(blockIndex, data);
         }
 
@@ -1305,7 +1320,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_ULTRALIGHT_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsMifareUltralightConnect(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareUltralightConnect;
         }
 
@@ -1318,7 +1333,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_ULTRALIGHT_GET_MAX_TRANSCEIVE_LENGTH = "getMaxTransceiveLength";
 
         private TagTechnologyClosure parseArgsMifareUltralightGetMaxTransceiveLength(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareUltralightGetMaxTransceiveLength;
         }
 
@@ -1333,7 +1348,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_ULTRALIGHT_GET_TIMEOUT = "getTimeout";
 
         private TagTechnologyClosure parseArgsMifareUltralightGetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareUltralightGetTimeout;
         }
 
@@ -1348,7 +1363,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_ULTRALIGHT_GET_TYPE = "getType";
 
         private TagTechnologyClosure parseArgsMifareUltralightGetType(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callMifareUltralightGetType;
         }
 
@@ -1363,8 +1378,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_ULTRALIGHT_READ_PAGES = "readPages";
 
         private TagTechnologyClosure parseArgsMifareUltralightReadPages(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int pageOffset = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            int pageOffset = Utils.parseInt(args[0]);
             return () -> callMifareUltralightReadPages(pageOffset);
         }
 
@@ -1379,8 +1394,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_ULTRALIGHT_SET_TIMEOUT = "setTimeout";
 
         private TagTechnologyClosure parseArgsMifareUltralightSetTimeout(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            int timeout = Utils.parseInt(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            int timeout = Utils.parseInt(args[0]);
             return () -> callMifareUltralightSetTimeout(timeout);
         }
 
@@ -1395,8 +1410,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_ULTRALIGHT_TRANSCEIVE = "transceive";
 
         private TagTechnologyClosure parseArgsMifareUltralightTransceive(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            @NonNull byte[] data = Utils.parseHex(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            @NonNull byte[] data = Utils.parseHex(args[0]);
             return () -> callMifareUltralightTransceive(data);
         }
 
@@ -1411,9 +1426,9 @@ public class NfcAPI {
         private final static String METHOD_NAME_MIFARE_ULTRALIGHT_WRITE_PAGE = "writePage";
 
         private TagTechnologyClosure parseArgsMifareUltralightWritePage(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 2, args.length);
-            int pageOffset = Utils.parseInt(args[args.length - 2]);
-            @NonNull byte[] data = Utils.parseHex(args[args.length - 1]);
+            Utils.checkIntEqual(2, args.length);
+            int pageOffset = Utils.parseInt(args[0]);
+            @NonNull byte[] data = Utils.parseHex(args[1]);
             return () -> callMifareUltralightWritePage(pageOffset, data);
         }
 
@@ -1434,7 +1449,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_BARCODE_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsNfcBarcodeConnect(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcBarcodeConnect;
         }
 
@@ -1447,7 +1462,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_BARCODE_GET_BARCODE = "getBarcode";
 
         private TagTechnologyClosure parseArgsNfcBarcodeGetBarcode(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcBarcodeGetBarcode;
         }
 
@@ -1462,7 +1477,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NFC_BARCODE_GET_TYPE = "getType";
 
         private TagTechnologyClosure parseArgsNfcBarcodeGetType(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNfcBarcodeGetType;
         }
 
@@ -1482,7 +1497,7 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_FORMATABLE_CONNECT = "connect";
 
         private TagTechnologyClosure parseArgsNdefFormatableConnect(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2, args.length);
+            Utils.checkIntEqual(0, args.length);
             return this::callNdefFormatableConnect;
         }
 
@@ -1495,8 +1510,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_FORMATABLE_FORMAT = "format";
 
         private TagTechnologyClosure parseArgsNdefFormatableFormat(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            @NonNull byte[] ndefMessageHex = Utils.parseHex(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            @NonNull byte[] ndefMessageHex = Utils.parseHex(args[0]);
             return () -> callNdefFormatableFormat(ndefMessageHex);
         }
 
@@ -1511,8 +1526,8 @@ public class NfcAPI {
         private final static String METHOD_NAME_NDEF_FORMATABLE_FORMAT_READ_ONLY = "formatReadOnly";
 
         private TagTechnologyClosure parseArgsNdefFormatableFormatReadOnly(@NonNull String[] args) throws ArgumentException {
-            Utils.checkIntEqual(2 + 1, args.length);
-            @NonNull byte[] ndefMessageHex = Utils.parseHex(args[args.length - 1]);
+            Utils.checkIntEqual(1, args.length);
+            @NonNull byte[] ndefMessageHex = Utils.parseHex(args[0]);
             return () -> callNdefFormatableFormatReadOnly(ndefMessageHex);
         }
 
@@ -1526,7 +1541,9 @@ public class NfcAPI {
 
         // helper function for subclasses' connect()
         private <T extends TagTechnology> CallResult callTagTechnologyConnect(Function<Tag, T> tagGetter) throws IOException {
-            Utils.checkTagNonNull(mTag);
+            if (mTag == null) {
+                throw new TagNullException();
+            }
             mTechnology = tagGetter.apply(mTag);
             if (mTechnology == null) {
                 throw new UnsupportedTechnology();
@@ -1535,20 +1552,24 @@ public class NfcAPI {
             return CallResult.success();
         }
 
-        TagTechnologyClosure parseClosureFromArgs(@NonNull String[] args) throws ArgumentException {
-            if (args.length == 0) {
-                throw new InvalidCommandException();
-            }
+        private CallResult discoverTag() throws InterruptedException {
+            clearTag();
 
-            switch (args[0]) {
-                case METHOD_NAME_QUIT:
-                    return parseArgsQuit(args);
+            Intent intent = new Intent(mActivity, NfcActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            mActivity.startActivity(intent);
 
+            mTagSemaphore.acquire();
+            assert mTag != null;
+
+            mActivity.runOnUiThread(() -> mActivity.moveTaskToBack(true));
+            return CallResult.success();
+        }
+
+        TagTechnologyClosure parseClosureFromClassMethodArgs(@NonNull String className, @NonNull String methodName, @NonNull String[] args) {
+            switch (className) {
                 case CLASS_NAME_TAG_TECHNOLOGY: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_TAG_TECHNOLOGY_CLOSE:
                             return parseArgsTagTechnologyClose(args);
                         case METHOD_NAME_TAG_TECHNOLOGY_IS_CONNECTED:
@@ -1561,10 +1582,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_NFC_A: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_NFC_A_CONNECT:
                             return parseArgsNfcAConnect(args);
                         case METHOD_NAME_NFC_A_GET_ATQA:
@@ -1585,10 +1603,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_NFC_B: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_NFC_B_CONNECT:
                             return parseArgsNfcBConnect(args);
                         case METHOD_NAME_NFC_B_GET_APPLICATION_DATA:
@@ -1596,6 +1611,7 @@ public class NfcAPI {
                         case METHOD_NAME_NFC_B_GET_MAX_TRANSCEIVE_LENGTH:
                             return parseArgsNfcBGetMaxTransceiveLength(args);
                         case METHOD_NAME_NFC_B_GET_PROTOCOL_INFO:
+                            return parseArgsNfcBGetProtocolInfo(args);
                         case METHOD_NAME_NFC_B_TRANSCEIVE:
                             return parseArgsNfcBTransceive(args);
                         default:
@@ -1604,10 +1620,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_NFC_F: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_NFC_F_CONNECT:
                             return parseArgsNfcFConnect(args);
                         case METHOD_NAME_NFC_F_GET_MANUFACTURER:
@@ -1628,10 +1641,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_NFC_V: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_NFC_V_CONNECT:
                             return parseArgsNfcVConnect(args);
                         case METHOD_NAME_NFC_V_GET_DSF_ID:
@@ -1648,10 +1658,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_ISO_DEP: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_ISO_DEP_CONNECT:
                             return parseArgsIsoDepConnect(args);
                         case METHOD_NAME_ISO_DEP_GET_HI_LAYER_RESPONSE:
@@ -1674,10 +1681,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_NDEF: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_NDEF_CAN_MAKE_READ_ONLY:
                             return parseArgsNdefCanMakeReadOnly(args);
                         case METHOD_NAME_NDEF_CONNECT:
@@ -1702,10 +1706,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_MIFARE_CLASSIC: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_MIFARE_CLASSIC_AUTHENTICATE_SECTOR_WITH_KEY_A:
                             return parseArgsMifareClassicAuthenticateSectorWithKeyA(args);
                         case METHOD_NAME_MIFARE_CLASSIC_AUTHENTICATE_SECTOR_WITH_KEY_B:
@@ -1752,10 +1753,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_MIFARE_ULTRALIGHT: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_MIFARE_ULTRALIGHT_CONNECT:
                             return parseArgsMifareUltralightConnect(args);
                         case METHOD_NAME_MIFARE_ULTRALIGHT_GET_MAX_TRANSCEIVE_LENGTH:
@@ -1778,10 +1776,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_NFC_BARCODE: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_NFC_BARCODE_CONNECT:
                             return parseArgsNfcBarcodeConnect(args);
                         case METHOD_NAME_NFC_BARCODE_GET_BARCODE:
@@ -1794,10 +1789,7 @@ public class NfcAPI {
                 }
 
                 case CLASS_NAME_NDEF_FORMATABLE: {
-                    if (args.length < 2) {
-                        throw new InvalidCommandException();
-                    }
-                    switch (args[1]) {
+                    switch (methodName) {
                         case METHOD_NAME_NDEF_FORMATABLE_CONNECT:
                             return parseArgsNdefFormatableConnect(args);
                         case METHOD_NAME_NDEF_FORMATABLE_FORMAT:
@@ -1812,19 +1804,117 @@ public class NfcAPI {
                 default:
                     throw new InvalidCommandException();
             }
-
         }
 
-        TagTechnologyClosure parseClosureFromIntent(Intent intent) throws ArgumentException {
-            @NonNull String[] args = Utils.collectNumberedArgs(intent, "arg");
-            return parseClosureFromArgs(args);
+        private final String JSON_KEY_OP_NAME = "op";
+        private final String JSON_VALUE_OP_API = "api";
+        private final String JSON_VALUE_OP_DISCOVER_TAG = "discoverTag";
+        private final String JSON_KEY_CLASS_NAME = "class";
+        private final String JSON_KEY_METHOD_NAME = "method";
+        private final String JSON_KEY_ARGS = "args";
+
+        TagTechnologyClosure parseClosureFromLine(@NonNull String line) throws ArgumentException {
+            JSONObject jsonObject;
+            String operationName;
+
+            try {
+                jsonObject = new JSONObject(line);
+                operationName = jsonObject.getString(JSON_KEY_OP_NAME);
+            } catch (JSONException e) {
+                throw new ArgumentException(e.getMessage());
+            }
+
+            switch (operationName) {
+                case JSON_VALUE_OP_DISCOVER_TAG:
+                    return this::discoverTag;
+                case JSON_VALUE_OP_API:
+                    return parseClosureFromJsonApi(jsonObject);
+                default:
+                    throw new InvalidCommandException();
+            }
         }
 
+        TagTechnologyClosure parseClosureFromJsonApi(@NonNull JSONObject jsonObject) throws ArgumentException {
+            String className;
+            String methodName;
+            String[] args;
+
+            try {
+                className = jsonObject.getString(JSON_KEY_CLASS_NAME);
+                methodName = jsonObject.getString(JSON_KEY_METHOD_NAME);
+                JSONArray jsonArray = jsonObject.getJSONArray(JSON_KEY_ARGS);
+                args = Utils.jsonArrayToStringArray(jsonArray);
+            } catch (JSONException e) {
+                throw new ArgumentException(e.getMessage());
+            }
+
+            return parseClosureFromClassMethodArgs(className, methodName, args);
+        }
+
+        NfcManager(Activity activity, Intent intent) {
+            mActivity = activity;
+            mIntent = intent;
+            mTagSemaphore = new Semaphore(0);
+        }
+
+        void listenAsync() {
+            ResultReturner.returnData(mActivity, mIntent, new ResultReturner.WithInput() {
+                @Override
+                public void writeResult(PrintWriter out) throws Exception {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        TagTechnologyClosure closure;
+                        try {
+                            closure = parseClosureFromLine(line);
+                        } catch (ArgumentException e) {
+                            Utils.printLnFlush(out, Utils.exceptionToJson(e).toString());
+                            continue;
+                        }
+
+                        CallResult result;
+                        try {
+                            result = closure.call();
+                        } catch (Exception e) {
+                            Utils.printLnFlush(out, Utils.exceptionToJson(e).toString());
+                            continue;
+                        }
+
+                        Utils.printLnFlush(out, result.toJson().toString());
+                    }
+
+                    mActivity.runOnUiThread(mActivity::finishAndRemoveTask);
+                }
+            });
+        }
+
+        private synchronized void setTag(@NonNull Tag tag) {
+            mTag = tag;
+            mTagSemaphore.release();
+        }
+
+        private synchronized void clearTag() {
+            mTag = null;
+            mTagSemaphore.drainPermits();
+        }
+    }
+
+    public static class NfcActivity extends AppCompatActivity {
+        private static final String LOG_TAG = "NfcActivity";
+        NfcManager mNfcManager;
+        NfcAdapter mAdapter;
 
         @Override
         protected void onCreate(@Nullable Bundle savedInstanceState) {
             Logger.logDebug(LOG_TAG, "onCreate");
             super.onCreate(savedInstanceState);
+
+            View view = new View(this);
+            Drawable drawable = AppCompatResources.getDrawable(this, R.drawable.ic_nfc_black_24dp);
+            view.setBackground(drawable);
+            getWindow().getDecorView().setBackgroundColor(Color.argb(128, 255, 255, 255));
+            setContentView(view);
+            moveTaskToBack(true);
 
             Intent intent = this.getIntent();
             if (intent == null) {
@@ -1835,22 +1925,14 @@ public class NfcAPI {
             assert intent.hasExtra("socket_input");
             assert intent.hasExtra("socket_output");
 
-            try {
-                mDelayedClosure = parseClosureFromIntent(intent);
-            }
-            catch (ArgumentException e) {
-                postException(e);
+            mAdapter = NfcAdapter.getDefaultAdapter(this);
+            if (mAdapter == null || !mAdapter.isEnabled()) {
                 finish();
                 return;
             }
 
-            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
-            if (adapter == null || !adapter.isEnabled()) {
-                postException(new NfcUnavailableException());
-                finish();
-                return;
-            }
-            mAdapter = adapter;
+            mNfcManager = new NfcManager(this, intent);
+            mNfcManager.listenAsync();
         }
 
         @Override
@@ -1869,57 +1951,20 @@ public class NfcAPI {
             mAdapter.enableForegroundDispatch(this, pendingIntent, intentFilter, null);
         }
 
-        private void invokeClosure(TagTechnologyClosure closure) {
-            try {
-                CallResult result = closure.call();
-                postResult(result);
-            } catch (Exception e) {
-                postException(e);
-            }
-        }
-
-        private void consumeClosure() {
-            assert mDelayedClosure != null;
-            invokeClosure(mDelayedClosure);
-            mDelayedClosure = null;
-        }
-
         @Override
         protected void onNewIntent(Intent intent) {
             Logger.logDebug(LOG_TAG, "onNewIntent");
             super.onNewIntent(intent);
-
-            if (isFinishing()) {
-                postException(new ActivityFinishingException());
-                return;
-            }
 
             String action = intent.getAction();
             if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)
                     || NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)
                     || NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
                 Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-
                 assert tag != null;
-                mTag = tag;
-                if (mDelayedClosure != null) {
-                    consumeClosure();
-                }
+                mNfcManager.setTag(tag);
                 return;
             }
-
-            assert intent.hasExtra("socket_input");
-            assert intent.hasExtra("socket_output");
-
-            setIntent(intent);
-            TagTechnologyClosure closure;
-            try {
-                closure = parseClosureFromIntent(intent);
-            } catch (ArgumentException e) {
-                postException(e);
-                return;
-            }
-            invokeClosure(closure);
         }
 
         @Override
@@ -1934,44 +1979,5 @@ public class NfcAPI {
             Logger.logDebug(LOG_TAG, "onDestroy");
             super.onDestroy();
         }
-
-        void postResult(final CallResult result) {
-            ResultReturner.returnData(getApplicationContext(), getIntent(), new ResultReturner.ResultJsonWriter() {
-                @Override
-                public void writeJson(JsonWriter out) throws Exception {
-                    Logger.logDebug(LOG_TAG, "postResult");
-                    out.beginObject();
-
-                    JsonWriter resultWriter = out.name("result");
-                    Object obj = result.mData;
-                    if (obj == null) {
-                        resultWriter.nullValue();
-                    } else if (obj instanceof String) {
-                        resultWriter.value((String)obj);
-                    } else if (obj instanceof Integer) {
-                        resultWriter.value((Integer)obj);
-                    } else if (obj instanceof Boolean) {
-                        resultWriter.value((Boolean)obj);
-                    } else {
-                        assert false : "Unexpected invalid result type: " + obj.getClass().getName();
-                    }
-                    
-                    out.endObject();
-                }
-            });
-        }
-
-        void postException(final Exception e) {
-            ResultReturner.returnData(getApplicationContext(), getIntent(), new ResultReturner.ResultJsonWriter() {
-                @Override
-                public void writeJson(JsonWriter out) throws Exception {
-                    out.beginObject();
-                    out.name("exceptionType").value(e.getClass().getSimpleName());
-                    out.name("exceptionMessage").value(e.getMessage());
-                    out.endObject();
-                }
-            });
-        }
     }
-
 }

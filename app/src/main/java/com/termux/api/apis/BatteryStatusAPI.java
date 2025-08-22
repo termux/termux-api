@@ -1,5 +1,7 @@
 package com.termux.api.apis;
 
+import static com.termux.api.util.JsonUtils.*;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -30,6 +32,7 @@ public class BatteryStatusAPI {
             public void writeJson(JsonWriter out) throws Exception {
                 // - https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:frameworks/base/services/core/java/com/android/server/BatteryService.java;l=745
                 Intent batteryStatus = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                if (batteryStatus == null) batteryStatus = new Intent();
 
                 int batteryLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
                 int batteryScale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
@@ -135,37 +138,39 @@ public class BatteryStatusAPI {
                 // charger does not output enough current, and will result in false inversions.
                 // - https://developer.android.com/reference/android/os/BatteryManager#BATTERY_PROPERTY_CURRENT_NOW
                 // - https://issuetracker.google.com/issues/37131318
-                int batteryCurrentNow = getIntProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+                Integer batteryCurrentNow = getIntProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
 
                 // - https://stackoverflow.com/questions/64532112/batterymanagers-battery-property-current-now-returning-0-or-incorrect-current-v
-                if (Math.abs(batteryCurrentNow / 1000) < 1.0) {
+                if (batteryCurrentNow != null && Math.abs(batteryCurrentNow / 1000) < 1.0) {
                     Logger.logVerbose(LOG_TAG, "Fixing current_now from " + batteryCurrentNow + " to " + (batteryCurrentNow * 1000));
                     batteryCurrentNow = batteryCurrentNow * 1000;
                 }
 
                 out.beginObject();
-                out.name("present").value(batteryStatus.getBooleanExtra(BatteryManager.EXTRA_PRESENT, false));
-                out.name("technology").value(batteryStatus.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY));
-                out.name("health").value(batteryHealth);
-                out.name("plugged").value(batteryPlugged);
-                out.name("status").value(batteryStatusString);
-                out.name("temperature").value(batteryTemperature);
-                out.name("voltage").value(batteryVoltage);
-                out.name("current").value(batteryCurrentNow);
-                out.name("current_average").value(getIntProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE));
-                out.name("percentage").value(getIntProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_CAPACITY));
-                out.name("level").value(batteryLevel);
-                out.name("scale").value(batteryScale);
-                out.name("charge_counter").value(getIntProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER));
-                out.name("energy").value(getLongProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER));
+                putBooleanValueIfSet(out, "present", batteryStatus.getBooleanExtra(BatteryManager.EXTRA_PRESENT, false));
+                putStringIfSet(out, "technology", batteryStatus.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY));
+                putStringIfSet(out, "health", batteryHealth);
+                putStringIfSet(out, "plugged", batteryPlugged);
+                putStringIfSet(out, "status", batteryStatusString);
+                putDoubleIfSet(out, "temperature", batteryTemperature);
+                putIntegerIfSet(out, "voltage", batteryVoltage);
+                putIntegerIfSet(out, "current", batteryCurrentNow);
+                putIntegerIfSet(out, "current_average", getIntProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE));
+                putIntegerIfSet(out, "percentage", getIntProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_CAPACITY));
+                putIntegerIfSet(out, "level", batteryLevel);
+                putIntegerIfSet(out, "scale", batteryScale);
+                putIntegerIfSet(out, "charge_counter", getIntProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER));
+                putLongIfSet(out, "energy", getLongProperty(batteryManager, BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER));
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     int batteryCycle = batteryStatus.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1);
-                    out.name("cycle").value(batteryCycle != -1 ? batteryCycle : null);
+                    putIntegerIfSet(out, "cycle", batteryCycle != -1 ? batteryCycle : null);
                 }
                 out.endObject();
             }
         });
     }
+
+
 
     /**
      * - https://developer.android.com/reference/android/os/BatteryManager.html#getIntProperty(int)
@@ -187,4 +192,5 @@ public class BatteryStatusAPI {
         long value = batteryManager.getLongProperty(id);
         return value != Long.MIN_VALUE ? value : null;
     }
+
 }

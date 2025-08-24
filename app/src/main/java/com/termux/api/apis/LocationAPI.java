@@ -161,6 +161,8 @@ public class LocationAPI {
         long elapsedMs = (SystemClock.elapsedRealtimeNanos() - lastKnownLocation.getElapsedRealtimeNanos()) / 1000000;
         out.name("elapsedMs").value(elapsedMs);
         out.name("provider").value(lastKnownLocation.getProvider());
+        boolean isMocked = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? lastKnownLocation.isMock() : lastKnownLocation.isFromMockProvider());
+        out.name("mocked").value(isMocked);
         out.endObject();
     }
 }

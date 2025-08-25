@@ -111,9 +111,8 @@
             android:exported="false" />
 
         <activity android:name=".apis.NfcAPI$NfcActivity"
+            android:launchMode="singleInstance"
             android:theme="@style/DialogTheme"
-            android:noHistory="true"
-            android:excludeFromRecents="true"
             android:exported="false"
             tools:ignore="IntentFilterExportedReceiver">
             <intent-filter>

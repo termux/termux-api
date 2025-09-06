@@ -9,6 +9,7 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.Engine;
 import android.speech.tts.TextToSpeech.EngineInfo;
 import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
@@ -22,6 +23,7 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Set;
 
 public class TextToSpeechAPI {
 
@@ -64,6 +66,7 @@ public class TextToSpeechAPI {
             Logger.logDebug(LOG_TAG, "onHandleIntent:\n" + IntentUtils.getIntentString(intent));
 
             final String speechLanguage = intent.getStringExtra("language");
+            final String speechVoice = intent.getStringExtra("voice");
             final String speechRegion = intent.getStringExtra("region");
             final String speechVariant = intent.getStringExtra("variant");
             final String speechEngine = intent.getStringExtra("engine");
@@ -139,6 +142,28 @@ public class TextToSpeechAPI {
                             return;
                         }
 
+                        Set<Voice> availableVoices = mTts.getVoices();
+
+                        if ("LIST_AVAILABLE".equals(speechVoice)) {
+                            try (JsonWriter writer = new JsonWriter(out)) {
+                                writer.setIndent("  ");
+                                String defaultVoiceName = mTts.getDefaultVoice().getName();
+                                writer.beginArray();
+                                for (Voice info : availableVoices) {
+                                    writer.beginObject();
+                                    writer.name("name").value(info.getName());
+                                    writer.name("locale").value(info.getLocale().getLanguage() + "-" + info.getLocale().getCountry());
+                                    writer.name("requiresNetworkConnection").value(info.isNetworkConnectionRequired());
+                                    writer.name("installed").value(!info.getFeatures().contains("notInstalled"));
+                                    writer.name("default").value(defaultVoiceName.equals(info.getName()));
+                                    writer.endObject();
+                                }
+                                writer.endArray();
+                            }
+                            out.println();
+                            return;
+                        }
+
                         final AtomicInteger ttsDoneUtterancesCount = new AtomicInteger();
 
                         mTts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
@@ -177,6 +202,22 @@ public class TextToSpeechAPI {
 
                         String utteranceId = "utterance_id";
                         Bundle params = new Bundle();
+                        if (speechVoice != null) {
+                            for (Voice voice : availableVoices) {
+                                if (speechVoice.equals(voice.getName())) {
+                                    int setVoiceResult = mTts.setVoice(voice);
+                                    if (setVoiceResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+                                        Logger.logError(LOG_TAG, "tts.setVoice('" + speechVoice +"') returned " + setVoiceResult);
+                                    }
+                                    break;
+                                }
+                            }
+                        } else if (speechLanguage != null) {
+                            int setLanguageResult = mTts.setLanguage(getLocale(speechLanguage, speechRegion, speechVariant));
+                            if (setLanguageResult != TextToSpeech.LANG_AVAILABLE) {
+                                Logger.logError(LOG_TAG, "tts.setLanguage('" + speechLanguage + "') returned " + setLanguageResult);
+                            }
+                        }
                         params.putInt(Engine.KEY_PARAM_STREAM, streamToUse);
                         params.putString(Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
 

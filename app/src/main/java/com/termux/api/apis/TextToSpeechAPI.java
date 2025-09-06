@@ -9,6 +9,7 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.Engine;
 import android.speech.tts.TextToSpeech.EngineInfo;
 import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
@@ -67,6 +68,7 @@ public class TextToSpeechAPI {
             final String speechRegion = intent.getStringExtra("region");
             final String speechVariant = intent.getStringExtra("variant");
             final String speechEngine = intent.getStringExtra("engine");
+            final String speechVoice = intent.getStringExtra("voice");
             final float speechPitch = intent.getFloatExtra("pitch", 1.0f);
 
             // STREAM_MUSIC is the default audio stream for TTS, see:
@@ -121,6 +123,23 @@ public class TextToSpeechAPI {
                             return;
                         }
 
+                        if ("LIST_AVAILABLE".equals(speechVoice)) {
+                            try (JsonWriter writer = new JsonWriter(out)) {
+                                writer.setIndent("  ");
+                                Voice defaultVoice = mTts.getVoice();
+                                writer.beginArray();
+                                for (Voice voice : mTts.getVoices()) {
+                                    writer.beginObject();
+                                    writer.name("name").value(voice.getName());
+                                    writer.name("default").value(defaultVoice.equals(voice.getName()));
+                                    writer.endObject();
+                                }
+                                writer.endArray();
+                            }
+                            out.println();
+                            return;
+                        }
+                        
                         if ("LIST_AVAILABLE".equals(speechEngine)) {
                             try (JsonWriter writer = new JsonWriter(out)) {
                                 writer.setIndent("  ");
@@ -169,6 +188,15 @@ public class TextToSpeechAPI {
                             int setLanguageResult = mTts.setLanguage(getLocale(speechLanguage, speechRegion, speechVariant));
                             if (setLanguageResult != TextToSpeech.LANG_AVAILABLE) {
                                 Logger.logError(LOG_TAG, "tts.setLanguage('" + speechLanguage + "') returned " + setLanguageResult);
+                            }
+                        }
+
+                        if (speechVoice != null) {
+                            for (Voice voice : mTts.getVoices()) {
+                                if (voice.getName().equals(speechVoice)) {
+                                    mTts.setVoice(voice);
+                                    break;
+                                }
                             }
                         }
 

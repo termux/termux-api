@@ -254,17 +254,18 @@ public class MicRecorderAPI {
                 int srate = intent.getIntExtra("srate", 0);
                 int channels = intent.getIntExtra("channels", 0);
 
-                file = new File(filename);
+                File newfile = new File(filename);
 
                 Logger.logInfo(LOG_TAG, "MediaRecording file is: " + file.getAbsolutePath());
 
-                if (file.exists()) {
-                    result.error = String.format("File: %s already exists! Please specify a different filename", file.getName());
+                if (newfile.exists()) {
+                    result.error = String.format("File: %s already exists! Please specify a different filename", newfile.getName());
                 } else {
                     if (isRecording) {
                         result.error = "Recording already in progress!";
                     } else {
                         try {
+                            file = newfile;
                             mediaRecorder.setAudioSource(source);
                             mediaRecorder.setOutputFormat(format);
                             mediaRecorder.setAudioEncoder(encoder);

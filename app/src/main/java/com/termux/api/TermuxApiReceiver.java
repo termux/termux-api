@@ -20,6 +20,7 @@ import com.termux.api.apis.DialogAPI;
 import com.termux.api.apis.DownloadAPI;
 import com.termux.api.apis.FingerprintAPI;
 import com.termux.api.apis.InfraredAPI;
+import com.termux.api.apis.InputAPI;
 import com.termux.api.apis.JobSchedulerAPI;
 import com.termux.api.apis.KeystoreAPI;
 import com.termux.api.apis.LocationAPI;
@@ -142,6 +143,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                     InfraredAPI.onReceiveTransmit(this, context, intent);
                 }
                 break;
+            case "Input":
+                InputAPI.onReceive(this, context, intent);
+                break;    
             case "JobScheduler":
                 JobSchedulerAPI.onReceive(this, context, intent);
                 break;

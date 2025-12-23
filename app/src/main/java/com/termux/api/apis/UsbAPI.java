@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 public class UsbAPI {
 
@@ -111,9 +112,8 @@ public class UsbAPI {
         }
 
 
-
         protected void runListAction(Intent intent) {
-            Logger.logVerbose(LOG_TAG,"Running 'list' usb devices action");
+            Logger.logVerbose(LOG_TAG, "Running 'list' usb devices action");
 
             ResultReturner.returnData(this, intent, new ResultReturner.ResultJsonWriter() {
                 @Override
@@ -134,60 +134,64 @@ public class UsbAPI {
         }
 
 
-
         protected void runPermissionAction(Intent intent) {
             mThreadPoolExecutor.submit(() -> {
                 String deviceName = intent.getStringExtra("device");
+                String vendorId = intent.getStringExtra("vendorId");
+                String productId = intent.getStringExtra("productId");
+                String device = (deviceName != null) ? deviceName : vendorId + ":" + productId;
 
-                Logger.logVerbose(LOG_TAG,"Running 'permission' action for device \"" + deviceName + "\"");
+                Logger.logVerbose(LOG_TAG, "Running 'permission' action for device \"" + device + "\"");
 
-                UsbDevice device = getDevice(intent, deviceName);
-                if (device == null) return;
+                UsbDevice usbDevice = getDevice(intent, deviceName, vendorId, productId);
+                if (usbDevice == null) return;
 
-                int status = checkAndRequestUsbDevicePermission(intent, device);
+                int status = checkAndRequestUsbDevicePermission(intent, usbDevice);
                 ResultReturner.returnData(this, intent, out -> {
                     if (status == 0) {
-                        Logger.logVerbose(LOG_TAG, "Permission granted for device \"" + device.getDeviceName() + "\"");
-                        out.append("Permission granted.\n" );
+                        Logger.logVerbose(LOG_TAG, "Permission granted for device \"" + usbDevice.getDeviceName() + "\"");
+                        out.append("Permission granted.\n");
                     } else if (status == 1) {
-                        Logger.logVerbose(LOG_TAG, "Permission denied for device \"" + device.getDeviceName() + "\"");
-                        out.append("Permission denied.\n" );
+                        Logger.logVerbose(LOG_TAG, "Permission denied for device \"" + usbDevice.getDeviceName() + "\"");
+                        out.append("Permission denied.\n");
                     } else if (status == -1) {
-                        out.append("Permission request timeout.\n" );
+                        out.append("Permission request timeout.\n");
                     }
                 });
             });
         }
 
 
-
         protected void runOpenAction(Intent intent) {
             mThreadPoolExecutor.submit(() -> {
                 String deviceName = intent.getStringExtra("device");
+                String vendorId = intent.getStringExtra("vendorId");
+                String productId = intent.getStringExtra("productId");
+                String device = (deviceName != null) ? deviceName : vendorId + ":" + productId;
 
-                Logger.logVerbose(LOG_TAG,"Running 'open' action for device \"" + deviceName + "\"");
+                Logger.logVerbose(LOG_TAG, "Running 'open' action for device \"" + device + "\"");
 
-                UsbDevice device = getDevice(intent, deviceName);
-                if (device == null) return;
+                UsbDevice usbDevice = getDevice(intent, deviceName, vendorId, productId);
+                if (usbDevice == null) return;
 
-                int status = checkAndRequestUsbDevicePermission(intent, device);
+                int status = checkAndRequestUsbDevicePermission(intent, usbDevice);
                 ResultReturner.returnData(this, intent, new ResultReturner.WithAncillaryFd() {
                     @Override
                     public void writeResult(PrintWriter out) {
                         if (status == 0) {
-                            int fd = open(device);
+                            int fd = open(usbDevice);
                             if (fd < 0) {
-                                Logger.logVerbose(LOG_TAG, "Failed to open device \"" + device.getDeviceName() + "\": " + fd);
+                                Logger.logVerbose(LOG_TAG, "Failed to open device \"" + usbDevice.getDeviceName() + "\": " + fd);
                                 out.append("Open device failed.\n");
                             } else {
-                                Logger.logVerbose(LOG_TAG, "Open device \"" + device.getDeviceName() + "\" successful");
+                                Logger.logVerbose(LOG_TAG, "Open device \"" + usbDevice.getDeviceName() + "\" successful");
                                 this.sendFd(out, fd);
                             }
                         } else if (status == 1) {
-                            Logger.logVerbose(LOG_TAG, "Permission denied to open device \"" + device.getDeviceName() + "\"");
-                            out.append("Permission denied.\n" );
+                            Logger.logVerbose(LOG_TAG, "Permission denied to open device \"" + usbDevice.getDeviceName() + "\"");
+                            out.append("Permission denied.\n");
                         } else if (status == -1) {
-                            out.append("Permission request timeout.\n" );
+                            out.append("Permission request timeout.\n");
                         }
                     }
                 });
@@ -211,20 +215,38 @@ public class UsbAPI {
         }
 
 
-
-        protected UsbDevice getDevice(Intent intent, String deviceName) {
+        protected UsbDevice getDevice(Intent intent, @Nullable String deviceName, @Nullable String vendorId, @Nullable String productId) {
             UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
 
-            HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
-            UsbDevice device = deviceList.get(deviceName);
-            if (device == null) {
-                Logger.logVerbose(LOG_TAG, "Failed to find device \"" + deviceName + "\"");
-                ResultReturner.returnData(this, intent, out -> out.append("No such device.\n"));
+            if (deviceName != null) {
+                HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
+                UsbDevice usbDevice = deviceList.get(deviceName);
+                if (usbDevice != null) return usbDevice;
             }
 
-            return device;
-        }
+            if (vendorId != null && productId != null) {
+                // If we do not strip the 0x, it freezes at Integer.parseInt
+                vendorId = vendorId.startsWith("0x") ? vendorId.substring(2) : vendorId;
+                productId = productId.startsWith("0x") ? productId.substring(2) : productId;
+                // UsbDevice returns int, not hex, correct for that.
+                int iVendorId = Integer.parseInt(vendorId, 16);
+                int iProductId = Integer.parseInt(productId, 16);
+                for (UsbDevice usbDevice : usbManager.getDeviceList().values()) {
+                    if (usbDevice.getVendorId() == iVendorId && usbDevice.getProductId() == iProductId) {
+                        if (deviceName != null && !(deviceName.equals(usbDevice.getDeviceName()))) {
+                            Logger.logVerbose(LOG_TAG, "Device \"" + deviceName + "\" mismatch with " + vendorId + ":" + productId);
+                            ResultReturner.returnData(this, intent, out -> out.append("No such device.\n"));
+                            return null;
+                        }
+                        return usbDevice;
+                    }
+                }
+            }
 
+            Logger.logVerbose(LOG_TAG, "No intent extras were passed for device name or vendor and product id.");
+            ResultReturner.returnData(this, intent, out -> out.append("No such device.\n"));
+            return null;
+        }
 
 
         protected boolean checkUsbDevicePermission(@NonNull UsbDevice device) {
@@ -239,7 +261,7 @@ public class UsbAPI {
                 return 0;
             }
 
-            if(!intent.getBooleanExtra("request", false)) {
+            if (!intent.getBooleanExtra("request", false)) {
                 return 1;
             }
 

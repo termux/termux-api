@@ -9,6 +9,7 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.Engine;
 import android.speech.tts.TextToSpeech.EngineInfo;
 import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.util.JsonWriter;
 
 import com.termux.api.util.ResultReturner;
@@ -63,6 +64,7 @@ public class TextToSpeechAPI {
         protected void onHandleIntent(final Intent intent) {
             Logger.logDebug(LOG_TAG, "onHandleIntent:\n" + IntentUtils.getIntentString(intent));
 
+            final String speechVoice = intent.getStringExtra("voice");
             final String speechLanguage = intent.getStringExtra("language");
             final String speechRegion = intent.getStringExtra("region");
             final String speechVariant = intent.getStringExtra("variant");
@@ -133,6 +135,35 @@ public class TextToSpeechAPI {
                                     writer.name("default").value(defaultEngineName.equals(info.name));
                                     writer.endObject();
                                 }
+
+                                    // writer.name("default");
+                                    Voice v = mTts.getDefaultVoice();
+                                    // Voice v = mTts.getDefaultEngine().getDefaultVoice();
+                                    Locale l = v.getLocale();
+                                    writer.beginObject();
+                                    writer.name("default").value(v.getName());
+                                    writer.name("language").value(l.getLanguage());
+                                    writer.name("region").value(l.getCountry());
+                                    writer.name("variant").value(l.getVariant());
+                                    writer.endObject();
+
+                                    String name = "en-gb-x-gbd-local";
+                            v = new Voice(name, Locale.getDefault(), 1, 1, false, null);
+                                    l = v.getLocale();
+                                    // writer.name("example");
+                                    writer.beginObject();
+                                    writer.name("example").value(v.getName());
+                                    writer.name("language").value(l.getLanguage());
+                                    writer.name("variant").value(l.getVariant());
+                                    writer.endObject();
+
+
+                                    writer.beginArray();
+                                for (Voice vv : mTts.getVoices()) {
+                                    writer.value(vv.getName());
+                                }
+                                    writer.endArray();
+
                                 writer.endArray();
                             }
                             out.println();
@@ -163,14 +194,24 @@ public class TextToSpeechAPI {
                                     ttsDoneUtterancesCount.notify();
                                 }
                             }
+
                         });
+
+                        if (speechVoice != null) {
+                            // int setVoiceResult = mTts.setVoice(mTts.getDefaultVoice());
+                            // int res = mTts.setVoice(new Voice("en-gb-x-gbd-local", Locale.getDefault(), 1, 1, false, null));
+                            int setVoiceResult = mTts.setVoice(new Voice(speechVoice, Locale.getDefault(), 1, 1, false, null));
+                            if (setVoiceResult != TextToSpeech.SUCCESS) {
+                                Logger.logError(LOG_TAG, "tts.setVoice('" + speechVoice + "') returned " + setVoiceResult);
+                            }
+                        }
 
                         if (speechLanguage != null) {
                             int setLanguageResult = mTts.setLanguage(getLocale(speechLanguage, speechRegion, speechVariant));
                             if (setLanguageResult != TextToSpeech.LANG_AVAILABLE) {
-                                Logger.logError(LOG_TAG, "tts.setLanguage('" + speechLanguage + "') returned " + setLanguageResult);
-                            }
+                                Logger.logError(LOG_TAG, "tts.setLanguage(" + speechLanguage + "-" + speechRegion + "-" + speechVariant + ") returned " + setLanguageResult);
                         }
+                    }
 
                         mTts.setPitch(speechPitch);
                         mTts.setSpeechRate(intent.getFloatExtra("rate", 1.0f));

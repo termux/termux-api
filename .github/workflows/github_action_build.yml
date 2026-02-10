@@ -3,10 +3,10 @@ name: GitHub Action Build
 on:
   push:
     branches:
-      - master
+      - hexa-zone-haqpc5pm
   pull_request:
     branches:
-      - master
+      - hexa-zone-haqpc5pm
   schedule:
     - cron: "15 0 1 */2 *"
   workflow_dispatch:

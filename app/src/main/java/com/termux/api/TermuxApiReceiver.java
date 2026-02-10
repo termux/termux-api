@@ -264,6 +264,11 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "WifiEnable":
                 WifiAPI.onReceiveWifiEnable(this, context, intent);
                 break;
+            case "WifiConnect":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_WIFI_STATE)) {
+                    WifiAPI.onReceiveWifiConnect(this, context, intent);
+                }
+                break;
             default:
                 Logger.logError(LOG_TAG, "Unrecognized 'api_method' extra: '" + apiMethod + "'");
         }

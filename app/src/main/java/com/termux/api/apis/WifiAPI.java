@@ -135,4 +135,106 @@ public class WifiAPI {
         });
     }
 
+    public static void onReceiveWifiConnect(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
+        Logger.logDebug(LOG_TAG, "onReceiveWifiConnect");
+
+        ResultReturner.returnData(apiReceiver, intent, new ResultReturner.ResultJsonWriter() {
+            @Override
+            public void writeJson(JsonWriter out) throws Exception {
+                String ssid = intent.getStringExtra("ssid");
+                String password = intent.getStringExtra("password");
+
+                out.beginObject();
+
+                if (TextUtils.isEmpty(ssid)) {
+                    out.name("API_ERROR").value("SSID is required");
+                    out.endObject();
+                    return;
+                }
+
+                try {
+                    WifiManager manager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+
+                    // Remove quotes if present
+                    String cleanSSID = ssid.replaceAll("^\"|\"$", "");
+                    String cleanPassword = (password != null) ? password : "";
+
+                    // Create WifiConfiguration
+                    android.net.wifi.WifiConfiguration conf = new android.net.wifi.WifiConfiguration();
+                    conf.SSID = "\"" + cleanSSID + "\"";
+                    conf.status = android.net.wifi.WifiConfiguration.Status.DISABLED;
+
+                    // Configure based on security
+                    if (TextUtils.isEmpty(cleanPassword)) {
+                        // Open network (no security)
+                        conf.allowedKeyManagement.set(android.net.wifi.WifiConfiguration.KeyMgmt.NONE);
+                    } else {
+                        // WPA2/WPA network
+                        conf.allowedKeyManagement.set(android.net.wifi.WifiConfiguration.KeyMgmt.WPA_PSK);
+                        conf.preSharedKey = "\"" + cleanPassword + "\"";
+                    }
+
+                    // Disable all auth algorithms
+                    conf.allowedAuthAlgorithms.clear();
+                    conf.allowedAuthAlgorithms.set(android.net.wifi.WifiConfiguration.AuthAlgorithm.OPEN);
+
+                    // Set protocols
+                    conf.allowedProtocols.set(android.net.wifi.WifiConfiguration.Protocol.RSN);
+                    conf.allowedProtocols.set(android.net.wifi.WifiConfiguration.Protocol.WPA);
+
+                    // Set pairwise cipher
+                    conf.allowedPairwiseCiphers.set(android.net.wifi.WifiConfiguration.PairwiseCipher.CCMP);
+                    conf.allowedPairwiseCiphers.set(android.net.wifi.WifiConfiguration.PairwiseCipher.TKIP);
+
+                    // Set group cipher
+                    conf.allowedGroupCiphers.set(android.net.wifi.WifiConfiguration.GroupCipher.CCMP);
+                    conf.allowedGroupCiphers.set(android.net.wifi.WifiConfiguration.GroupCipher.TKIP);
+
+                    // Add or update the network
+                    int networkId = manager.addNetwork(conf);
+
+                    if (networkId == -1) {
+                        // Try to update if network exists
+                        networkId = findNetworkId(manager, cleanSSID);
+                        if (networkId == -1) {
+                            out.name("API_ERROR").value("Failed to add WiFi network");
+                            out.endObject();
+                            return;
+                        }
+                        manager.updateNetwork(conf);
+                    }
+
+                    // Connect to the network
+                    boolean enableResult = manager.enableNetwork(networkId, true);
+
+                    if (enableResult) {
+                        out.name("status").value("success");
+                        out.name("message").value("Connected to WiFi: " + cleanSSID);
+                        out.name("network_id").value(networkId);
+                    } else {
+                        out.name("API_ERROR").value("Failed to enable network");
+                    }
+
+                } catch (Exception e) {
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Error connecting to WiFi", e);
+                    out.name("API_ERROR").value("Exception: " + e.getMessage());
+                }
+
+                out.endObject();
+            }
+        });
+    }
+
+    private static int findNetworkId(WifiManager manager, String ssid) {
+        android.net.wifi.WifiConfiguration[] configs = manager.getConfiguredNetworks();
+        if (configs != null) {
+            for (android.net.wifi.WifiConfiguration config : configs) {
+                if (config.SSID.equals("\"" + ssid + "\"")) {
+                    return config.networkId;
+                }
+            }
+        }
+        return -1;
+    }
+
 }

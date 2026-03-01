@@ -59,7 +59,7 @@ public class AccessibilityAPI {
             if (intent.hasExtra("dump")) {
                 out.print(dump());
             } else if (intent.hasExtra("click")) {
-                click(intent.getIntExtra("x", 0), intent.getIntExtra("y", 0));
+                click(intent.getIntExtra("x", 0), intent.getIntExtra("y", 0), intent.getIntExtra("duration", 1));
             } else if (intent.hasExtra("type")) {
                 type(intent.getStringExtra("type"));
             } else if (intent.hasExtra("global-action")) {
@@ -82,11 +82,11 @@ public class AccessibilityAPI {
         return false;
     }
 
-    private static void click(int x, int y) {
+    private static void click(int x, int y, int millisecondsDuration) {
         Path swipePath = new Path();
         swipePath.moveTo(x, y);
         GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
-        gestureBuilder.addStroke(new GestureDescription.StrokeDescription(swipePath, 0, 1));
+        gestureBuilder.addStroke(new GestureDescription.StrokeDescription(swipePath, 0, millisecondsDuration));
         TermuxAccessibilityService.instance.dispatchGesture(gestureBuilder.build(), null, null);
     }
 

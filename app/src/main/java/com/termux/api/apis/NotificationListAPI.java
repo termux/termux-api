@@ -118,7 +118,7 @@ public class NotificationListAPI {
             if (metadata != null) {
                 out.beginObject()
                     .name("packageName").value(controller.getPackageName())
-                    .name("state").value(state.getState())
+                    .name("state").value(getStateString(state.getState()))
                     .name("title").value(metadata.getString(MediaMetadata.METADATA_KEY_TITLE))
                     .name("artist").value(metadata.getString(MediaMetadata.METADATA_KEY_ARTIST))
                     .name("duration").value(metadata.getLong(MediaMetadata.METADATA_KEY_DURATION))
@@ -131,6 +131,37 @@ public class NotificationListAPI {
         }
         out.endArray();
     }
+
+	static String getStateString(int state) {
+		switch(state) {
+			case PlaybackState.STATE_BUFFERING:
+				return "buffering";
+			case PlaybackState.STATE_CONNECTING:
+                return "connecting";
+			case PlaybackState.STATE_ERROR:
+                return "error";
+			case PlaybackState.STATE_FAST_FORWARDING:
+                return "fast_forwarding";
+			case PlaybackState.STATE_NONE:
+                return "none";
+			case PlaybackState.STATE_PAUSED:
+                return "paused";
+			case PlaybackState.STATE_PLAYING:
+                return "playing";
+			case PlaybackState.STATE_REWINDING:
+                return "rewinding";
+			case PlaybackState.STATE_SKIPPING_TO_NEXT:
+                return "skipping_to_next";
+			case PlaybackState.STATE_SKIPPING_TO_PREVIOUS:
+                return "skipping_to_previous";
+            case PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM:
+                return "skipping_to_queue_item";
+			case PlaybackState.STATE_STOPPED:
+                return "stopped";
+			default:
+				return "unknown";
+		}
+	}
 
     public static class NotificationService extends NotificationListenerService {
         static NotificationService _this;

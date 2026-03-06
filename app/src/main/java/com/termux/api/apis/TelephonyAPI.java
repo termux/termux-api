@@ -198,7 +198,7 @@ public class TelephonyAPI {
 
                 {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        out.name("data_enabled").value(Boolean.toString(manager.isDataEnabled()));
+                        out.name("data_enabled").value(manager.isDataEnabled());
                     }
 
                     int dataActivity = manager.getDataActivity();
@@ -383,6 +383,18 @@ public class TelephonyAPI {
                             break;
                         case TelephonyManager.SIM_STATE_UNKNOWN:
                             simStateString = "unknown";
+                            break;
+						case TelephonyManager.SIM_STATE_NOT_READY:
+                            simStateString = "not_ready";
+                            break;
+						case TelephonyManager.SIM_STATE_PERM_DISABLED:
+                            simStateString = "perm_disabled";
+                            break;
+						case TelephonyManager.SIM_STATE_CARD_IO_ERROR:
+                            simStateString = "card_io_error";
+                            break;
+						case TelephonyManager.SIM_STATE_CARD_RESTRICTED:
+                            simStateString = "card_restricted";
                             break;
                         default:
                             simStateString = Integer.toString(simState);

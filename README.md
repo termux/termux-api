@@ -1,5 +1,13 @@
 # Termux API
+Then, use any text editor to open and edit rish.
 
+For example, if you want to use Shizuku in Termux, you should replace PKG with com.termux (com.termux is the package name of Termux).
+
+Finally, move the files to
+
+somewhere where your terminal app can access, you will be able to use sh rish to run commands through Shizuku.
+
+Some tips: grant execute permission to rish and add it to PATH, you will able to use rish directly.
 [![Build status](https://github.com/termux/termux-api/workflows/Build/badge.svg)](https://github.com/termux/termux-api/actions)
 [![Join the chat at https://gitter.im/termux/termux](https://badges.gitter.im/termux/termux.svg)](https://gitter.im/termux/termux)
 

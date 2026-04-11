@@ -52,19 +52,19 @@ public class AudioScoAPI {
 
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (am == null) {
-            returnError(context, intent, "AudioManager unavailable");
+            returnError(apiReceiver, intent, "AudioManager unavailable");
             return;
         }
 
         switch (command == null ? "status" : command) {
             case "enable":
-                handleEnable(context, intent, am);
+                handleEnable(apiReceiver, context, intent, am);
                 break;
             case "disable":
-                handleDisable(context, intent, am);
+                handleDisable(apiReceiver, intent, am);
                 break;
             default:
-                handleStatus(context, intent, am);
+                handleStatus(apiReceiver, intent, am);
                 break;
         }
     }
@@ -73,15 +73,18 @@ public class AudioScoAPI {
     // enable
     // -------------------------------------------------------------------------
 
-    private static void handleEnable(final Context context, final Intent intent,
-                                     final AudioManager am) {
+    private static void handleEnable(final TermuxApiReceiver apiReceiver, final Context context,
+                                     final Intent intent, final AudioManager am) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12+: use setCommunicationDevice
+            // Android 12+: getProfileProxy is async — return immediately, set up SCO in background.
             BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
             if (adapter == null || !adapter.isEnabled()) {
-                returnError(context, intent, "Bluetooth is not enabled");
+                returnError(apiReceiver, intent, "Bluetooth is not enabled");
                 return;
             }
+
+            // Reply to caller right away so the socket doesn't hang.
+            returnJson(apiReceiver, intent, false, "SCO enable initiated, check status with termux-audio-sco");
 
             adapter.getProfileProxy(context, new BluetoothProfile.ServiceListener() {
                 @Override
@@ -91,23 +94,22 @@ public class AudioScoAPI {
                     adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
 
                     if (devices.isEmpty()) {
-                        returnError(context, intent, "No Bluetooth headset connected");
+                        Logger.logError(LOG_TAG, "SCO enable: no Bluetooth headset connected");
                         return;
                     }
 
                     AudioDeviceInfo scoDevice = findScoDevice(am);
                     if (scoDevice == null) {
-                        returnError(context, intent, "No Bluetooth SCO audio device available");
+                        Logger.logError(LOG_TAG, "SCO enable: no Bluetooth SCO audio device available");
                         return;
                     }
 
                     boolean ok = am.setCommunicationDevice(scoDevice);
                     if (!ok) {
-                        returnError(context, intent, "setCommunicationDevice failed");
+                        Logger.logError(LOG_TAG, "SCO enable: setCommunicationDevice failed");
                         return;
                     }
-
-                    returnJson(context, intent, true, "SCO enabled via setCommunicationDevice");
+                    Logger.logInfo(LOG_TAG, "SCO enabled via setCommunicationDevice");
                 }
 
                 @Override
@@ -115,9 +117,12 @@ public class AudioScoAPI {
             }, BluetoothProfile.HEADSET);
 
         } else {
-            // Android < 12: legacy SCO with async state broadcast
+            // Android < 12: startBluetoothSco is async — return immediately.
             am.setMode(AudioManager.MODE_IN_COMMUNICATION);
             am.startBluetoothSco();
+
+            // Reply to caller right away.
+            returnJson(apiReceiver, intent, false, "SCO enable initiated, check status with termux-audio-sco");
 
             final BroadcastReceiver[] receiverHolder = new BroadcastReceiver[1];
             receiverHolder[0] = new BroadcastReceiver() {
@@ -129,13 +134,13 @@ public class AudioScoAPI {
 
                     if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
                         context.unregisterReceiver(receiverHolder[0]);
-                        returnJson(context, intent, true, "SCO enabled via startBluetoothSco");
+                        Logger.logInfo(LOG_TAG, "SCO enabled via startBluetoothSco");
                     } else if (state == AudioManager.SCO_AUDIO_STATE_ERROR
                                || state == AudioManager.SCO_AUDIO_STATE_DISCONNECTED) {
                         context.unregisterReceiver(receiverHolder[0]);
                         am.stopBluetoothSco();
                         am.setMode(AudioManager.MODE_NORMAL);
-                        returnError(context, intent, "Bluetooth SCO connection failed (state=" + state + ")");
+                        Logger.logError(LOG_TAG, "SCO connection failed (state=" + state + ")");
                     }
                     // SCO_AUDIO_STATE_CONNECTING — keep waiting
                 }
@@ -149,7 +154,7 @@ public class AudioScoAPI {
     // disable
     // -------------------------------------------------------------------------
 
-    private static void handleDisable(final Context context, final Intent intent,
+    private static void handleDisable(final TermuxApiReceiver apiReceiver, final Intent intent,
                                       final AudioManager am) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             am.clearCommunicationDevice();
@@ -157,14 +162,14 @@ public class AudioScoAPI {
             am.stopBluetoothSco();
             am.setMode(AudioManager.MODE_NORMAL);
         }
-        returnJson(context, intent, false, "SCO disabled");
+        returnJson(apiReceiver, intent, false, "SCO disabled");
     }
 
     // -------------------------------------------------------------------------
     // status
     // -------------------------------------------------------------------------
 
-    private static void handleStatus(final Context context, final Intent intent,
+    private static void handleStatus(final TermuxApiReceiver apiReceiver, final Intent intent,
                                      final AudioManager am) {
         boolean scoOn;
         String deviceName = null;
@@ -181,7 +186,7 @@ public class AudioScoAPI {
         final boolean finalScoOn = scoOn;
         final String finalDeviceName = deviceName;
 
-        ResultReturner.returnData(context, intent, out -> {
+        ResultReturner.returnData(apiReceiver, intent, out -> {
             JsonWriter writer = new JsonWriter(out);
             try {
                 writer.beginObject();
@@ -211,9 +216,9 @@ public class AudioScoAPI {
         return null;
     }
 
-    private static void returnJson(final Context context, final Intent intent,
+    private static void returnJson(final TermuxApiReceiver apiReceiver, final Intent intent,
                                    final boolean scoActive, final String message) {
-        ResultReturner.returnData(context, intent, out -> {
+        ResultReturner.returnData(apiReceiver, intent, out -> {
             JsonWriter writer = new JsonWriter(out);
             try {
                 writer.beginObject();
@@ -227,9 +232,9 @@ public class AudioScoAPI {
         });
     }
 
-    private static void returnError(final Context context, final Intent intent,
+    private static void returnError(final TermuxApiReceiver apiReceiver, final Intent intent,
                                     final String error) {
-        ResultReturner.returnData(context, intent, out -> {
+        ResultReturner.returnData(apiReceiver, intent, out -> {
             JsonWriter writer = new JsonWriter(out);
             try {
                 writer.beginObject();

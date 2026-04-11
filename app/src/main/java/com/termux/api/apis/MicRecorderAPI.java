@@ -188,9 +188,8 @@ public class MicRecorderAPI {
                         BluetoothHeadset headset = (BluetoothHeadset) proxy;
                         java.util.List<BluetoothDevice> devices = headset.getConnectedDevices();
                         if (devices.isEmpty()) {
-                            result.error = "No Bluetooth headset connected";
+                            Logger.logError(LOG_TAG, "SCO setup: no Bluetooth headset connected");
                             scoRequested = false;
-                            postRecordCommandResult(context, intent, result);
                             adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
                             return;
                         }
@@ -204,23 +203,23 @@ public class MicRecorderAPI {
                             }
                         }
                         if (targetDevice == null) {
-                            result.error = "No Bluetooth SCO audio device available";
+                            Logger.logError(LOG_TAG, "SCO setup: no Bluetooth SCO audio device available");
                             scoRequested = false;
-                            postRecordCommandResult(context, intent, result);
                             adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
                             return;
                         }
                         boolean set = audioManager.setCommunicationDevice(targetDevice);
                         adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
                         if (!set) {
-                            result.error = "setCommunicationDevice failed";
+                            Logger.logError(LOG_TAG, "SCO setup: setCommunicationDevice failed");
                             scoRequested = false;
-                            postRecordCommandResult(context, intent, result);
                             return;
                         }
-                        // SCO is synchronous on Android 12+ via setCommunicationDevice
+                        // Result socket is already closed by the time this async callback fires.
+                        // Start recording silently — errors go to logcat only.
                         startRecording(context, intent, result);
-                        postRecordCommandResult(context, intent, result);
+                        Logger.logInfo(LOG_TAG, "SCO recording started: " + result.message
+                            + (result.error != null ? " error=" + result.error : ""));
                     }
 
                     @Override
@@ -244,14 +243,15 @@ public class MicRecorderAPI {
                         if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
                             context.unregisterReceiver(this);
                             scoReceiver = null;
+                            // Result socket is already closed — log only.
                             startRecording(context, intent, result);
-                            postRecordCommandResult(context, intent, result);
+                            Logger.logInfo(LOG_TAG, "SCO recording started: " + result.message
+                                + (result.error != null ? " error=" + result.error : ""));
                         } else if (state == AudioManager.SCO_AUDIO_STATE_ERROR) {
                             context.unregisterReceiver(this);
                             scoReceiver = null;
                             teardownSco();
-                            result.error = "Bluetooth SCO connection error";
-                            postRecordCommandResult(context, intent, result);
+                            Logger.logError(LOG_TAG, "Bluetooth SCO connection error");
                         }
                     }
                 };

@@ -1,8 +1,15 @@
 package com.termux.api.apis;
 
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothHeadset;
+import android.bluetooth.BluetoothProfile;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Environment;
@@ -62,11 +69,16 @@ public class MicRecorderAPI {
         // file we're recording too
         protected static File file;
 
+        // SCO Bluetooth state
+        protected static boolean scoRequested;
+        protected static BroadcastReceiver scoReceiver;
+        protected static AudioManager audioManager;
 
         private static final String LOG_TAG = "MicRecorderService";
 
         public void onCreate() {
             getMediaRecorder(this);
+            audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         }
 
         public int onStartCommand(Intent intent, int flags, int startId) {
@@ -130,7 +142,7 @@ public class MicRecorderAPI {
         }
 
         /**
-         * Releases MediaRecorder resources
+         * Releases MediaRecorder resources and tears down SCO if it was activated
          */
         protected static void cleanupMediaRecorder() {
             if (isRecording) {
@@ -139,6 +151,220 @@ public class MicRecorderAPI {
             }
             mediaRecorder.reset();
             mediaRecorder.release();
+            teardownSco();
+        }
+
+        /**
+         * Activates Bluetooth SCO for microphone capture.
+         * Registers a BroadcastReceiver to wait for SCO_AUDIO_STATE_CONNECTED,
+         * then starts the actual recording once the channel is established.
+         *
+         * @param context  application context
+         * @param intent   original record intent (forwarded to startRecording on success)
+         * @param result   RecorderCommandResult to populate on error
+         * @return true if SCO setup was initiated (async), false if SCO unavailable
+         */
+        protected static boolean setupScoAndRecord(final Context context, final Intent intent,
+                                                    final RecorderCommandResult result) {
+            if (audioManager == null) {
+                result.error = "AudioManager unavailable";
+                return false;
+            }
+
+            scoRequested = true;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Android 12+: use setCommunicationDevice
+                BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+                if (adapter == null || !adapter.isEnabled()) {
+                    result.error = "Bluetooth is not enabled";
+                    scoRequested = false;
+                    return false;
+                }
+                // Find a connected headset device
+                adapter.getProfileProxy(context, new BluetoothProfile.ServiceListener() {
+                    @Override
+                    public void onServiceConnected(int profile, BluetoothProfile proxy) {
+                        BluetoothHeadset headset = (BluetoothHeadset) proxy;
+                        java.util.List<BluetoothDevice> devices = headset.getConnectedDevices();
+                        if (devices.isEmpty()) {
+                            Logger.logError(LOG_TAG, "SCO setup: no Bluetooth headset connected");
+                            scoRequested = false;
+                            adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
+                            return;
+                        }
+                        android.media.AudioDeviceInfo targetDevice = null;
+                        java.util.List<android.media.AudioDeviceInfo> allDevices =
+                            audioManager.getAvailableCommunicationDevices();
+                        for (android.media.AudioDeviceInfo dev : allDevices) {
+                            if (dev.getType() == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                                targetDevice = dev;
+                                break;
+                            }
+                        }
+                        if (targetDevice == null) {
+                            Logger.logError(LOG_TAG, "SCO setup: no Bluetooth SCO audio device available");
+                            scoRequested = false;
+                            adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
+                            return;
+                        }
+                        boolean set = audioManager.setCommunicationDevice(targetDevice);
+                        adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
+                        if (!set) {
+                            Logger.logError(LOG_TAG, "SCO setup: setCommunicationDevice failed");
+                            scoRequested = false;
+                            return;
+                        }
+                        // Result socket is already closed by the time this async callback fires.
+                        // Start recording silently — errors go to logcat only.
+                        startRecording(context, intent, result);
+                        Logger.logInfo(LOG_TAG, "SCO recording started: " + result.message
+                            + (result.error != null ? " error=" + result.error : ""));
+                    }
+
+                    @Override
+                    public void onServiceDisconnected(int profile) {
+                        // no-op
+                    }
+                }, BluetoothProfile.HEADSET);
+                return true; // async path — result posted inside callback
+            } else {
+                // Android < 12: legacy startBluetoothSco
+                audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                audioManager.startBluetoothSco();
+
+                IntentFilter filter = new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED);
+                scoReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context ctx, Intent scoIntent) {
+                        int state = scoIntent.getIntExtra(
+                            AudioManager.EXTRA_SCO_AUDIO_STATE,
+                            AudioManager.SCO_AUDIO_STATE_ERROR);
+                        if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
+                            context.unregisterReceiver(this);
+                            scoReceiver = null;
+                            // Result socket is already closed — log only.
+                            startRecording(context, intent, result);
+                            Logger.logInfo(LOG_TAG, "SCO recording started: " + result.message
+                                + (result.error != null ? " error=" + result.error : ""));
+                        } else if (state == AudioManager.SCO_AUDIO_STATE_ERROR) {
+                            context.unregisterReceiver(this);
+                            scoReceiver = null;
+                            teardownSco();
+                            Logger.logError(LOG_TAG, "Bluetooth SCO connection error");
+                        }
+                    }
+                };
+                context.registerReceiver(scoReceiver, filter);
+                return true; // async path — result posted inside receiver
+            }
+        }
+
+        /**
+         * Stops Bluetooth SCO and restores audio mode.
+         */
+        protected static void teardownSco() {
+            if (!scoRequested) return;
+            scoRequested = false;
+            if (audioManager == null) return;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                audioManager.clearCommunicationDevice();
+            } else {
+                audioManager.stopBluetoothSco();
+                audioManager.setMode(AudioManager.MODE_NORMAL);
+            }
+
+            if (scoReceiver != null) {
+                // Should not happen in normal flow, but guard just in case
+                scoReceiver = null;
+            }
+        }
+
+        /**
+         * Core recording start logic (synchronous part, after SCO is ready).
+         * Populates result.message or result.error.
+         */
+        protected static void startRecording(final Context context, final Intent intent,
+                                             final RecorderCommandResult result) {
+            int duration = intent.getIntExtra("limit", DEFAULT_RECORDING_LIMIT);
+            if (duration > 0 && duration < MIN_RECORDING_LIMIT)
+                duration = MIN_RECORDING_LIMIT;
+
+            String sencoder = intent.hasExtra("encoder") ? intent.getStringExtra("encoder") : "";
+            ArrayMap<String, Integer> encoder_map = new ArrayMap<>(4);
+            encoder_map.put("aac", MediaRecorder.AudioEncoder.AAC);
+            encoder_map.put("amr_nb", MediaRecorder.AudioEncoder.AMR_NB);
+            encoder_map.put("amr_wb", MediaRecorder.AudioEncoder.AMR_WB);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                encoder_map.put("opus", MediaRecorder.AudioEncoder.OPUS);
+
+            Integer encoder = encoder_map.get(sencoder.toLowerCase());
+            if (encoder == null)
+                encoder = MediaRecorder.AudioEncoder.AAC;
+
+            int format = intent.getIntExtra("format", MediaRecorder.OutputFormat.DEFAULT);
+            if (format == MediaRecorder.OutputFormat.DEFAULT) {
+                SparseIntArray format_map = new SparseIntArray(4);
+                format_map.put(MediaRecorder.AudioEncoder.AAC, MediaRecorder.OutputFormat.MPEG_4);
+                format_map.put(MediaRecorder.AudioEncoder.AMR_NB, MediaRecorder.OutputFormat.THREE_GPP);
+                format_map.put(MediaRecorder.AudioEncoder.AMR_WB, MediaRecorder.OutputFormat.THREE_GPP);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                    format_map.put(MediaRecorder.AudioEncoder.OPUS, MediaRecorder.OutputFormat.OGG);
+                format = format_map.get(encoder, MediaRecorder.OutputFormat.DEFAULT);
+            }
+
+            SparseArray<String> extension_map = new SparseArray<>(3);
+            extension_map.put(MediaRecorder.OutputFormat.MPEG_4, ".m4a");
+            extension_map.put(MediaRecorder.OutputFormat.THREE_GPP, ".3gp");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                extension_map.put(MediaRecorder.OutputFormat.OGG, ".ogg");
+            String extension = extension_map.get(format);
+
+            String filename = intent.hasExtra("file")
+                ? intent.getStringExtra("file")
+                : getDefaultRecordingFilename() + (extension != null ? extension : "");
+
+            int source = intent.getIntExtra("source", MediaRecorder.AudioSource.MIC);
+            int bitrate = intent.getIntExtra("bitrate", 0);
+            int srate = intent.getIntExtra("srate", 0);
+            int channels = intent.getIntExtra("channels", 0);
+
+            file = new File(filename);
+            Logger.logInfo(LOG_TAG, "MediaRecording file is: " + file.getAbsolutePath());
+
+            if (file.exists()) {
+                result.error = String.format(
+                    "File: %s already exists! Please specify a different filename", file.getName());
+                teardownSco();
+            } else if (isRecording) {
+                result.error = "Recording already in progress!";
+                teardownSco();
+            } else {
+                try {
+                    mediaRecorder.setAudioSource(source);
+                    mediaRecorder.setOutputFormat(format);
+                    mediaRecorder.setAudioEncoder(encoder);
+                    mediaRecorder.setOutputFile(filename);
+                    mediaRecorder.setMaxDuration(duration);
+                    if (bitrate > 0)
+                        mediaRecorder.setAudioEncodingBitRate(bitrate);
+                    if (srate > 0)
+                        mediaRecorder.setAudioSamplingRate(srate);
+                    if (channels > 0)
+                        mediaRecorder.setAudioChannels(channels);
+                    mediaRecorder.prepare();
+                    mediaRecorder.start();
+                    isRecording = true;
+                    result.message = String.format("Recording started: %s \nMax Duration: %s",
+                        file.getAbsolutePath(),
+                        duration <= 0 ? "unlimited" : MediaPlayerAPI.getTimeString(duration / 1000));
+                } catch (IllegalStateException | IOException e) {
+                    Logger.logStackTraceWithMessage(LOG_TAG, "MediaRecorder error", e);
+                    result.error = "Recording error: " + e.getMessage();
+                    teardownSco();
+                }
+            }
         }
 
         @Override
@@ -208,90 +434,23 @@ public class MicRecorderAPI {
             public RecorderCommandResult handle(Context context, Intent intent) {
                 RecorderCommandResult result = new RecorderCommandResult();
 
-                int duration = intent.getIntExtra("limit", DEFAULT_RECORDING_LIMIT);
-                // allow the duration limit to be disabled with zero or negative
-                if (duration > 0 && duration < MIN_RECORDING_LIMIT)
-                    duration = MIN_RECORDING_LIMIT;
-
-                String sencoder = intent.hasExtra("encoder") ? intent.getStringExtra("encoder") : "";
-                ArrayMap<String, Integer> encoder_map = new ArrayMap<>(4);
-                encoder_map.put("aac", MediaRecorder.AudioEncoder.AAC);
-                encoder_map.put("amr_nb", MediaRecorder.AudioEncoder.AMR_NB);
-                encoder_map.put("amr_wb", MediaRecorder.AudioEncoder.AMR_WB);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    encoder_map.put("opus", MediaRecorder.AudioEncoder.OPUS);
-
-                Integer encoder = encoder_map.get(sencoder.toLowerCase());
-                if (encoder == null)
-                    encoder = MediaRecorder.AudioEncoder.AAC;
-
-                int format = intent.getIntExtra("format", MediaRecorder.OutputFormat.DEFAULT);
-                if (format == MediaRecorder.OutputFormat.DEFAULT) {
-                    SparseIntArray format_map = new SparseIntArray(4);
-                    format_map.put(MediaRecorder.AudioEncoder.AAC,
-                                   MediaRecorder.OutputFormat.MPEG_4);
-                    format_map.put(MediaRecorder.AudioEncoder.AMR_NB,
-                                   MediaRecorder.OutputFormat.THREE_GPP);
-                    format_map.put(MediaRecorder.AudioEncoder.AMR_WB,
-                                   MediaRecorder.OutputFormat.THREE_GPP);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                        format_map.put(MediaRecorder.AudioEncoder.OPUS, MediaRecorder.OutputFormat.OGG);
-                    format = format_map.get(encoder, MediaRecorder.OutputFormat.DEFAULT);
-                }
-
-                SparseArray<String> extension_map = new SparseArray<>(3);
-                extension_map.put(MediaRecorder.OutputFormat.MPEG_4, ".m4a");
-                extension_map.put(MediaRecorder.OutputFormat.THREE_GPP, ".3gp");
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    extension_map.put(MediaRecorder.OutputFormat.OGG, ".ogg");
-                String extension = extension_map.get(format);
-
-                String filename = intent.hasExtra("file") ? intent.getStringExtra("file") : getDefaultRecordingFilename() + (extension != null ? extension : "");
-
                 int source = intent.getIntExtra("source", MediaRecorder.AudioSource.MIC);
 
-                int bitrate = intent.getIntExtra("bitrate", 0);
-                int srate = intent.getIntExtra("srate", 0);
-                int channels = intent.getIntExtra("channels", 0);
-
-                file = new File(filename);
-
-                Logger.logInfo(LOG_TAG, "MediaRecording file is: " + file.getAbsolutePath());
-
-                if (file.exists()) {
-                    result.error = String.format("File: %s already exists! Please specify a different filename", file.getName());
-                } else {
-                    if (isRecording) {
-                        result.error = "Recording already in progress!";
-                    } else {
-                        try {
-                            mediaRecorder.setAudioSource(source);
-                            mediaRecorder.setOutputFormat(format);
-                            mediaRecorder.setAudioEncoder(encoder);
-                            mediaRecorder.setOutputFile(filename);
-                            mediaRecorder.setMaxDuration(duration);
-                            if (bitrate > 0)
-                                mediaRecorder.setAudioEncodingBitRate(bitrate);
-                            if (srate > 0)
-                                mediaRecorder.setAudioSamplingRate(srate);
-                            if (channels > 0)
-                                mediaRecorder.setAudioChannels(channels);
-                            mediaRecorder.prepare();
-                            mediaRecorder.start();
-                            isRecording = true;
-                            result.message = String.format("Recording started: %s \nMax Duration: %s",
-                                                           file.getAbsolutePath(),
-                                                           duration <= 0 ?
-                                                           "unlimited" :
-                                                           MediaPlayerAPI.getTimeString(duration /
-                                                                                        1000));
-
-                        } catch (IllegalStateException | IOException e) {
-                            Logger.logStackTraceWithMessage(LOG_TAG, "MediaRecorder error", e);
-                            result.error = "Recording error: " + e.getMessage();
-                        }
+                if (source == MediaRecorder.AudioSource.VOICE_COMMUNICATION) {
+                    // Async path: set up Bluetooth SCO first, then start recording.
+                    // Result is posted inside setupScoAndRecord callbacks.
+                    boolean initiated = setupScoAndRecord(context, intent, result);
+                    if (!initiated) {
+                        // Synchronous failure — result.error already set
+                        if (!isRecording)
+                            context.stopService(intent);
                     }
+                    // Return empty result; the real result is posted asynchronously.
+                    return new RecorderCommandResult();
                 }
+
+                // Synchronous path for all other sources
+                startRecording(context, intent, result);
                 if (!isRecording)
                     context.stopService(intent);
                 return result;

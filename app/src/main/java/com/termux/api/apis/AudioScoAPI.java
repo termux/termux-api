@@ -80,6 +80,13 @@ public class AudioScoAPI {
 
     private static void handleEnable(final TermuxApiReceiver apiReceiver, final Context context,
                                      final Intent intent, final AudioManager am) {
+        // Fast path: if SCO is already active, return immediately.
+        if (isScoActive(am)) {
+            Logger.logInfo(LOG_TAG, "SCO already active, skipping enable");
+            returnJson(apiReceiver, intent, true, "SCO already active");
+            return;
+        }
+
         // Use a latch + atomic results so the ResultWriter thread blocks until
         // the async SCO operation completes (or times out).
         final CountDownLatch latch = new CountDownLatch(1);
@@ -219,6 +226,13 @@ public class AudioScoAPI {
 
     private static void handleDisable(final TermuxApiReceiver apiReceiver, final Intent intent,
                                       final AudioManager am) {
+        // Fast path: if SCO is already inactive, report it without touching audio state.
+        if (!isScoActive(am)) {
+            Logger.logInfo(LOG_TAG, "SCO already disabled, skipping disable");
+            returnJson(apiReceiver, intent, false, "SCO already disabled");
+            return;
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             am.clearCommunicationDevice();
         } else {
@@ -234,16 +248,13 @@ public class AudioScoAPI {
 
     private static void handleStatus(final TermuxApiReceiver apiReceiver, final Intent intent,
                                      final AudioManager am) {
-        boolean scoOn;
+        boolean scoOn = isScoActive(am);
         String deviceName = null;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             AudioDeviceInfo dev = am.getCommunicationDevice();
-            scoOn = (dev != null && dev.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO);
             if (dev != null) deviceName = dev.getProductName() != null
                 ? dev.getProductName().toString() : null;
-        } else {
-            scoOn = am.isBluetoothScoOn();
         }
 
         final boolean finalScoOn = scoOn;
@@ -268,6 +279,20 @@ public class AudioScoAPI {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Check whether SCO audio is currently active.
+     * Android 12+: checks getCommunicationDevice() type.
+     * Older: checks isBluetoothScoOn().
+     */
+    private static boolean isScoActive(AudioManager am) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AudioDeviceInfo dev = am.getCommunicationDevice();
+            return dev != null && dev.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO;
+        } else {
+            return am.isBluetoothScoOn();
+        }
+    }
 
     private static AudioDeviceInfo findScoDevice(AudioManager am) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

@@ -19,6 +19,10 @@ import com.termux.shared.logger.Logger;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * API for managing Bluetooth SCO audio channel independently of recording.
@@ -43,6 +47,7 @@ import java.util.List;
 public class AudioScoAPI {
 
     private static final String LOG_TAG = "AudioScoAPI";
+    private static final int SCO_TIMEOUT_SECONDS = 5;
 
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context,
                                  final Intent intent) {
@@ -75,54 +80,68 @@ public class AudioScoAPI {
 
     private static void handleEnable(final TermuxApiReceiver apiReceiver, final Context context,
                                      final Intent intent, final AudioManager am) {
+        // Use a latch + atomic results so the ResultWriter thread blocks until
+        // the async SCO operation completes (or times out).
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicBoolean resultError = new AtomicBoolean(false);
+        final AtomicReference<String> resultMessage = new AtomicReference<>("SCO timeout");
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12+: getProfileProxy is async — return immediately, set up SCO in background.
+            // Android 12+: getProfileProxy is async, but setCommunicationDevice is synchronous.
             BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
             if (adapter == null || !adapter.isEnabled()) {
                 returnError(apiReceiver, intent, "Bluetooth is not enabled");
                 return;
             }
 
-            // Reply to caller right away so the socket doesn't hang.
-            returnJson(apiReceiver, intent, false, "SCO enable initiated, check status with termux-audio-sco");
-
             adapter.getProfileProxy(context, new BluetoothProfile.ServiceListener() {
                 @Override
                 public void onServiceConnected(int profile, BluetoothProfile proxy) {
-                    BluetoothHeadset headset = (BluetoothHeadset) proxy;
-                    List<BluetoothDevice> devices = headset.getConnectedDevices();
-                    adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
+                    try {
+                        BluetoothHeadset headset = (BluetoothHeadset) proxy;
+                        List<BluetoothDevice> devices = headset.getConnectedDevices();
+                        adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
 
-                    if (devices.isEmpty()) {
-                        Logger.logError(LOG_TAG, "SCO enable: no Bluetooth headset connected");
-                        return;
-                    }
+                        if (devices.isEmpty()) {
+                            resultError.set(true);
+                            resultMessage.set("No Bluetooth headset connected");
+                            return;
+                        }
 
-                    AudioDeviceInfo scoDevice = findScoDevice(am);
-                    if (scoDevice == null) {
-                        Logger.logError(LOG_TAG, "SCO enable: no Bluetooth SCO audio device available");
-                        return;
-                    }
+                        AudioDeviceInfo scoDevice = findScoDevice(am);
+                        if (scoDevice == null) {
+                            resultError.set(true);
+                            resultMessage.set("No Bluetooth SCO audio device available");
+                            return;
+                        }
 
-                    boolean ok = am.setCommunicationDevice(scoDevice);
-                    if (!ok) {
-                        Logger.logError(LOG_TAG, "SCO enable: setCommunicationDevice failed");
-                        return;
+                        boolean ok = am.setCommunicationDevice(scoDevice);
+                        if (ok) {
+                            resultError.set(false);
+                            resultMessage.set("SCO enabled via setCommunicationDevice");
+                            Logger.logInfo(LOG_TAG, "SCO enabled via setCommunicationDevice");
+                        } else {
+                            resultError.set(true);
+                            resultMessage.set("setCommunicationDevice failed");
+                            Logger.logError(LOG_TAG, "SCO enable: setCommunicationDevice failed");
+                        }
+                    } finally {
+                        latch.countDown();
                     }
-                    Logger.logInfo(LOG_TAG, "SCO enabled via setCommunicationDevice");
                 }
 
                 @Override
-                public void onServiceDisconnected(int profile) { }
+                public void onServiceDisconnected(int profile) {
+                    resultError.set(true);
+                    resultMessage.set("Bluetooth headset service disconnected");
+                    latch.countDown();
+                }
             }, BluetoothProfile.HEADSET);
 
         } else {
-            // Android < 12: startBluetoothSco is async — return immediately.
+            // Android < 12: startBluetoothSco is async — listen for state broadcast.
             am.setMode(AudioManager.MODE_IN_COMMUNICATION);
             am.startBluetoothSco();
-
-            // Reply to caller right away.
-            returnJson(apiReceiver, intent, false, "SCO enable initiated, check status with termux-audio-sco");
 
             final BroadcastReceiver[] receiverHolder = new BroadcastReceiver[1];
             receiverHolder[0] = new BroadcastReceiver() {
@@ -133,21 +152,65 @@ public class AudioScoAPI {
                         AudioManager.SCO_AUDIO_STATE_ERROR);
 
                     if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
-                        context.unregisterReceiver(receiverHolder[0]);
+                        try { context.unregisterReceiver(receiverHolder[0]); } catch (Exception ignored) {}
+                        resultError.set(false);
+                        resultMessage.set("SCO enabled via startBluetoothSco");
                         Logger.logInfo(LOG_TAG, "SCO enabled via startBluetoothSco");
+                        latch.countDown();
                     } else if (state == AudioManager.SCO_AUDIO_STATE_ERROR
                                || state == AudioManager.SCO_AUDIO_STATE_DISCONNECTED) {
-                        context.unregisterReceiver(receiverHolder[0]);
+                        try { context.unregisterReceiver(receiverHolder[0]); } catch (Exception ignored) {}
                         am.stopBluetoothSco();
                         am.setMode(AudioManager.MODE_NORMAL);
+                        resultError.set(true);
+                        resultMessage.set("SCO connection failed (state=" + state + ")");
                         Logger.logError(LOG_TAG, "SCO connection failed (state=" + state + ")");
+                        latch.countDown();
                     }
                     // SCO_AUDIO_STATE_CONNECTING — keep waiting
                 }
             };
             context.registerReceiver(receiverHolder[0],
                 new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED));
+
+            // Schedule timeout on main looper to clean up if no broadcast arrives.
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (latch.getCount() > 0) {
+                    try { context.unregisterReceiver(receiverHolder[0]); } catch (Exception ignored) {}
+                    resultError.set(true);
+                    resultMessage.set("SCO timeout after " + SCO_TIMEOUT_SECONDS + "s");
+                    Logger.logError(LOG_TAG, "SCO timeout after " + SCO_TIMEOUT_SECONDS + "s");
+                    latch.countDown();
+                }
+            }, SCO_TIMEOUT_SECONDS * 1000L);
         }
+
+        // Block the ResultReturner thread until the async operation signals completion.
+        // ResultReturner.returnData() calls goAsync() synchronously then runs the writer
+        // in a new thread, so this will not block the main thread.
+        ResultReturner.returnData(apiReceiver, intent, out -> {
+            JsonWriter writer = new JsonWriter(out);
+            try {
+                latch.await(SCO_TIMEOUT_SECONDS + 2, TimeUnit.SECONDS);
+                writer.beginObject();
+                if (resultError.get()) {
+                    writer.name("error").value(resultMessage.get());
+                } else {
+                    writer.name("sco_active").value(true);
+                    writer.name("message").value(resultMessage.get());
+                }
+                writer.endObject();
+                writer.flush();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                writer.beginObject();
+                writer.name("error").value("Interrupted while waiting for SCO");
+                writer.endObject();
+                writer.flush();
+            } catch (IOException e) {
+                Logger.logStackTraceWithMessage(LOG_TAG, "JSON write error", e);
+            }
+        });
     }
 
     // -------------------------------------------------------------------------

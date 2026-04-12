@@ -1,9 +1,5 @@
 package com.termux.api.apis;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothHeadset;
-import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -87,69 +83,40 @@ public class AudioScoAPI {
             return;
         }
 
-        // Use a latch + atomic results so the ResultWriter thread blocks until
-        // the async SCO operation completes (or times out).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12+: synchronous path using getAvailableCommunicationDevices.
+            // No getProfileProxy needed — avoids flaky onServiceDisconnected callbacks.
+            List<AudioDeviceInfo> devices = am.getAvailableCommunicationDevices();
+            AudioDeviceInfo scoDevice = null;
+            for (AudioDeviceInfo dev : devices) {
+                if (dev.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                    scoDevice = dev;
+                    break;
+                }
+            }
+            if (scoDevice == null) {
+                returnError(apiReceiver, intent, "No Bluetooth SCO device available");
+                return;
+            }
+            boolean ok = am.setCommunicationDevice(scoDevice);
+            returnJson(apiReceiver, intent, ok, ok ? "SCO enabled" : "setCommunicationDevice failed");
+            if (ok) {
+                Logger.logInfo(LOG_TAG, "SCO enabled via setCommunicationDevice");
+            } else {
+                Logger.logError(LOG_TAG, "SCO enable: setCommunicationDevice failed");
+            }
+            return;
+        }
+
+        // Android < 12: startBluetoothSco is async — listen for state broadcast.
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicBoolean resultError = new AtomicBoolean(false);
         final AtomicReference<String> resultMessage = new AtomicReference<>("SCO timeout");
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12+: getProfileProxy is async, but setCommunicationDevice is synchronous.
-            BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-            if (adapter == null || !adapter.isEnabled()) {
-                returnError(apiReceiver, intent, "Bluetooth is not enabled");
-                return;
-            }
+        am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        am.startBluetoothSco();
 
-            adapter.getProfileProxy(context, new BluetoothProfile.ServiceListener() {
-                @Override
-                public void onServiceConnected(int profile, BluetoothProfile proxy) {
-                    try {
-                        BluetoothHeadset headset = (BluetoothHeadset) proxy;
-                        List<BluetoothDevice> devices = headset.getConnectedDevices();
-                        adapter.closeProfileProxy(BluetoothProfile.HEADSET, proxy);
-
-                        if (devices.isEmpty()) {
-                            resultError.set(true);
-                            resultMessage.set("No Bluetooth headset connected");
-                            return;
-                        }
-
-                        AudioDeviceInfo scoDevice = findScoDevice(am);
-                        if (scoDevice == null) {
-                            resultError.set(true);
-                            resultMessage.set("No Bluetooth SCO audio device available");
-                            return;
-                        }
-
-                        boolean ok = am.setCommunicationDevice(scoDevice);
-                        if (ok) {
-                            resultError.set(false);
-                            resultMessage.set("SCO enabled via setCommunicationDevice");
-                            Logger.logInfo(LOG_TAG, "SCO enabled via setCommunicationDevice");
-                        } else {
-                            resultError.set(true);
-                            resultMessage.set("setCommunicationDevice failed");
-                            Logger.logError(LOG_TAG, "SCO enable: setCommunicationDevice failed");
-                        }
-                    } finally {
-                        latch.countDown();
-                    }
-                }
-
-                @Override
-                public void onServiceDisconnected(int profile) {
-                    resultError.set(true);
-                    resultMessage.set("Bluetooth headset service disconnected");
-                    latch.countDown();
-                }
-            }, BluetoothProfile.HEADSET);
-
-        } else {
-            // Android < 12: startBluetoothSco is async — listen for state broadcast.
-            am.setMode(AudioManager.MODE_IN_COMMUNICATION);
-            am.startBluetoothSco();
-
+        {
             final BroadcastReceiver[] receiverHolder = new BroadcastReceiver[1];
             receiverHolder[0] = new BroadcastReceiver() {
                 @Override
@@ -292,16 +259,6 @@ public class AudioScoAPI {
         } else {
             return am.isBluetoothScoOn();
         }
-    }
-
-    private static AudioDeviceInfo findScoDevice(AudioManager am) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            for (AudioDeviceInfo dev : (java.util.List<AudioDeviceInfo>) am.getAvailableCommunicationDevices()) {
-                if (dev.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO)
-                    return dev;
-            }
-        }
-        return null;
     }
 
     private static void returnJson(final TermuxApiReceiver apiReceiver, final Intent intent,

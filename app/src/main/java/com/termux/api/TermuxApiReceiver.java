@@ -97,6 +97,7 @@ public class TermuxApiReceiver extends BroadcastReceiver {
 
                     // user must enable WRITE_SETTINGS permission this special way
                     Intent settingsIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                    settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(settingsIntent);
                     return;
                 }

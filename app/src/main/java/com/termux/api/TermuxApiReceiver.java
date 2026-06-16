@@ -20,6 +20,7 @@ import com.termux.api.apis.DialogAPI;
 import com.termux.api.apis.DownloadAPI;
 import com.termux.api.apis.FingerprintAPI;
 import com.termux.api.apis.InfraredAPI;
+import com.termux.api.apis.InstallAPI;
 import com.termux.api.apis.JobSchedulerAPI;
 import com.termux.api.apis.KeystoreAPI;
 import com.termux.api.apis.LocationAPI;
@@ -140,6 +141,11 @@ public class TermuxApiReceiver extends BroadcastReceiver {
             case "InfraredTransmit":
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.TRANSMIT_IR)) {
                     InfraredAPI.onReceiveTransmit(this, context, intent);
+                }
+                break;
+            case "Install":
+                if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.REQUEST_INSTALL_PACKAGES)) {
+                    InstallAPI.onReceive(this, context, intent);
                 }
                 break;
             case "JobScheduler":

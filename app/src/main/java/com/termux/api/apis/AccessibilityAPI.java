@@ -63,12 +63,13 @@ public class AccessibilityAPI {
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");
 
-        boolean isAccessibilityEnabled = isAccessibilityServiceEnabled(context, TermuxAccessibilityService.class);
+        // Not always reliable, see https://codeberg.org/Benjamin_Loison/Voice_assistant/issues/58#issuecomment-19684162
+		/*boolean isAccessibilityEnabled = isAccessibilityServiceEnabled(context, TermuxAccessibilityService.class);
         if (!isAccessibilityEnabled) {
             Intent accessibilityIntent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             accessibilityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(accessibilityIntent);
-        }
+        }*/
 
 		int displayId = intent.getIntExtra("display-id", Display.DEFAULT_DISPLAY);
 

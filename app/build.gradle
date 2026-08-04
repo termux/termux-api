@@ -4,8 +4,20 @@ android {
     namespace "com.termux.api"
 
     compileSdk project.properties.compileSdkVersion.toInteger()
+
     def appVersionName = System.getenv("TERMUX_API_APP__BUILD__APP_VERSION_NAME") ?: ""
     def apkVersionTag = System.getenv("TERMUX_API_APP__BUILD__APK_VERSION_TAG") ?: ""
+
+    def releaseKeystorePath = System.getenv("TERMUX_RELEASE_KEYSTORE")
+    def releaseStorePassword = System.getenv("TERMUX_RELEASE_STORE_PASSWORD")
+    def releaseKeyAlias = System.getenv("TERMUX_RELEASE_KEY_ALIAS")
+    def releaseKeyPassword = System.getenv("TERMUX_RELEASE_KEY_PASSWORD")
+
+    def releaseSigningConfigured =
+            releaseKeystorePath &&
+            releaseStorePassword &&
+            releaseKeyAlias &&
+            releaseKeyPassword
 
     defaultConfig {
         applicationId "com.termux.api"
@@ -29,6 +41,15 @@ android {
             storePassword 'xrj45yWGLbsO7W0v'
             keyPassword 'xrj45yWGLbsO7W0v'
         }
+
+        if (releaseSigningConfigured) {
+            release {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
@@ -36,6 +57,12 @@ android {
             minifyEnabled true
             shrinkResources false // Reproducible builds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.lifecycle("Release signing not configured - release APK will not be signed.")
+            }
         }
 
         debug {
@@ -53,8 +80,13 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            outputFileName = new File("termux-api-app_" +
-                    (apkVersionTag ? apkVersionTag : "v" + versionName + "+" + variant.buildType.name) + ".apk")
+            outputFileName = new File(
+                    "termux-api-app_" +
+                            (apkVersionTag
+                                    ? apkVersionTag
+                                    : "v" + versionName + "+" + variant.buildType.name) +
+                            ".apk"
+            )
         }
     }
 
@@ -74,10 +106,11 @@ dependencies {
     implementation "androidx.preference:preference:1.2.1"
 
     implementation "com.termux.termux-app:termux-shared:8aca6dbbf4"
-    // Use if below libraries are published locally by termux-app with `./gradlew publishReleasePublicationToMavenLocal` and used with `mavenLocal()`.
+    // Use if below libraries are published locally by termux-app with
+    // `./gradlew publishReleasePublicationToMavenLocal` and used with `mavenLocal()`.
     // If updates are done, republish there and sync project with gradle files here
     // https://github.com/termux/termux-app/wiki/Termux-Libraries
-    //implementation "com.termux:termux-shared:0.118.0"
+    // implementation "com.termux:termux-shared:0.118.0"
 
     implementation "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava"
 }
@@ -92,6 +125,16 @@ task versionName {
 static def validateVersionName(String versionName) {
     // https://semver.org/spec/v2.0.0.html#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
     // ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
-    if (!java.util.regex.Pattern.matches("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?\$", versionName))
-        throw new GradleException("The versionName '" + versionName + "' is not a valid version as per semantic version '2.0.0' spec in the format 'major.minor.patch(-prerelease)(+buildmetadata)'. https://semver.org/spec/v2.0.0.html.")
+    if (!java.util.regex.Pattern.matches(
+            "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?\$",
+            versionName
+    )) {
+        throw new GradleException(
+                "The versionName '" +
+                        versionName +
+                        "' is not a valid version as per semantic version '2.0.0' spec in the format " +
+                        "'major.minor.patch(-prerelease)(+buildmetadata)'. " +
+                        "https://semver.org/spec/v2.0.0.html."
+        )
+    }
 }

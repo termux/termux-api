@@ -187,6 +187,9 @@
         <service android:name=".apis.MicRecorderAPI$MicRecorderService"
             android:exported="false" />
 
+        <service android:name=".apis.CameraVideoAPI$CameraVideoService"
+            android:exported="false" />
+
         <service
             android:name=".apis.NotificationListAPI$NotificationService"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"

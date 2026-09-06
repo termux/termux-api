@@ -26,6 +26,7 @@ import com.termux.api.apis.LocationAPI;
 import com.termux.api.apis.MediaPlayerAPI;
 import com.termux.api.apis.MediaScannerAPI;
 import com.termux.api.apis.MicRecorderAPI;
+import com.termux.api.apis.NsdApi;
 import com.termux.api.apis.NfcAPI;
 import com.termux.api.apis.NotificationAPI;
 import com.termux.api.apis.NotificationListAPI;
@@ -163,6 +164,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, Manifest.permission.RECORD_AUDIO)) {
                     MicRecorderAPI.onReceive(context, intent);
                 }
+                break;
+            case "Nsd":
+                NsdApi.onReceive(context, intent);
                 break;
             case "Nfc":
                 NfcAPI.onReceive(context, intent);

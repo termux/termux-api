@@ -162,6 +162,9 @@
         <receiver android:name=".TermuxApiReceiver"
             android:exported="false" />
 
+        <receiver android:name=".apis.InstallAPI$InstallStatusReceiver"
+            android:exported="false" />
+
         <receiver
             android:name="${TERMUX_PACKAGE_NAME}.shared.activities.ReportActivity$ReportActivityBroadcastReceiver"
             android:exported="false"

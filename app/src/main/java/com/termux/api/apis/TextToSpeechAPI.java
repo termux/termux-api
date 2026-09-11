@@ -188,13 +188,14 @@ public class TextToSpeechAPI {
                                 if (!line.isEmpty()) {
                                     submittedUtterances++;
                                     mTts.speak(line, TextToSpeech.QUEUE_ADD, params, utteranceId);
+									synchronized (ttsDoneUtterancesCount) {
+										while (ttsDoneUtterancesCount.get() != submittedUtterances) {
+											ttsDoneUtterancesCount.wait();
+										}
+									}
+									out.println("spoken");
+									out.flush();
                                 }
-                            }
-                        }
-
-                        synchronized (ttsDoneUtterancesCount) {
-                            while (ttsDoneUtterancesCount.get() != submittedUtterances) {
-                                ttsDoneUtterancesCount.wait();
                             }
                         }
                     } catch (Exception e) {

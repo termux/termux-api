@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.google.protobuf'
 
 android {
     namespace "com.termux.api"
@@ -63,6 +64,40 @@ android {
         exclude "lib/*/libtermux.so"
         exclude "lib/*/liblocal-socket.so"
     }
+    sourceSets {
+        main {
+            proto {
+                srcDir 'src/main/proto'
+            }
+            java {
+                srcDir 'src/main/java'
+            }
+        }
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:4.29.3'
+    }
+
+    plugins {
+        javalite {
+            artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
+        }
+    }
+
+    // this is a task which will generate classes for our proto files
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                remove java
+            }
+            task.plugins {
+                javalite {}
+            }
+        }
+    }
 }
 
 dependencies {
@@ -78,6 +113,7 @@ dependencies {
     // If updates are done, republish there and sync project with gradle files here
     // https://github.com/termux/termux-app/wiki/Termux-Libraries
     //implementation "com.termux:termux-shared:0.118.0"
+    implementation 'com.google.protobuf:protobuf-lite:3.0.1'
 
     implementation "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava"
 }

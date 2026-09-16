@@ -113,6 +113,10 @@ public class TelephonyAPI {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 writeIfKnown(out, "bands", lteInfo.getCellIdentity().getBands());
                             }
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                writeIfKnown(out, "arfcn", lteInfo.getCellIdentity().getEarfcn());
+                            }
                         } else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) && (cellInfo instanceof CellInfoNr)) {
                             CellInfoNr nrInfo = (CellInfoNr) cellInfo;
                             CellIdentityNr nrcellIdent = (CellIdentityNr) nrInfo.getCellIdentity();
@@ -140,6 +144,7 @@ public class TelephonyAPI {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 writeIfKnown(out, "bands", nrcellIdent.getBands());
                             }
+                            writeIfKnown(out, "arfcn", nrcellIdent.getNrarfcn());
                         } else if (cellInfo instanceof CellInfoCdma) {
                             CellInfoCdma cdmaInfo = (CellInfoCdma) cellInfo;
                             out.name("type").value("cdma");

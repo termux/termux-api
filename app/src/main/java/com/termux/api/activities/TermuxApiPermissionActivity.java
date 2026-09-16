@@ -44,7 +44,7 @@ public class TermuxApiPermissionActivity extends Activity {
                     String errorMessage = "Please grant the following permission"
                             + (permissionsToRequest.size() > 1 ? "s" : "")
                             + " to use this command: "
-                            + TextUtils.join(" ,", permissionsToRequest);
+                            + TextUtils.join(", ", permissionsToRequest);
                     out.beginObject().name("error").value(errorMessage).endObject();
                 }
             });

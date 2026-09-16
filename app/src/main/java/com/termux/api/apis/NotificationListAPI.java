@@ -15,6 +15,12 @@ import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
 import com.termux.shared.logger.Logger;
 
+import android.media.session.MediaSessionManager;
+import android.media.MediaMetadata;
+import android.media.session.PlaybackState;
+import android.media.session.MediaController;
+import java.util.List;
+import android.content.ComponentName;
 
 public class NotificationListAPI {
 
@@ -26,7 +32,11 @@ public class NotificationListAPI {
         ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
             @Override
             public void writeJson(JsonWriter out) throws Exception {
-                listNotifications(context, out);
+                if (!intent.hasExtra("media")) {
+                    listNotifications(context, out);
+                } else {
+                    listMedias(context, out);
+                }
             }
         });
     }
@@ -93,7 +103,65 @@ public class NotificationListAPI {
         out.endArray();
     }
 
+    static void listMedias(Context context, JsonWriter out) throws Exception {
+        MediaSessionManager mediaSessionManager = (MediaSessionManager)context.getSystemService(Context.MEDIA_SESSION_SERVICE);
 
+        ComponentName listenerComponent = new ComponentName(NotificationService.get(), NotificationService.class);
+
+        List<MediaController> controllers = mediaSessionManager.getActiveSessions(listenerComponent);
+
+        out.beginArray();
+        for (MediaController controller : controllers) {
+            MediaMetadata metadata = controller.getMetadata();
+            PlaybackState state = controller.getPlaybackState();
+
+            if (metadata != null) {
+                out.beginObject()
+                    .name("packageName").value(controller.getPackageName())
+                    .name("state").value(getStateString(state.getState()))
+                    .name("title").value(metadata.getString(MediaMetadata.METADATA_KEY_TITLE))
+                    .name("artist").value(metadata.getString(MediaMetadata.METADATA_KEY_ARTIST))
+                    .name("duration").value(metadata.getLong(MediaMetadata.METADATA_KEY_DURATION))
+                    .name("bufferedPosition").value(state.getBufferedPosition())
+                    .name("lastPositionUpdateTime").value(state.getLastPositionUpdateTime())
+                    .name("playbackSpeed").value(state.getPlaybackSpeed())
+                    .name("position").value(state.getPosition());
+                out.endObject();
+            }
+        }
+        out.endArray();
+    }
+
+	static String getStateString(int state) {
+		switch(state) {
+			case PlaybackState.STATE_BUFFERING:
+				return "buffering";
+			case PlaybackState.STATE_CONNECTING:
+                return "connecting";
+			case PlaybackState.STATE_ERROR:
+                return "error";
+			case PlaybackState.STATE_FAST_FORWARDING:
+                return "fast_forwarding";
+			case PlaybackState.STATE_NONE:
+                return "none";
+			case PlaybackState.STATE_PAUSED:
+                return "paused";
+			case PlaybackState.STATE_PLAYING:
+                return "playing";
+			case PlaybackState.STATE_REWINDING:
+                return "rewinding";
+			case PlaybackState.STATE_SKIPPING_TO_NEXT:
+                return "skipping_to_next";
+			case PlaybackState.STATE_SKIPPING_TO_PREVIOUS:
+                return "skipping_to_previous";
+            case PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM:
+                return "skipping_to_queue_item";
+			case PlaybackState.STATE_STOPPED:
+                return "stopped";
+			default:
+				return "unknown";
+		}
+	}
 
     public static class NotificationService extends NotificationListenerService {
         static NotificationService _this;

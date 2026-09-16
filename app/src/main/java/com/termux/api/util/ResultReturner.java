@@ -202,24 +202,43 @@ public abstract class ResultReturner {
     public static LocalSocketAddress getApiLocalSocketAddress(@NonNull Context context,
                                                               @NonNull String socketLabel, @NonNull String socketAddress) {
         if (socketAddress.startsWith("/")) {
-            ApplicationInfo termuxApplicationInfo = PackageUtils.getApplicationInfoForPackage(context,
-                    TermuxConstants.TERMUX_PACKAGE_NAME);
-            if (termuxApplicationInfo == null) {
-                throw new RuntimeException("Failed to get ApplicationInfo for the Termux app package: " +
-                        TermuxConstants.TERMUX_PACKAGE_NAME);
-            }
-
-            List<String> termuxAppDataDirectories = Arrays.asList(termuxApplicationInfo.dataDir,
-                    "/data/data/" + TermuxConstants.TERMUX_PACKAGE_NAME);
-            if (!FileUtils.isPathInDirPaths(socketAddress, termuxAppDataDirectories, true)) {
-                throw new RuntimeException("The " + socketLabel + " socket address \"" + socketAddress + "\"" +
-                        " is not under Termux app data directories: " + termuxAppDataDirectories);
-            }
+            isPathInTermuxAppDataDirectory(context, socketLabel + " socket address",
+                    socketAddress, /* `throwException` */ true);
 
             return new LocalSocketAddress(socketAddress, Namespace.FILESYSTEM);
         } else {
             return new LocalSocketAddress(socketAddress, Namespace.ABSTRACT);
         }
+    }
+
+    @SuppressLint("SdCardPath")
+    public static boolean isPathInTermuxAppDataDirectory(@NonNull Context context,
+                                                         @NonNull String label,
+                                                         String path,
+                                                         boolean throwException) {
+        if (path == null || !path.startsWith("/")) return false;
+
+        ApplicationInfo termuxApplicationInfo = PackageUtils.getApplicationInfoForPackage(context,
+                TermuxConstants.TERMUX_PACKAGE_NAME);
+        if (termuxApplicationInfo == null) {
+            if (throwException) {
+                throw new RuntimeException("Failed to get ApplicationInfo for the Termux app package: " +
+                    TermuxConstants.TERMUX_PACKAGE_NAME);
+            }
+            return false;
+        }
+
+        List<String> termuxAppDataDirectories = Arrays.asList(termuxApplicationInfo.dataDir,
+                "/data/data/" + TermuxConstants.TERMUX_PACKAGE_NAME);
+        if (!FileUtils.isPathInDirPaths(path, termuxAppDataDirectories, true)) {
+            if (throwException) {
+                throw new RuntimeException("The " + label + " \"" + path + "\"" +
+                        " is not under Termux app data directories: " + termuxAppDataDirectories);
+            }
+            return false;
+        }
+
+        return true;
     }
 
     public static boolean shouldRunThreadForResultRunnable(Object context) {

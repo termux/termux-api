@@ -1,6 +1,7 @@
 package com.termux.api.apis;
 
 import android.Manifest;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
@@ -8,7 +9,8 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Looper;
+import android.os.HandlerThread;
+import android.os.IBinder;
 import android.os.SystemClock;
 import android.util.JsonWriter;
 
@@ -20,6 +22,8 @@ import com.termux.api.util.ResultReturner.ResultJsonWriter;
 import com.termux.shared.logger.Logger;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class LocationAPI {
 
@@ -32,11 +36,43 @@ public class LocationAPI {
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");
 
-        ResultReturner.returnData(apiReceiver, intent, new ResultJsonWriter() {
+        Intent serviceIntent = new Intent(context, LocationService.class);
+        serviceIntent.setAction(intent.getAction());
+        Bundle extras = intent.getExtras();
+        if (extras != null)
+            serviceIntent.putExtras(extras);
+        context.startService(serviceIntent);
+    }
+
+
+    public static class LocationService extends Service {
+
+        protected static final String LOG_TAG = "LocationService";
+
+        public LocationService() {
+            super();
+        }
+
+        @Override
+        public IBinder onBind(Intent intent) {
+            return null;
+        }
+
+        public void onCreate() {
+            Logger.logDebug(LOG_TAG, "onCreate");
+
+            super.onCreate();
+        }
+
+        @Override
+        public int onStartCommand(Intent intent, int flags, int startId) {
+            Logger.logDebug(LOG_TAG, "onStartCommand");
+
+            ResultReturner.returnData(this, intent, new ResultJsonWriter() {
             @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
             @Override
             public void writeJson(final JsonWriter out) throws Exception {
-                LocationManager manager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+                LocationManager manager = (LocationManager) LocationService.this.getSystemService(Context.LOCATION_SERVICE);
 
                 String provider = intent.getStringExtra("provider");
                 if (provider == null)
@@ -50,97 +86,133 @@ public class LocationAPI {
                     return;
                 }
 
-                String request = intent.getStringExtra("request");
-                if (request == null)
-                    request = REQUEST_ONCE;
+                String requestParam = intent.getStringExtra("request");
+                if (requestParam == null)
+                    requestParam = REQUEST_ONCE;
+
+                final String request = requestParam;
                 switch (request) {
                     case REQUEST_LAST_KNOWN:
                         Location lastKnownLocation = manager.getLastKnownLocation(provider);
                         locationToJson(lastKnownLocation, out);
                         break;
                     case REQUEST_ONCE:
-                        Looper.prepare();
-                        manager.requestSingleUpdate(provider, new LocationListener() {
+                    case REQUEST_UPDATES:
+                        LocationMonitorStore locationMonitorStore = new LocationMonitorStore();
+
+                        CountDownLatch latch = new CountDownLatch(1);
+
+                        LocationListener locationListener = new LocationListener() {
+                            @Override
+                            public void onStatusChanged(String changedProvider, int status, Bundle extras) {}
 
                             @Override
-                            public void onStatusChanged(String changedProvider, int status, Bundle extras) {
-                                // TODO Auto-generated method stub
-                            }
+                            public void onProviderEnabled(String changedProvider) {}
 
                             @Override
-                            public void onProviderEnabled(String changedProvider) {
-                                // TODO Auto-generated method stub
-                            }
-
-                            @Override
-                            public void onProviderDisabled(String changedProvider) {
-                                // TODO Auto-generated method stub
-                            }
+                            public void onProviderDisabled(String changedProvider) {}
 
                             @Override
                             public void onLocationChanged(Location location) {
                                 try {
-                                    locationToJson(location, out);
-                                } catch (IOException e) {
+                                    synchronized (out) {
+                                        if (REQUEST_UPDATES.equals(request) && !locationMonitorStore.responseReceived) {
+                                            locationMonitorStore.responseReceived = true;
+                                            out.beginArray();
+                                        }
+
+                                        locationToJson(location, out);
+                                        out.flush();
+                                    }
+                                } catch (Exception e) {
                                     Logger.logStackTraceWithMessage(LOG_TAG, "Writing json", e);
                                 } finally {
-                                    Looper.myLooper().quit();
+                                    if (REQUEST_ONCE.equals(request)) {
+                                        // End wait.
+                                        latch.countDown();
+                                    }
                                 }
                             }
-                        }, null);
-                        Looper.loop();
-                        break;
-                    case REQUEST_UPDATES:
-                        Looper.prepare();
-                        manager.requestLocationUpdates(provider, 5000, 50.f, new LocationListener() {
+                        };
+                        locationMonitorStore.locationListener = locationListener;
 
-                            @Override
-                            public void onStatusChanged(String changedProvider, int status, Bundle extras) {
-                                // Do nothing.
+                        HandlerThread locationThread = new HandlerThread("BackgroundLocationThread");
+                        locationThread.start();
+
+                        try {
+                            if (REQUEST_ONCE.equals(request)) {
+                                manager.requestSingleUpdate(provider, locationListener, locationThread.getLooper());
+                            } else {
+                                manager.requestLocationUpdates(provider, 5000, 1.f, locationListener, locationThread.getLooper());
                             }
+                        } catch (Throwable t) {
+                            out.beginObject().name("API_ERROR").value("Failed to request location:\n" + Logger.getStackTraceString(t)).endObject();
+                            return;
+                        }
 
-                            @Override
-                            public void onProviderEnabled(String changedProvider) {
-                                // Do nothing.
-                            }
-
-                            @Override
-                            public void onProviderDisabled(String changedProvider) {
-                                // Do nothing.
-                            }
-
-                            @Override
-                            public void onLocationChanged(Location location) {
-                                try {
-                                    locationToJson(location, out);
-                                    out.flush();
-                                } catch (IOException e) {
-                                    Logger.logStackTraceWithMessage(LOG_TAG, "Writing json", e);
+                        try {
+                            // Wait up to 30 seconds for `updates` request, or if `once` request
+                            // received a response and counted down from initial 1 to 0.
+                            latch.await(30, TimeUnit.SECONDS);
+                        } catch (InterruptedException e) {
+                        } finally {
+                            synchronized (out) {
+                                if (REQUEST_UPDATES.equals(request) && locationMonitorStore.responseReceived) {
+                                    try {
+                                        out.endArray();
+                                    } catch (IOException e) {
+                                        Logger.logStackTraceWithMessage(LOG_TAG, "Failed to end output location updates array", e);
+                                    }
                                 }
+
+                                cleanUpLocationUpdates(manager, locationMonitorStore);
                             }
-                        }, null);
-                        final Looper looper = Looper.myLooper();
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                try {
-                                    Thread.sleep(30 * 1000);
-                                } catch (InterruptedException e) {
-                                    Logger.logStackTraceWithMessage(LOG_TAG, "INTER", e);
-                                }
-                                looper.quit();
+
+                            try {
+                                locationThread.quitSafely();
+                            } catch (Throwable t) {
+                                Logger.logStackTraceWithMessage(LOG_TAG, "Failed to quit background location thread", t);
                             }
-                        }.start();
-                        Looper.loop();
+                        }
+
                         break;
                     default:
                         out.beginObject()
-                                .name("API_ERROR")
-                                .value("Unsupported request '" + request + "' - only '" + REQUEST_LAST_KNOWN + "', '" + REQUEST_ONCE + "' and '" + REQUEST_UPDATES
-                                        + "' supported").endObject();
+                            .name("API_ERROR")
+                            .value("Unsupported request '" + request + "' - only '" + REQUEST_LAST_KNOWN + "', '" + REQUEST_ONCE + "' and '" + REQUEST_UPDATES
+                                    + "' supported").endObject();
                 }
             }
         });
+
+            return Service.START_NOT_STICKY;
+        }
+
+        public class LocationMonitorStore {
+            public LocationListener locationListener;
+            public boolean responseReceived;
+        }
+
+        protected void cleanUpLocationUpdates(LocationManager manager, LocationMonitorStore locationMonitorStore) {
+            synchronized (locationMonitorStore) {
+                try {
+                    if (locationMonitorStore.locationListener != null) {
+                        manager.removeUpdates(locationMonitorStore.locationListener);
+                    }
+                } catch (Exception e) {
+                    Logger.logStackTraceWithMessage(LOG_TAG, "Failed to remove location updates", e);
+                }
+                locationMonitorStore.locationListener = null;
+            }
+        }
+
+        @Override
+        public void onDestroy() {
+            Logger.logDebug(LOG_TAG, "onDestroy");
+
+            super.onDestroy();
+        }
+
     }
 
     static void locationToJson(Location lastKnownLocation, JsonWriter out) throws IOException {
@@ -163,4 +235,5 @@ public class LocationAPI {
         out.name("provider").value(lastKnownLocation.getProvider());
         out.endObject();
     }
+
 }

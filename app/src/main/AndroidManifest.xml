@@ -181,6 +181,9 @@
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
 
+        <service android:name=".apis.LocationAPI$LocationService"
+            android:exported="false" />
+
         <service android:name=".apis.MediaPlayerAPI$MediaPlayerService"
             android:exported="false" />
 

@@ -17,6 +17,17 @@ public class BrightnessAPI {
         Logger.logDebug(LOG_TAG, "onReceive");
 
         final ContentResolver contentResolver = context.getContentResolver();
+        if (!intent.hasExtra("brightness") && !intent.hasExtra("auto")) {
+                ResultReturner.returnData(receiver, intent, out -> {
+                        int brightness = Settings.System.getInt(
+                                contentResolver,
+                                Settings.System.SCREEN_BRIGHTNESS,
+                                0
+                        );
+                        out.println("{\"brightness\":" + brightness + "}");
+                });
+                return;
+        }
         if (intent.hasExtra("auto")) {
             boolean auto = intent.getBooleanExtra("auto", false);
             Settings.System.putInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, auto?Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC:Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);

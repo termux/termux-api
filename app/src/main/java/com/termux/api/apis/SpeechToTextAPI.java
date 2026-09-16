@@ -171,6 +171,7 @@ public class SpeechToTextAPI {
                             return;
                         } else {
                             out.println(s);
+                            out.flush();
                         }
                     }
                 }

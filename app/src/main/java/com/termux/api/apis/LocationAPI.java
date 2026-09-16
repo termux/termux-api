@@ -19,7 +19,9 @@ import androidx.annotation.RequiresPermission;
 import com.termux.api.TermuxApiReceiver;
 import com.termux.api.util.ResultReturner;
 import com.termux.api.util.ResultReturner.ResultJsonWriter;
+import com.termux.shared.android.PermissionUtils;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -73,6 +75,18 @@ public class LocationAPI {
             @Override
             public void writeJson(final JsonWriter out) throws Exception {
                 LocationManager manager = (LocationManager) LocationService.this.getSystemService(Context.LOCATION_SERVICE);
+
+                // If on Android `>= 11` and background location permission is missing, ask user to grant it.
+                // - https://developer.android.com/reference/android/Manifest.permission#ACCESS_BACKGROUND_LOCATION
+                // - https://developer.android.com/develop/sensors-and-location/location/permissions/background
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                    !PermissionUtils.checkPermission(LocationService.this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+                    out.beginObject()
+                        .name("API_ERROR")
+                        .value("Background location permission not granted." +
+                                " Grant it manually from Android Settings -> Apps -> " + TermuxConstants.TERMUX_API_APP_NAME + " -> Permissions -> Location -> Allow all the time").endObject();
+                    return;
+                }
 
                 String provider = intent.getStringExtra("provider");
                 if (provider == null)

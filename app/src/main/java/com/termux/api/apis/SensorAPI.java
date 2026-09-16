@@ -180,6 +180,18 @@ public class SensorAPI {
             });
         }
 
+        private static JSONObject getSensorInfo(Sensor sensor) throws JSONException {
+            JSONObject obj = new JSONObject();
+            obj.put("name", sensor.getName());
+            obj.put("max_range", sensor.getMaximumRange());
+            obj.put("min_delay", sensor.getMinDelay());
+            obj.put("power", sensor.getPower());
+            obj.put("resolution", sensor.getResolution());
+            obj.put("type", sensor.getStringType());
+            obj.put("vendor", sensor.getVendor());
+            obj.put("version", sensor.getVersion());
+            return obj;
+        }
 
         /*
          * -----
@@ -196,10 +208,16 @@ public class SensorAPI {
             JSONArray sensorArray = new JSONArray();
             List<Sensor> sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL);
 
+            boolean showInfo = intent.getBooleanExtra("info", false);
+
             try {
                 for (int j = 0; j < sensorList.size(); ++j) {
                     Sensor sensor = sensorList.get(j);
-                    sensorArray.put(sensor.getName());
+                    if (showInfo) {
+                        sensorArray.put(getSensorInfo(sensor));
+                    } else {
+                        sensorArray.put(sensor.getName());
+                    }
                 }
                 JSONObject output = new JSONObject();
                 output.put("sensors", sensorArray);

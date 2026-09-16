@@ -66,7 +66,7 @@ jobs:
           echo "checksums-sha256.txt:"$'\n```\n'"$(cat "$APK_DIR_PATH/checksums-sha256.txt")"$'\n```'
 
       - name: Upload files to action
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}
           path: |

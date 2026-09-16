@@ -49,6 +49,7 @@ import com.termux.api.activities.TermuxApiPermissionActivity;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.markdown.MarkdownUtils;
 import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.plugins.TermuxPluginUtils;
 
@@ -64,13 +65,21 @@ public class TermuxApiReceiver extends BroadcastReceiver {
         try {
             doWork(context, intent);
         } catch (Throwable t) {
-            String message = "Error in " + LOG_TAG;
+            String header = "Error in " + LOG_TAG + " for " + ResultReturner.getApiMethodLabel(intent) +
+                    " sent by API server " + ResultReturner.getApiServerLabel(intent);
+            String message = header + ":\n\n" +
+                IntentUtils.getIntentString(intent) + "\n\n" +
+                "Error";
+
             // Make sure never to throw exception from BroadCastReceiver to avoid "process is bad"
             // behaviour from the Android system.
             Logger.logStackTraceWithMessage(LOG_TAG, message, t);
 
+            // Only add header to notification text.
             TermuxPluginUtils.sendPluginCommandErrorNotification(context, LOG_TAG,
-                    TermuxConstants.TERMUX_API_APP_NAME + " Error", message, t);
+                TermuxConstants.TERMUX_API_APP_NAME + " Error", header,
+                MarkdownUtils.getMarkdownCodeForString(Logger.getMessageAndStackTraceString(message, t), true),
+                false, false, true);
 
             ResultReturner.noteDone(this, intent);
         }

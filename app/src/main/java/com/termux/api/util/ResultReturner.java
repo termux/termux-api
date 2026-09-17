@@ -99,6 +99,13 @@ public abstract class ResultReturner {
     private static final String API_SERVER_STARTTIME_EXTRA = "api_server_starttime";
 
 
+    /**
+     * An internal extra intent state which specifies if {@link #returnData(Object, Intent, ResultWriter)}
+     * has already been called. Multiple calls to return data are not allowed.
+     */
+    private static final String __RETURN_DATA_CALLED_EXTRA = "__return_data_called";
+
+
 
     public interface ResultWriter {
         void writeResult(PrintWriter out) throws Exception;
@@ -236,6 +243,7 @@ public abstract class ResultReturner {
         newIntent.putExtra(API_SERVER_PID_EXTRA, origIntent.getIntExtra(API_SERVER_PID_EXTRA, -1));
         newIntent.putExtra(API_SERVER_UID_EXTRA, origIntent.getIntExtra(API_SERVER_UID_EXTRA, -1));
         newIntent.putExtra(API_SERVER_STARTTIME_EXTRA, origIntent.getIntExtra(API_SERVER_STARTTIME_EXTRA, -1));
+        newIntent.putExtra(__RETURN_DATA_CALLED_EXTRA, origIntent.getBooleanExtra(__RETURN_DATA_CALLED_EXTRA, false));
 
     }
 
@@ -301,9 +309,14 @@ public abstract class ResultReturner {
      * Run in a separate thread, unless the context is an IntentService.
      */
     public static void returnData(Object context, final Intent intent, final ResultWriter resultWriter) {
+        boolean returnDataCalled = intent.getBooleanExtra(__RETURN_DATA_CALLED_EXTRA, false);
+        if (!returnDataCalled) {
+            intent.putExtra(__RETURN_DATA_CALLED_EXTRA, true);
+        }
+
         final BroadcastReceiver receiver = (BroadcastReceiver) ((context instanceof BroadcastReceiver) ? context : null);
         final Activity activity = (Activity) ((context instanceof Activity) ? context : null);
-        final PendingResult asyncResult = receiver != null ? receiver.goAsync() : null;
+        final PendingResult asyncResult = receiver != null && !returnDataCalled ? receiver.goAsync() : null;
 
         // Store caller function stack trace to add to exception messages thrown inside `Runnable`
         // lambda in case its run in a thread as it will not be included by default.
@@ -313,6 +326,18 @@ public abstract class ResultReturner {
             PrintWriter writer = null;
             LocalSocket outputSocket = null;
             try {
+                // If `ResultReturner.returnData()` is called again, then attempting to connect to
+                // output/input socket again would fail with `java.io.IOException: Connection refused`,
+                // which is also handled below in the exception catch block, but since the API server
+                // process may have already been killed after receiving result from initial call
+                // to `ResultReturner.returnData()`, an error notification will not be shown.
+                // However, a call to `ResultReturner.returnData()` would be from a faulty logic
+                // in a API command receiver, and the user should be notified, so that they can
+                // report to the developers to fix the logic.
+                if (returnDataCalled) {
+                    throw new IllegalStateException("ResultReturner.returnData() is being called again for the same API command");
+                }
+
                 outputSocket = new LocalSocket();
                 String outputSocketAddress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
                 if (outputSocketAddress == null || outputSocketAddress.isEmpty())

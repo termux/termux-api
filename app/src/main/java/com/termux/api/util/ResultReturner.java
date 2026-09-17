@@ -61,14 +61,14 @@ public abstract class ResultReturner {
      * `getpid()`.
      *
      * A `pid` and `starttime` combo can uniquely identify a process even if pid gets recycled,
-     * check {@link #API_SERVER_STARTTIME}.
+     * check {@link #API_SERVER_STARTTIME_EXTRA}.
      *
      * This is passed by the client themselves and is considered untrusted, it must not be used for
      * access control.
      *
      * - https://manpages.debian.org/testing/manpages-dev/getpid.2.en.html
      */
-    private static final String API_SERVER_PID = "api_server_pid";
+    private static final String API_SERVER_PID_EXTRA = "api_server_pid";
 
     /**
      * An extra intent parameter for the `uid` of the API server that sent the command returned by
@@ -79,14 +79,14 @@ public abstract class ResultReturner {
      *
      * - https://manpages.debian.org/testing/manpages-dev/getuid.2.en.html
      */
-    private static final String API_SERVER_UID = "api_server_uid";
+    private static final String API_SERVER_UID_EXTRA = "api_server_uid";
 
     /**
      * An extra intent parameter for the `starttime` of the API server that sent the command
      * from the field 22 of `/proc/<pid>/stat` file.
      *
      * A `pid` and `starttime` combo can uniquely identify a process even if pid gets recycled,
-     * check {@link #API_SERVER_PID}.
+     * check {@link #API_SERVER_PID_EXTRA}.
      *
      * This is passed by the client themselves and is considered untrusted, it must not be used for
      * access control.
@@ -96,7 +96,7 @@ public abstract class ResultReturner {
      *
      * - https://manpages.debian.org/testing/manpages/proc_pid_stat.5.en.html
      */
-    private static final String API_SERVER_STARTTIME = "api_server_starttime";
+    private static final String API_SERVER_STARTTIME_EXTRA = "api_server_starttime";
 
 
 
@@ -233,9 +233,9 @@ public abstract class ResultReturner {
         newIntent.putExtra("api_method", origIntent.getStringExtra("api_method"));
         newIntent.putExtra(SOCKET_OUTPUT_EXTRA, origIntent.getStringExtra(SOCKET_OUTPUT_EXTRA));
         newIntent.putExtra(SOCKET_INPUT_EXTRA, origIntent.getStringExtra(SOCKET_INPUT_EXTRA));
-        newIntent.putExtra(API_SERVER_PID, origIntent.getIntExtra(API_SERVER_PID, -1));
-        newIntent.putExtra(API_SERVER_UID, origIntent.getIntExtra(API_SERVER_UID, -1));
-        newIntent.putExtra(API_SERVER_STARTTIME, origIntent.getIntExtra(API_SERVER_STARTTIME, -1));
+        newIntent.putExtra(API_SERVER_PID_EXTRA, origIntent.getIntExtra(API_SERVER_PID_EXTRA, -1));
+        newIntent.putExtra(API_SERVER_UID_EXTRA, origIntent.getIntExtra(API_SERVER_UID_EXTRA, -1));
+        newIntent.putExtra(API_SERVER_STARTTIME_EXTRA, origIntent.getIntExtra(API_SERVER_STARTTIME_EXTRA, -1));
 
     }
 
@@ -433,9 +433,9 @@ public abstract class ResultReturner {
         String outputSocketAddress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
         boolean isFileSystemSocket = outputSocketAddress != null && outputSocketAddress.startsWith("/");
 
-        int apiServerPid = intent.getIntExtra(API_SERVER_PID, -1);
-        int apiServerUid = intent.getIntExtra(API_SERVER_UID, -1);
-        int apiServerStartTime = intent.getIntExtra(API_SERVER_STARTTIME, -1);
+        int apiServerPid = intent.getIntExtra(API_SERVER_PID_EXTRA, -1);
+        int apiServerUid = intent.getIntExtra(API_SERVER_UID_EXTRA, -1);
+        int apiServerStartTime = intent.getIntExtra(API_SERVER_STARTTIME_EXTRA, -1);
         if (apiServerPid < 1 || apiServerUid < 0 || apiServerStartTime < 1) {
             return  "(" +
                 "socketType=" + (isFileSystemSocket ? "filesystem" : "abstract") +
@@ -463,9 +463,9 @@ public abstract class ResultReturner {
         String outputSocketAddress = intent.getStringExtra(SOCKET_OUTPUT_EXTRA);
         boolean isFileSystemSocket = outputSocketAddress != null && outputSocketAddress.startsWith("/");
 
-        int apiServerPid = intent.getIntExtra(API_SERVER_PID, -1);
-        int apiServerUid = intent.getIntExtra(API_SERVER_UID, -1);
-        int apiServerStartTime = intent.getIntExtra(API_SERVER_STARTTIME, -1);
+        int apiServerPid = intent.getIntExtra(API_SERVER_PID_EXTRA, -1);
+        int apiServerUid = intent.getIntExtra(API_SERVER_UID_EXTRA, -1);
+        int apiServerStartTime = intent.getIntExtra(API_SERVER_STARTTIME_EXTRA, -1);
         if (apiServerPid < 1 || apiServerUid < 0 || apiServerStartTime < 1) return null;
 
         ApplicationInfo applicationInfo = ResultReturner.context.getApplicationInfo();

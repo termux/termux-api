@@ -19,6 +19,8 @@ import com.termux.shared.logger.Logger;
 
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class SpeechToTextAPI {
@@ -38,6 +40,8 @@ public class SpeechToTextAPI {
         }
 
         protected SpeechRecognizer mSpeechRecognizer;
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         final LinkedBlockingQueue<String> queueu = new LinkedBlockingQueue<>();
 
         private static final String LOG_TAG = "SpeechToTextService";
@@ -62,6 +66,10 @@ public class SpeechToTextAPI {
                     List<String> recognitions = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                     Logger.logError(LOG_TAG, "RecognitionListener#onResults(" + recognitions + ")");
                     queueu.addAll(recognitions);
+                    // On full mode, stop only when recognition is achieved
+                    if (!recognizerIntent.getBooleanExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)) {
+                        queueu.add(STOP_ELEMENT);
+                    }
                 }
 
                 @Override
@@ -108,7 +116,11 @@ public class SpeechToTextAPI {
                 @Override
                 public void onEndOfSpeech() {
                     Logger.logError(LOG_TAG, "RecognitionListener#onEndOfSpeech()");
-                    queueu.add(STOP_ELEMENT);
+
+                    // On partial mode, stop recognition when speech ends
+                    if (recognizerIntent.getBooleanExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)) {
+                        queueu.add(STOP_ELEMENT);
+                    }
                 }
 
                 @Override
@@ -141,13 +153,14 @@ public class SpeechToTextAPI {
                         .create().show();
             }
 
-            Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Enter shell command");
-            recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10);
-            recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
-            recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+            // Wait for the intent handler thread to update the intent
+	    try {
+		latch.await(1, TimeUnit.SECONDS);
+	    } catch (InterruptedException e) {
+	    }
+
             mSpeechRecognizer.startListening(recognizerIntent);
+
         }
 
         @Override
@@ -161,6 +174,15 @@ public class SpeechToTextAPI {
         @Override
         protected void onHandleIntent(final Intent intent) {
             Logger.logDebug(LOG_TAG, "onHandleIntent:\n" + IntentUtils.getIntentString(intent));
+
+            recognizerIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Enter shell command");
+            recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10);
+            recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
+            recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+
+            recognizerIntent.putExtras(intent.getExtras());
+            latch.countDown(); // inform main thread about intent update
 
             ResultReturner.returnData(this, intent, new ResultReturner.WithInput() {
                 @Override

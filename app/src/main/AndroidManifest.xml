@@ -139,6 +139,12 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
+        <activity android:name=".apis.ScreenshotAPI$ScreenshotActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
         <!-- If you see "Unresolved package" errors for ReportActivity with manifest placeholder,
              ignore it. Android Studio linter is broken and correct package name will be used at build time. -->
         <activity

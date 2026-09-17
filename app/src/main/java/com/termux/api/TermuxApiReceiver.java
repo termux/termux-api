@@ -30,6 +30,7 @@ import com.termux.api.apis.NfcAPI;
 import com.termux.api.apis.NotificationAPI;
 import com.termux.api.apis.NotificationListAPI;
 import com.termux.api.apis.SAFAPI;
+import com.termux.api.apis.ScreenshotAPI;
 import com.termux.api.apis.SensorAPI;
 import com.termux.api.apis.ShareAPI;
 import com.termux.api.apis.SmsInboxAPI;
@@ -204,6 +205,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "Sensor":
                 SensorAPI.onReceive(context, intent);
+                break;
+            case "Screenshot":
+                ScreenshotAPI.onReceive(this, context, intent);
                 break;
             case "Share":
                 ShareAPI.onReceive(this, context, intent);

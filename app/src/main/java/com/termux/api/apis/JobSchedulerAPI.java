@@ -7,6 +7,7 @@ import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PersistableBundle;
@@ -54,7 +55,9 @@ public class JobSchedulerAPI {
             }
         }
         if (Build.VERSION.SDK_INT >= 28) {
-            description.add(String.format(Locale.ENGLISH, "(network: %s)", jobInfo.getRequiredNetwork().toString()));
+            final NetworkRequest requiredNetwork = jobInfo.getRequiredNetwork();
+            final String networkDescription = requiredNetwork == null ? "none" : requiredNetwork.toString();
+            description.add(String.format(Locale.ENGLISH, "(network: %s)", networkDescription));
         }
 
         return String.format(Locale.ENGLISH, "Job %d: %s    %s", jobInfo.getId(), path,

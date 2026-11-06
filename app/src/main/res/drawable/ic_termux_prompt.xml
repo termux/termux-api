@@ -1,0 +1,48 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!--
+        The app's own mark, taken verbatim from ic_foreground.xml (the
+        foreground layer of the adaptive launcher icon) and only re-fitted to
+        the 24dp notification grid.
+
+        ic_foreground.xml cannot be used directly here: it lives on a 108dp
+        canvas where the glyph occupies only 40x32, so at 24dp it would shrink
+        to an unreadable speck. The launcher icon adds a black disc, which is
+        wrong for a notification because small icons are drawn from the alpha
+        channel only.
+
+        So the two sub-paths are kept byte for byte and just scaled by 0.5 and
+        translated into the 24dp box (content ends up inside 2..22 x 4..20,
+        the usual 2dp padding).
+    -->
+    <group
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="-15"
+        android:translateY="-15">
+
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M34,38
+                              h6
+                              l12,16
+                              l-12,16
+                              h-6
+                              l12,-16
+                              " />
+
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M56,66
+                              h18
+                              v4
+                              h-18
+                              " />
+
+    </group>
+
+</vector>

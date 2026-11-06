@@ -45,6 +45,7 @@ import com.termux.api.apis.VibrateAPI;
 import com.termux.api.apis.VolumeAPI;
 import com.termux.api.apis.WallpaperAPI;
 import com.termux.api.apis.WifiAPI;
+import com.termux.api.apis.WifiMulticastAPI;
 import com.termux.api.activities.TermuxApiPermissionActivity;
 import com.termux.api.util.ResultReturner;
 import com.termux.shared.data.IntentUtils;
@@ -272,6 +273,15 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "WifiEnable":
                 WifiAPI.onReceiveWifiEnable(this, context, intent);
+                break;
+            case "WifiMulticastAcquire":
+                WifiMulticastAPI.onReceiveAcquire(this, context, intent);
+                break;
+            case "WifiMulticastRelease":
+                WifiMulticastAPI.onReceiveRelease(this, context, intent);
+                break;
+            case "WifiMulticastStatus":
+                WifiMulticastAPI.onReceiveStatus(this, context, intent);
                 break;
             default:
                 Logger.logError(LOG_TAG, "Unrecognized 'api_method' extra: '" + apiMethod + "'");

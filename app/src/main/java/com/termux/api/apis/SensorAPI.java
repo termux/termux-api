@@ -57,6 +57,9 @@ public class SensorAPI {
         protected static JSONObject sensorReadout;
         protected static SensorOutputWriter outputWriter;
 
+        // whether sensorEventListener is currently registered with sensorManager
+        protected static boolean listenerRegistered;
+
         // prevent concurrent modifications w/ sensor readout
         protected static Semaphore semaphore;
 
@@ -110,9 +113,23 @@ public class SensorAPI {
             }
 
             if (sensorManager != null) {
-                sensorManager.unregisterListener(sensorEventListener);
+                unregisterSensorListener(sensorManager);
                 sensorManager = null;
             }
+        }
+
+        /**
+         * Unregisters sensorEventListener from all sensors.
+         *
+         * @return true if the listener was registered before this call
+         */
+        protected static boolean unregisterSensorListener(SensorManager sensorManager) {
+            boolean wasRegistered = listenerRegistered;
+            if (sensorManager != null) {
+                sensorManager.unregisterListener(sensorEventListener);
+            }
+            listenerRegistered = false;
+            return wasRegistered;
         }
 
         @Override
@@ -218,10 +235,16 @@ public class SensorAPI {
             public SensorCommandResult handle(SensorManager sensorManager, Context context, Intent intent) {
                 SensorCommandResult result = new SensorCommandResult();
 
-                if (outputWriter != null) {
+                // The writer may already be gone (e.g. client was killed and the output socket
+                // broke) while listeners are still registered, so check both.
+                boolean writerWasActive = outputWriter != null;
+                if (writerWasActive) {
                     outputWriter.interrupt();
                     outputWriter = null;
-                    sensorManager.unregisterListener(sensorEventListener);
+                }
+                boolean listenerWasRegistered = unregisterSensorListener(sensorManager);
+
+                if (writerWasActive || listenerWasRegistered) {
                     result.message = "Sensor cleanup successful!";
                     Logger.logInfo(LOG_TAG, "Cleanup()");
                 } else {
@@ -280,7 +303,9 @@ public class SensorAPI {
 
             if (listenToAll) {
                 for (Sensor sensor : availableSensors) {
-                    sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI);
+                    if (sensorManager.registerListener(sensorEventListener, sensor, SensorManager.SENSOR_DELAY_UI)) {
+                        listenerRegistered = true;
+                    }
                 }
                 sensorsToListenTo = availableSensors;
                 Logger.logInfo(LOG_TAG, "Listening to ALL sensors");
@@ -303,7 +328,9 @@ public class SensorAPI {
                     }
 
                     if (shortestMatchSensor != null) {
-                        sensorManager.registerListener(sensorEventListener, shortestMatchSensor, SensorManager.SENSOR_DELAY_UI);
+                        if (sensorManager.registerListener(sensorEventListener, shortestMatchSensor, SensorManager.SENSOR_DELAY_UI)) {
+                            listenerRegistered = true;
+                        }
                         sensorsToListenTo.add(shortestMatchSensor);
                     }
                 }
@@ -316,7 +343,7 @@ public class SensorAPI {
          */
         protected static void clearSensorValues() {
             // prevent duplicate listeners
-            sensorManager.unregisterListener(sensorEventListener);
+            unregisterSensorListener(sensorManager);
 
             // clear out old values
             sensorReadout = new JSONObject();
@@ -329,11 +356,19 @@ public class SensorAPI {
         protected static SensorOutputWriter createSensorOutputWriter(Intent intent) {
             String socketAddress = intent.getStringExtra("socket_output");
 
-            outputWriter = new SensorOutputWriter(socketAddress);
-            outputWriter.setOnErrorListener(e -> {
-                outputWriter = null;
+            final SensorOutputWriter writer = new SensorOutputWriter(socketAddress);
+            writer.setOnErrorListener(e -> {
                 Logger.logStackTraceWithMessage(LOG_TAG, "SensorOutputWriter error", e);
+                // The client is gone (e.g. termux-sensor was killed), so nobody reads the
+                // output anymore. Release the sensors instead of keeping them registered.
+                // Only act if this writer is still the active one.
+                if (outputWriter == writer) {
+                    writer.interrupt();
+                    outputWriter = null;
+                    unregisterSensorListener(sensorManager);
+                }
             });
+            outputWriter = writer;
 
             int delay = intent.getIntExtra("delay", SensorOutputWriter.DEFAULT_DELAY);
             Logger.logInfo(LOG_TAG, "Delay set to: " + delay);

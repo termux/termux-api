@@ -58,6 +58,10 @@ android {
         }
     }
 
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
     packagingOptions {
         // Remove terminal-emulator and termux-shared JNI libs added via termux-shared dependency
         exclude "lib/*/libtermux.so"
@@ -80,6 +84,9 @@ dependencies {
     //implementation "com.termux:termux-shared:0.118.0"
 
     implementation "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava"
+
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.mockito:mockito-core:5.11.0"
 }
 
 task versionName {
